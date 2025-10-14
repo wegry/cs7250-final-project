@@ -40,7 +40,7 @@ def _(pl):
             read_options={"skip_rows": 0, "n_rows": 3},
         )
 
-        # Get the three header rows
+        # Get the three header rows and squish them into 1
         row0 = df.row(
             0
         )  # Main groups: "Utility Characteristics", "Number of Customers Enrolled", etc.
@@ -162,11 +162,15 @@ def _(mo):
 
 @app.cell
 def _(pl):
+    dynamic_priced_utilities = pl.read_json("data/dynamically-priced-eiads.json")
+
     eiads = set(
-        pl.read_json("data/dynamically-priced-eiads.json")[
+        dynamic_priced_utilities[
             "Utility Characteristics->Utility Number"
         ].to_list()
     )
+
+    pl.DataFrame(dynamic_priced_utilities)
     return (eiads,)
 
 
@@ -181,7 +185,7 @@ def _(mo):
 
     narrows things down. Questions:
 
-    - How do know what state to which each plan applies? USURDB doesn't seem to have this information
+    - How do know what state to which each plan applies? USURDB doesn't seem to have this information. EIA 861's _Utility Data_ form has which states the utility operates in (which might be all we have to go on)
     - How can we filter down the matching `eiaid`s to just dynamic pricing plans?
     """
     )
