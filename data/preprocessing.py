@@ -101,12 +101,17 @@ def _(dynamic_pricing, pl):
 
     utilities = dynamic_pricing.select(
         cs.starts_with("Utility"), cs.ends_with("Residential")
-    ).filter(pl.any_horizontal(cs.ends_with("Residential") == "Y"))
+    ).filter(
+        pl.any_horizontal(cs.ends_with("Residential") == "Y")
+        & (pl.col("Utility Characteristics->BA Code") == "PJM")
+    )
 
     utilities.select(
         "Utility Characteristics->Utility Name",
         "Utility Characteristics->Utility Number",
     ).write_json("data/dynamically-priced-eiads.json")
+
+    utilities
     return
 
 
