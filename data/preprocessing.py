@@ -211,17 +211,20 @@ def _(mo):
 
 @app.cell
 def _(eiads, pl, rates):
+    ends_after_start_of_2024 = rates.filter(pl.col("eiaid").is_in(eiads)).filter(
+        pl.col("enddate").is_null()
+        | (pl.col("enddate") >= pl.lit("2024-01-01").str.to_date())
+    )
+
     ends_after_start_of_2024 = (
-        rates.filter(pl.col("eiaid").is_in(eiads))
-        .filter(
-            pl.col("enddate").is_null()
-            | (pl.col("enddate") >= pl.lit("2024-01-01").str.to_date())
-        )
+        ends_after_start_of_2024
         # Remove totally empty columns as well
         .select(
-            [col for col in rates.columns if rates[col].null_count() < len(rates)]
+            [col for col in ends_after_start_of_2024.columns if ends_after_start_of_2024[col].null_count() < len(ends_after_start_of_2024)]
         )
     )
+
+    ends_after_start_of_2024
     return (ends_after_start_of_2024,)
 
 
