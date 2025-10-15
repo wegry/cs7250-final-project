@@ -121,6 +121,18 @@ def _(pl):
             pl.col("enddate").str.to_datetime("%Y-%m-%d %H:%M:%S"),
             pl.col("latest_update").str.to_datetime("%Y-%m-%d %H:%M:%S"),
             pl.col("eiaid").cast(pl.Int64),
+            pl.col("demandweekdayschedule").str.json_decode(
+                pl.List(pl.List(pl.Int64))
+            ),
+            pl.col("demandweekendschedule").str.json_decode(
+                pl.List(pl.List(pl.Int64))
+            ),
+            pl.col("energyweekdayschedule").str.json_decode(
+                pl.List(pl.List(pl.Int64))
+            ),
+            pl.col("energyweekendschedule").str.json_decode(
+                pl.List(pl.List(pl.Int64))
+            ),
         )
     )
 
@@ -194,9 +206,8 @@ def _(mo):
 
 @app.cell
 def _(eiads, pl, rates):
-    (
+    ends_after_start_of_2024 = (
         rates.filter(pl.col("eiaid").is_in(eiads))
-        # .filter(pl.col("startdate") >= pl.lit("2024-01-01").str.to_date())
         .filter(
             pl.col("enddate").is_null()
             | (pl.col("enddate") >= pl.lit("2024-01-01").str.to_date())
@@ -206,6 +217,22 @@ def _(eiads, pl, rates):
             [col for col in rates.columns if rates[col].null_count() < len(rates)]
         )
     )
+    return (ends_after_start_of_2024,)
+
+
+@app.cell
+def _(ends_after_start_of_2024, pl):
+    import json
+    import numpy as np
+
+    ends_after_start_of_2024.select(
+        "name",
+        "utility",
+        "startdate",
+        "enddate",
+        "latest_update",
+        "energyweekdayschedule",
+    ).filter(pl.col("energyweekdayschedule").is_not_null())
     return
 
 

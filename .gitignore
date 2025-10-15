@@ -1,2 +1,3 @@
 # Ignore excel backups
 ~$*.xlsx
+.DS_Store
