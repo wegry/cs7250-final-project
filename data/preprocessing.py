@@ -103,7 +103,6 @@ def _(dynamic_pricing, pl):
         cs.starts_with("Utility"), cs.ends_with("Residential")
     ).filter(
         pl.any_horizontal(cs.ends_with("Residential") == "Y")
-        & (pl.col("Utility Characteristics->BA Code") == "PJM")
     )
 
     utilities.select(
