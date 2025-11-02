@@ -1,3 +1,4 @@
 # Ignore excel backups
 ~$*.xlsx
 .DS_Store
+node_modules

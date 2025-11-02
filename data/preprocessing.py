@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.16.5"
+__generated_with = "0.17.6"
 app = marimo.App()
 
 
@@ -13,8 +13,7 @@ def _():
 
 @app.cell
 def _(mo):
-    mo.md(
-        r"""
+    mo.md(r"""
     Since our project is focusing on retail electricity pricing systems across the US, I started with the 2024 _EIA 861_ report. Specifically Dynamic Pricing 2024. There are five program types:
 
     - Time of Use Pricing
@@ -24,8 +23,7 @@ def _(mo):
     - Critical Peak Rebate
 
     We want rows where there is a Y in residential for one of these 5 program types.
-    """
-    )
+    """)
     return
 
 
@@ -101,9 +99,7 @@ def _(dynamic_pricing, pl):
 
     utilities = dynamic_pricing.select(
         cs.starts_with("Utility"), cs.ends_with("Residential")
-    ).filter(
-        pl.any_horizontal(cs.ends_with("Residential") == "Y")
-    )
+    ).filter(pl.any_horizontal(cs.ends_with("Residential") == "Y"))
 
     utilities.select(
         "Utility Characteristics->Utility Name",
@@ -121,22 +117,28 @@ def _(pl):
         .filter((pl.col("sector") == "Residential"))
         .with_columns(
             # These columns are being inferred as str
-            pl.col("startdate").str.to_datetime("%Y-%m-%d %H:%M:%S"),
-            pl.col("enddate").str.to_datetime("%Y-%m-%d %H:%M:%S"),
-            pl.col("latest_update").str.to_datetime("%Y-%m-%d %H:%M:%S"),
+            pl.col("startdate").str.to_datetime(
+                "%Y-%m-%d %H:%M:%S", time_unit="us", time_zone="UTC"
+            ),
+            pl.col("enddate").str.to_datetime(
+                "%Y-%m-%d %H:%M:%S", time_unit="us", time_zone="UTC"
+            ),
+            pl.col("latest_update").str.to_datetime(
+                "%Y-%m-%d %H:%M:%S", time_unit="us", time_zone="UTC"
+            ),
             pl.col("eiaid").cast(pl.Int64),
-            pl.col("demandweekdayschedule").str.json_decode(
-                pl.List(pl.List(pl.Int64))
-            ),
-            pl.col("demandweekendschedule").str.json_decode(
-                pl.List(pl.List(pl.Int64))
-            ),
-            pl.col("energyweekdayschedule").str.json_decode(
-                pl.List(pl.List(pl.Int64))
-            ),
-            pl.col("energyweekendschedule").str.json_decode(
-                pl.List(pl.List(pl.Int64))
-            ),
+            pl.col("demandweekdayschedule")
+            .str.json_decode(pl.List(pl.List(pl.Int64)))
+            .cast(pl.Array(pl.Int8, shape=(12, 24))),
+            pl.col("demandweekendschedule")
+            .str.json_decode(pl.List(pl.List(pl.Int64)))
+            .cast(pl.Array(pl.Int8, shape=(12, 24))),
+            pl.col("energyweekdayschedule")
+            .str.json_decode(pl.List(pl.List(pl.Int64)))
+            .cast(pl.Array(pl.Int8, shape=(12, 24))),
+            pl.col("energyweekendschedule")
+            .str.json_decode(pl.List(pl.List(pl.Int64)))
+            .cast(pl.Array(pl.Int8, shape=(12, 24))),
         )
     )
 
@@ -146,9 +148,9 @@ def _(pl):
 
 @app.cell
 def _(mo):
-    mo.md(
-        r"""There is a some overlap between the various plans in USURDB. The `supersedes` field seems to show which of the plans should take precedence. There are also multiple plans that could be in effect in our target years."""
-    )
+    mo.md(r"""
+    There is a some overlap between the various plans in USURDB. The `supersedes` field seems to show which of the plans should take precedence. There are also multiple plans that could be in effect in our target years.
+    """)
     return
 
 
@@ -170,9 +172,9 @@ def _(pl, rates):
 
 @app.cell
 def _(mo):
-    mo.md(
-        r"""We want to only pull those utilities with Residential dynamic pricing programs based on the EIA 861 Dynamic Pricing form."""
-    )
+    mo.md(r"""
+    We want to only pull those utilities with Residential dynamic pricing programs based on the EIA 861 Dynamic Pricing form.
+    """)
     return
 
 
@@ -187,14 +189,13 @@ def _(pl):
     )
 
     pl.DataFrame(dynamic_priced_utilities)
-    return (eiads,)
+    return
 
 
 @app.cell
 def _(mo):
-    mo.md(
-        r"""
-    Our project is interested in data for 2024 onward. Filtering out 
+    mo.md(r"""
+    Our project is interested in data for 2024 onward. Filtering out
 
     - `enddate`s that are null or end prior to 2024
     - columns where every value is empty (~725 columns down to 368)
@@ -203,25 +204,43 @@ def _(mo):
 
     - How do know what state to which each plan applies? USURDB doesn't seem to have this information. EIA 861's _Utility Data_ form has which states the utility operates in (which might be all we have to go on)
     - How can we filter down the matching `eiaid`s to just dynamic pricing plans?
-    """
-    )
+    """)
     return
 
 
 @app.cell
-def _(eiads, pl, rates):
-    ends_after_start_of_2024 = rates.filter(pl.col("eiaid").is_in(eiads)).filter(
-        pl.col("enddate").is_null()
-        | (pl.col("enddate") >= pl.lit("2024-01-01").str.to_date())
+def _(pl, rates):
+    ends_after_start_of_2024 = (
+        rates
+        # filter out utilities without Dynamic Pricing
+        # .filter(pl.col("eiaid").is_in(eiads))
+        .filter(
+            (
+                pl.col("enddate").is_null()
+                | (pl.col("enddate") >= pl.lit("2024-01-01").str.to_date())
+            )
+            & (
+                (pl.col("startdate") >= pl.lit("2024-01-01").str.to_date())
+                | (pl.col("startdate").is_null())
+            )
+        )
     )
 
     ends_after_start_of_2024 = (
         ends_after_start_of_2024
         # Remove totally empty columns as well
         .select(
-            [col for col in ends_after_start_of_2024.columns if ends_after_start_of_2024[col].null_count() < len(ends_after_start_of_2024)]
+            [
+                col
+                for col in ends_after_start_of_2024.columns
+                if ends_after_start_of_2024[col].null_count()
+                < len(ends_after_start_of_2024)
+            ]
         )
     )
+
+    ## Save USURDB in sqlite format.
+    ends_after_start_of_2024.write_parquet("data/data.parquet")
 
     ends_after_start_of_2024
     return (ends_after_start_of_2024,)
@@ -240,6 +259,110 @@ def _(ends_after_start_of_2024, pl):
         "latest_update",
         "energyweekdayschedule",
     ).filter(pl.col("energyweekdayschedule").is_not_null())
+    return (json,)
+
+
+@app.cell
+def _(ends_after_start_of_2024):
+    import re
+
+    pattern = (
+        r"(energyrate|demandrate|flatdemand)structure/period(\d+)/tier(\d+)(.*)"
+    )
+
+    data_structure = {}
+    for col in ends_after_start_of_2024.columns:
+        match = re.match(pattern, col)
+        if match:
+            kind, period, tier, _unit = match.groups()
+            kind_key = kind
+            period_key = f"period{period}"
+            tier_key = f"tier{tier}"
+            if kind_key not in data_structure:
+                data_structure[kind_key] = {}
+
+            if period_key not in data_structure[kind_key]:
+                data_structure[kind_key][period_key] = {}
+            if tier_key not in data_structure[kind_key][period_key]:
+                data_structure[kind_key][period_key][tier_key] = {}
+
+            data_structure[kind_key][period_key][tier_key][_unit] = col
+    return data_structure, re
+
+
+@app.cell
+def _(data_structure, ends_after_start_of_2024, json, pl, re):
+    import pyarrow as pa
+
+
+    def row_to_nested_map(row, data_structure):
+        """Convert row to nested dict, excluding nulls"""
+        result = {}
+        for kind_name, kinds in data_structure.items():
+            kind_data = {}
+            for period_name, tiers in kinds.items():
+                period_data = {}
+                for tier_name, units in tiers.items():
+                    tier_data = {}
+                    for unit, col_name in units.items():
+                        val = row[col_name]
+                        if val is not None:
+                            # Some floats are encoded as strings for whatever reason
+                            if (
+                                unit in ["adj", "rate"]
+                                and isinstance(val, str)
+                                and re.match("^(\d+\.\d+)$", val)
+                            ):
+                                tier_data[unit.lstrip("/")] = float(val)
+                            else:
+                                tier_data[unit.lstrip("/")] = val
+                    if tier_data:  # Only include tier if it has data
+                        period_data[tier_name] = tier_data
+                if period_data:
+                    kind_data[period_name] = period_data
+            if kind_data:
+                result[kind_name] = kind_data
+                # if len(kind_data.keys()) >= 2:
+                #     print(kind_data)
+                #     print(row["label"])
+
+        return result
+
+
+    # Convert to nested dicts
+    nested_data = [
+        json.dumps(row_to_nested_map(row, data_structure))
+        for row in ends_after_start_of_2024.iter_rows(named=True)
+    ]
+
+    cols_to_drop = []
+    for kind_name, kinds in data_structure.items():
+        for period_name, tiers in kinds.items():
+            for tier_name, units in tiers.items():
+                for unit, col_name in units.items():
+                    cols_to_drop.append(col_name)
+
+    # Remove duplicates
+    cols_to_drop = set(cols_to_drop)
+
+    # Add new column and drop the source columns
+    df_final = ends_after_start_of_2024.with_columns(
+        pl.Series("ratestructure", nested_data)
+    ).drop(cols_to_drop)
+
+    # df_final.write_parquet("data/flattened_rates.parquet")
+
+    import duckdb
+
+    con = duckdb.connect("data/flattened.duckdb")
+
+    # Or use DuckDB's register method for zero-copy
+    con.register("usurdb", df_final)
+    con.execute("CREATE OR REPLACE TABLE usurdb AS SELECT * FROM usurdb")
+
+    con.close()
+
+    df_final
     return
 
 
