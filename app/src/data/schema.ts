@@ -39,10 +39,14 @@ export const RatePlan = z.object({
   utility: z.string(),
   startdate: dates,
   enddate: dates,
+  supersedes: z.string().nullish(),
+  flatdemandunit: z.string().nullish(),
   fixedchargefirstmeter: z.number().nullish(),
   fixedchargeunits: z.string().nullish(),
   demandweekendschedule: optionalSchedule,
   demandweekdayschedule: optionalSchedule,
+  demandcomments: z.string().nullish(),
+  energycomments: z.string().nullish(),
   /** Hours of the day by months  */
   energyweekdayschedule: optionalSchedule,
   /** Hours of the day by months  */

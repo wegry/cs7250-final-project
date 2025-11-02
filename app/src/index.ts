@@ -14,23 +14,76 @@ try {
   throw e
 }
 
-const select = document.createElement('select')
-const adjustedIncludedCheckbox = document.createElement('input')
-adjustedIncludedCheckbox.type = 'checkbox'
+class DetailView extends HTMLElement {
+  constructor() {
+    super()
+    let template = document.getElementById('detail-view')
+    if (!(template instanceof HTMLTemplateElement)) {
+      throw new Error('Invalid template')
+    }
+    let templateContent = template.content
 
-for (const row of rows) {
-  select.add(
-    new Option([row.utility, row.name, row.label].join('/'), row.label)
-  )
+    const shadowRoot = this.attachShadow({ mode: 'open' })
+    shadowRoot.appendChild(templateContent.cloneNode(true))
+  }
+
+  get adjustedIncluded() {
+    return this.shadowRoot!.querySelector<HTMLInputElement>(
+      '#include-adjusted-rate'
+    )!
+  }
+
+  get ratePlanChooser() {
+    return this.shadowRoot!.querySelector<HTMLSelectElement>(
+      '#rate-plan-chooser'
+    )!
+  }
+
+  get raw() {
+    return this.shadowRoot!.querySelector('#raw-view')!
+  }
+
+  get chartEl() {
+    return this.shadowRoot!.querySelector<HTMLElement>('#my-div')!
+  }
+
+  async replaceSlot(label?: string | null) {
+    let old = this.shadowRoot!.querySelector<HTMLAnchorElement>(
+      'slot[name="supersedes"]'
+    )
+
+    if (!old) {
+      old = document.createElement('a')
+      old.slot = 'supersedes'
+      this.appendChild(old)
+    }
+
+    if (label) {
+      const ratePlanInData = await get_query(queries.ratePlanInData(label))
+      if (ratePlanInData.toArray()[0]) {
+        old.innerHTML = `Supersedes <a href="?rate-plan=${label}">${label}</a>`
+      } else {
+        old.innerHTML = `Supersedes rate plan not in data set (${label})`
+      }
+    } else {
+      old.innerHTML = 'Latest plan'
+    }
+  }
 }
 
-const myDiv = document.createElement('div')
-myDiv.id = 'myDiv'
-const raw = document.createElement('pre')
-document.body.appendChild(adjustedIncludedCheckbox)
-document.body.appendChild(select)
-document.body.appendChild(myDiv)
-document.body.appendChild(raw)
+customElements.define('detail-view', DetailView)
+
+const detailView = document.createElement('detail-view') as DetailView
+document.body.appendChild(detailView)
+
+{
+  const select = detailView.ratePlanChooser
+  for (const row of rows) {
+    select!.add(
+      new Option([row.utility, row.name, row.label].join('/'), row.label)
+    )
+  }
+}
 
 class UiState {
   selected?: RatePlan
@@ -41,6 +94,7 @@ class UiState {
     try {
       raw = (await get_query(queries.ratePlanDetail(value))).toArray()
       state.selected = RatePlan.parse(raw[0])
+      detailView.replaceSlot(state.selected.supersedes)
     } catch (e) {
       console.debug('Failed to parse', raw)
       console.error(e)
@@ -56,7 +110,7 @@ let rateQueryId = null
     RATE_QUERY_PARAM
   )
   if (maybeId) {
-    select.value = maybeId
+    detailView.ratePlanChooser.value = maybeId
     rateQueryId = maybeId
   } else {
     rateQueryId = rows[0].label
@@ -68,14 +122,14 @@ console.log(rateQueryId)
 const state = new UiState()
 await state.setSelected(rateQueryId)
 function render() {
-  console.log(state)
   if (!state.selected) {
-    console.log(state)
     return
   }
 
-  chart(state.selected, { includeAdjusted: state.adjustedIncluded })
-  raw.innerHTML = JSON.stringify(
+  chart(state.selected, detailView.chartEl, {
+    includeAdjusted: state.adjustedIncluded,
+  })
+  detailView.raw.innerHTML = JSON.stringify(
     state.selected,
     (key, value) => {
       if (typeof value === 'bigint') {
@@ -84,7 +138,11 @@ function render() {
       return value // Return other values unchanged
     },
     2
-  )
+  ).replaceAll(/\[\s+([^\[\]{}]+?)\s+\]/g, (match, content) => {
+    // Clean up the content and put on one line
+    const cleaned = content.replace(/\s+/g, ' ').trim()
+    return `[${cleaned}]`
+  })
 }
 
 function selectEvent({ target }: Event) {
@@ -100,7 +158,7 @@ function selectEvent({ target }: Event) {
   }
 }
 
-adjustedIncludedCheckbox.addEventListener('change', ({ target }) => {
+detailView.adjustedIncluded.addEventListener('change', ({ target }) => {
   if (target instanceof HTMLInputElement) {
     state.adjustedIncluded = target.checked
   }
@@ -108,6 +166,6 @@ adjustedIncludedCheckbox.addEventListener('change', ({ target }) => {
   render()
 })
 
-select.addEventListener('change', selectEvent)
+detailView.ratePlanChooser.addEventListener('change', selectEvent)
 
 render()

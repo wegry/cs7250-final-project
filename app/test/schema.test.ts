@@ -24,11 +24,9 @@ function normalizeDuckDBRow(row: any) {
 }
 
 beforeAll(async () => {
-  instance = await duckdb.DuckDBInstance.create()
+  instance = await duckdb.DuckDBInstance.create('../data/flattened.duckdb')
   const conn = await instance.connect()
-  const result = await conn.runAndReadAll(
-    `SELECT * FROM read_parquet('../data/flattened_rates.parquet')`
-  )
+  const result = await conn.runAndReadAll(`SELECT * FROM flattened.usurdb`)
   const rows = result.getRowObjects()
   ratePlans.resolve(rows.map(normalizeDuckDBRow))
 })

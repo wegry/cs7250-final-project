@@ -13,6 +13,10 @@ export const selectList = `
     , enddate DESC NULLS FIRST
 `
 
+export const ratePlanInData = (label: string) => `SELECT 1 FROM ${tableName}
+ WHERE label = '${label}'
+ LIMIT 1`
+
 export const ratePlanDetail = (label: string) => `select * from ${tableName}
   WHERE label = '${label}'`
 

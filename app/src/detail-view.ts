@@ -13,6 +13,7 @@ function extractPeriodsOfMonth(matrix: number[][] | null, month: number) {
 
 export function chart(
   data: RatePlan,
+  div: HTMLElement,
   { includeAdjusted = true }: { includeAdjusted: boolean }
 ) {
   const periodsThisMonth = extractPeriodsOfMonth(
@@ -41,6 +42,7 @@ export function chart(
         hour: i,
         value,
         tier,
+        period,
       }
 
       if (result.hour == 23) {
@@ -51,7 +53,8 @@ export function chart(
     })
   })
 
-  // console.log(periodsThisMonth)
+  const hideLegend =
+    Object.keys(countBy(periodsThisMonth, (x) => x.tier)).length == 1
 
   const spec: vegaLite.TopLevelSpec = {
     $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
@@ -61,11 +64,13 @@ export function chart(
     encoding: {
       x: { field: 'hour', type: 'quantitative' },
       y: { field: 'value', type: 'quantitative' },
+      tooltip: { field: 'period' },
       color: {
         field: 'tier',
         scale: {
           scheme: 'viridis',
         },
+        ...(hideLegend ? { legend: null } : {}),
       },
     },
   }
@@ -76,7 +81,7 @@ export function chart(
   // Create Vega view and render
   const view = new vega.View(vega.parse(vegaSpec), {
     renderer: 'svg', // or 'canvas'
-    container: '#myDiv', // your div selector
+    container: div, // your div selector
     hover: true,
   })
 
