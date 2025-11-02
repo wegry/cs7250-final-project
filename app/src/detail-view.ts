@@ -8,17 +8,17 @@ function extractPeriodsOfMonth(matrix: number[][] | null, month: number) {
   if (matrix == null) {
     return []
   }
-  return matrix[month - 1]
+  return matrix[month]
 }
 
 export function chart(
   data: RatePlan,
   div: HTMLElement,
-  { includeAdjusted = true }: { includeAdjusted: boolean }
+  { includeAdjusted = true, month }: { includeAdjusted: boolean; month: number }
 ) {
   const periodsThisMonth = extractPeriodsOfMonth(
     data.energyweekdayschedule,
-    new Date().getMonth()
+    month
   ).flatMap((period, i) => {
     const periodInfo = data?.ratestructure?.energyrate?.[`period${period}`]
     if (!periodInfo) {

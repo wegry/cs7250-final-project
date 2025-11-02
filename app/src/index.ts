@@ -25,6 +25,9 @@ class DetailView extends HTMLElement {
 
     const shadowRoot = this.attachShadow({ mode: 'open' })
     shadowRoot.appendChild(templateContent.cloneNode(true))
+    const date = new Date()
+    date.setFullYear(2024)
+    this.dateInputEl.value = date.toJSON().slice(0, 10)
   }
 
   get adjustedIncluded() {
@@ -41,6 +44,10 @@ class DetailView extends HTMLElement {
 
   get raw() {
     return this.shadowRoot!.querySelector('#raw-view')!
+  }
+
+  get dateInputEl() {
+    return this.shadowRoot!.querySelector<HTMLInputElement>('#date-picker')!
   }
 
   get chartEl() {
@@ -88,6 +95,7 @@ document.body.appendChild(detailView)
 class UiState {
   selected?: RatePlan
   adjustedIncluded = true
+  date: Date | null = null
 
   async setSelected(value: string) {
     let raw = null
@@ -128,6 +136,7 @@ function render() {
 
   chart(state.selected, detailView.chartEl, {
     includeAdjusted: state.adjustedIncluded,
+    month: (state.date ?? new Date())?.getMonth(),
   })
   detailView.raw.innerHTML = JSON.stringify(
     state.selected,
@@ -157,6 +166,14 @@ function selectEvent({ target }: Event) {
     })
   }
 }
+
+detailView.dateInputEl.addEventListener('change', ({ target }) => {
+  if (target instanceof HTMLInputElement) {
+    state.date = target.valueAsDate
+
+    render()
+  }
+})
 
 detailView.adjustedIncluded.addEventListener('change', ({ target }) => {
   if (target instanceof HTMLInputElement) {
