@@ -311,7 +311,7 @@ def _(data_structure, ends_after_start_of_2024, json, pl, re):
                             if (
                                 unit in ["adj", "rate"]
                                 and isinstance(val, str)
-                                and re.match("^(\d+\.\d+)$", val)
+                                and re.match(r"^(\d+\.\d+)$", val)
                             ):
                                 tier_data[unit.lstrip("/")] = float(val)
                             else:
@@ -330,7 +330,7 @@ def _(data_structure, ends_after_start_of_2024, json, pl, re):
 
 
     # Convert to nested dicts
-    nested_data = [
+    ratestructure = [
         json.dumps(row_to_nested_map(row, data_structure))
         for row in ends_after_start_of_2024.iter_rows(named=True)
     ]
@@ -347,7 +347,7 @@ def _(data_structure, ends_after_start_of_2024, json, pl, re):
 
     # Add new column and drop the source columns
     df_final = ends_after_start_of_2024.with_columns(
-        pl.Series("ratestructure", nested_data)
+        pl.Series("ratestructure", ratestructure)
     ).drop(cols_to_drop)
 
     # df_final.write_parquet("data/flattened_rates.parquet")
