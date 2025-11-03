@@ -59,7 +59,7 @@ export function chart(
   const spec: vegaLite.TopLevelSpec = {
     $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
     data: { values: periodsThisMonth },
-    mark: { type: 'line', interpolate: 'step-before' },
+    mark: { type: 'line', interpolate: 'step-after' },
     title: 'Weekday energy rate schedule',
     encoding: {
       x: { field: 'hour', type: 'quantitative' },
