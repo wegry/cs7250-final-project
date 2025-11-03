@@ -26,12 +26,12 @@ export function chart(
         return []
       }
 
-      return range(0, 2).flatMap((tier) => {
-        const tierInfo = periodInfo?.[`tier${tier}`]
-
+      return Object.entries(periodInfo).flatMap(([prefixedTier, tierInfo]) => {
         if (!tierInfo) {
           return []
         }
+
+        const tier = prefixedTier.match(/\d+$/g)
 
         const value = sum(
           [includeAdjusted ? tierInfo.adj : null, tierInfo.rate].map(
