@@ -1,11 +1,12 @@
 import { USURDB_NAME } from './duckdb'
+import type { SynthData } from './schema'
 
-const tableName = `${USURDB_NAME}.usurdb`
+const usurdbName = `${USURDB_NAME}.usurdb`
 /** For select list */
 export const selectList = `
   SELECT
     label, name, utility
-  FROM ${tableName}
+  FROM ${usurdbName}
   ORDER BY
     utility ASC
     , name ASC
@@ -13,11 +14,23 @@ export const selectList = `
     , enddate DESC NULLS FIRST
 `
 
-export const ratePlanInData = (label: string) => `SELECT 1 FROM ${tableName}
+export const ratePlanInData = (label: string) => `SELECT 1 FROM ${usurdbName}
  WHERE label = '${label}'
  LIMIT 1`
 
-export const ratePlanDetail = (label: string) => `select * from ${tableName}
+export const ratePlanDetail = (label: string) => `select * from ${usurdbName}
   WHERE label = '${label}'`
 
-export const all = `select * from ${tableName}`
+export const all = `select * from ${usurdbName}`
+
+type SynthItem = SynthData[number]
+
+export const synthUsage = (
+  season: SynthItem['season'],
+  region: SynthItem['region']
+) => `SELECT season, hour, region, usage_kw
+          FROM flattened.synthetic_usage
+          WHERE
+            season = '${season}' AND
+            region = '${region}'
+          ORDER BY season, hour, region`

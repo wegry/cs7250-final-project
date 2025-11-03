@@ -90,3 +90,14 @@ export const RatePlanSelect = z.array(
 
 export type RatePlanSelect = z.infer<typeof RatePlanSelect>
 export type RatePlan = z.infer<typeof RatePlan>
+
+export const SynthData = z.array(
+  z.object({
+    hour: z.number(),
+    usage_kw: z.number(),
+    season: unionOfLiterals(['winter', 'summer']),
+    region: unionOfLiterals(['New England', 'Texas', 'Southern California']),
+  })
+)
+
+export type SynthData = z.infer<typeof SynthData>

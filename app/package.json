@@ -15,13 +15,23 @@
     "@duckdb/duckdb-wasm": "^1.30.0",
     "@duckdb/node-api": "^1.4.1-r.4",
     "@netlify/vite-plugin": "^2.7.8",
+    "@vitejs/plugin-react": "^5.1.0",
     "es-toolkit": "^1.41.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-router-dom": "^7.9.5",
+    "react-vega": "^8.0.0",
     "typescript": "^5.9.3",
+    "use-immer": "^0.11.0",
     "vega": "^6.2.0",
+    "vega-embed": "^7.1.0",
     "vega-lite": "^6.4.1",
     "zod": "^4.1.12"
   },
   "devDependencies": {
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.2",
+    "@types/react-vega": "^6.0.0",
     "prettier": "^3.6.2",
     "vite": "^7.1.12",
     "vitest": "^4.0.6"
