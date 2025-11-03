@@ -1,3 +1,8 @@
 # Ignore excel backups
 ~$*.xlsx
 .DS_Store
+node_modules
+app/dist
+
+# Local Netlify folder
+.netlify

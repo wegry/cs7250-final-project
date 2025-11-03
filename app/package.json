@@ -1,0 +1,30 @@
+{
+  "name": "visualize-dynamic-pricing",
+  "version": "0.0.1",
+  "description": "",
+  "license": "ISC",
+  "author": "",
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "vite build",
+    "start": "vite",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "@duckdb/duckdb-wasm": "^1.30.0",
+    "@duckdb/node-api": "^1.4.1-r.4",
+    "@netlify/vite-plugin": "^2.7.8",
+    "@sqlite.org/sqlite-wasm": "^3.50.4-build1",
+    "es-toolkit": "^1.41.0",
+    "typescript": "^5.9.3",
+    "vega": "^6.2.0",
+    "vega-lite": "^6.4.1",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "prettier": "^3.6.2",
+    "vite": "^7.1.12",
+    "vitest": "^4.0.6"
+  }
+}

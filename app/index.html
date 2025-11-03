@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <script src="/src/index.ts" type="module"></script>
+  </head>
+  <body>
+    <template id="detail-view">
+      <style>
+        select {
+          width: 500px;
+        }
+      </style>
+      <main><h1>Visualizing Dynamic Electricity Pricing</h1></main>
+      <div>
+        <label
+          >Rate Plan Chooser
+          <select id="rate-plan-chooser"></select>
+        </label>
+      </div>
+      <div>
+        <label>
+          For date:
+          <input
+            type="date"
+            id="date-picker"
+            min="2024-01-01"
+            max="2024-12-31"
+          />
+        </label>
+      </div>
+      <label>
+        Include Adjusted Rate?
+        <input id="include-adjusted-rate" type="checkbox" checked />
+      </label>
+      <div>
+        <slot name="supersedes"></slot>
+      </div>
+      <div id="my-div"></div>
+      <pre id="raw-view"></pre>
+    </template>
+  </body>
+</html>
