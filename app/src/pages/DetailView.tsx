@@ -7,29 +7,25 @@ import { RatePlan, RatePlanSelect } from '../data/schema'
 import * as queries from '../data/queries'
 
 interface UiState {
+  rawData?: string
+  ratePlans: RatePlanSelect
   selected?: RatePlan
   adjustedIncluded: boolean
   date: Date | null
 }
 
-interface RatePlanOption {
-  label: string
-  utility: string
-  name: string
-}
-
 const RATE_QUERY_PARAM = 'rate-plan'
 
 export default function DetailView() {
-  const [ratePlans, setRatePlans] = useState<RatePlanOption[]>([])
   const [state, updateState] = useImmer<UiState>({
+    rawData: undefined,
+    ratePlans: [],
     selected: undefined,
     adjustedIncluded: true,
     date: null,
   })
   const [searchParams, setSearchParams] = useSearchParams()
   const chartRef = useRef<HTMLDivElement>(null)
-  const rawRef = useRef<HTMLPreElement>(null)
   const [supersedesContent, setSupersedesContent] =
     useState<string>('Latest plan')
 
@@ -41,7 +37,9 @@ export default function DetailView() {
 
       try {
         const rows = RatePlanSelect.parse(table, { reportInput: true })
-        setRatePlans(rows)
+        updateState((state) => {
+          state.ratePlans = rows
+        })
 
         // Set initial selected rate plan from URL or first option
         const rateQueryId = searchParams.get(RATE_QUERY_PARAM) || rows[0]?.label
@@ -66,8 +64,8 @@ export default function DetailView() {
       })
 
       // Update raw view
-      if (rawRef.current) {
-        rawRef.current.innerHTML = JSON.stringify(
+      updateState((state) => {
+        state.rawData = JSON.stringify(
           state.selected,
           (key, value) => {
             if (typeof value === 'bigint') {
@@ -80,7 +78,7 @@ export default function DetailView() {
           const cleaned = content.replace(/\s+/g, ' ').trim()
           return `[${cleaned}]`
         })
-      }
+      })
     }
   }, [state])
 
@@ -147,7 +145,7 @@ export default function DetailView() {
   }, [])
 
   const selectedValue =
-    searchParams.get(RATE_QUERY_PARAM) || ratePlans[0]?.label || ''
+    searchParams.get(RATE_QUERY_PARAM) || state.ratePlans[0]?.label || ''
 
   return (
     <div>
@@ -163,7 +161,7 @@ export default function DetailView() {
             value={selectedValue}
             onChange={handleRatePlanChange}
           >
-            {ratePlans.map((plan) => (
+            {state.ratePlans.map((plan) => (
               <option key={plan.label} value={plan.label}>
                 {`${plan.utility}/${plan.name}/${plan.label}`}
               </option>
@@ -200,7 +198,7 @@ export default function DetailView() {
 
       <div id="my-div" ref={chartRef}></div>
 
-      <pre id="raw-view" ref={rawRef}></pre>
+      <pre id="raw-view">{state.rawData}</pre>
     </div>
   )
 }
