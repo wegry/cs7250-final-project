@@ -240,7 +240,6 @@ def _(pl, rates):
     )
 
     ## Save USURDB in sqlite format.
-    ends_after_start_of_2024.write_parquet("data/data.parquet")
 
     ends_after_start_of_2024
     return (ends_after_start_of_2024,)
