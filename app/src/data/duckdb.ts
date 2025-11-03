@@ -26,15 +26,11 @@ export const USURDB_NAME = 'flattened'
 
 // Setup and connect to the database
 // Initialize database
-await db.registerFileURL(
-  'db-file',
-  '/flattened.duckdb',
-  duckdb.DuckDBDataProtocol.HTTP,
-  false
-)
 
 const conn = await db.connect()
-await conn.query(`ATTACH 'db-file' AS flattened`)
+await conn.query(
+  `ATTACH '${window.location.origin + '/flattened.duckdb'}' AS flattened (READ_ONLY)`
+)
 
 export async function get_query(q: string) {
   console.debug(q)

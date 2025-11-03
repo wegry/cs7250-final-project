@@ -16,51 +16,80 @@ export function chart(
   div: HTMLElement,
   { includeAdjusted = true, month }: { includeAdjusted: boolean; month: number }
 ) {
-  const periodsThisMonth = extractPeriodsOfMonth(
-    data.energyweekdayschedule,
-    month
-  ).flatMap((period, i) => {
-    const periodInfo = data?.ratestructure?.energyrate?.[`period${period}`]
-    if (!periodInfo) {
-      return []
-    }
-
-    return range(0, 2).flatMap((tier) => {
-      const tierInfo = periodInfo?.[`tier${tier}`]
-
-      if (!tierInfo) {
+  const pullData = (
+    periods: (typeof data)['energyweekdayschedule'],
+    name: string
+  ) =>
+    extractPeriodsOfMonth(periods, month).flatMap((period, i) => {
+      const periodInfo = data?.ratestructure?.energyrate?.[`period${period}`]
+      if (!periodInfo) {
         return []
       }
 
-      const value = sum(
-        [includeAdjusted ? tierInfo.adj : null, tierInfo.rate].map(
-          (x) => x ?? 0
+      return range(0, 2).flatMap((tier) => {
+        const tierInfo = periodInfo?.[`tier${tier}`]
+
+        if (!tierInfo) {
+          return []
+        }
+
+        const value = sum(
+          [includeAdjusted ? tierInfo.adj : null, tierInfo.rate].map(
+            (x) => x ?? 0
+          )
         )
-      )
 
-      const result = {
-        hour: i,
-        value,
-        tier,
-        period,
-      }
+        const result = {
+          hour: i,
+          value,
+          tier,
+          period,
+          name,
+        }
 
-      if (result.hour == 23) {
-        return [result, { ...result, hour: 24 }]
-      }
+        if (result.hour == 23) {
+          return [result, { ...result, hour: 24 }]
+        }
 
-      return result
+        return result
+      })
     })
-  })
+
+  const weekdayPeriodsThisMonth = pullData(
+    data.energyweekdayschedule,
+    'Weekdays'
+  )
+  const weekendPeriodsThisMonth = pullData(
+    data.energyweekendschedule,
+    'Weekends'
+  )
+  const wholeWeekPeriodsThisMonth = [
+    ...weekdayPeriodsThisMonth,
+    ...weekendPeriodsThisMonth,
+  ]
 
   const hideLegend =
-    Object.keys(countBy(periodsThisMonth, (x) => x.tier)).length == 1
+    Object.keys(countBy(wholeWeekPeriodsThisMonth, (x) => x.tier)).length == 1
 
   const spec: vegaLite.TopLevelSpec = {
     $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
-    data: { values: periodsThisMonth },
-    mark: { type: 'line', interpolate: 'step-after' },
+    data: { values: wholeWeekPeriodsThisMonth },
     title: 'Weekday energy rate schedule',
+    layer: [
+      {
+        transform: [{ filter: "datum.name === 'Weekdays'" }], // Filters data only for this layer
+        mark: { type: 'line', interpolate: 'step-after' },
+      },
+      {
+        transform: [{ filter: "datum.name === 'Weekends'" }], // Filters data only for this layer
+        mark: {
+          type: 'line',
+          interpolate: 'step-after',
+          opacity: 0.7,
+          strokeDash: [5, 5],
+        },
+      },
+    ],
     encoding: {
       x: { field: 'hour', type: 'quantitative' },
       y: { field: 'value', type: 'quantitative' },
@@ -70,7 +99,7 @@ export function chart(
         scale: {
           scheme: 'viridis',
         },
-        ...(hideLegend ? { legend: null } : {}),
+        // ...(hideLegend ? { legend: null } : {}),
       },
     },
   }
