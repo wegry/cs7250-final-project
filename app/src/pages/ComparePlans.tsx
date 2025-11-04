@@ -4,6 +4,7 @@ import { synthUsage } from '../data/queries'
 import { useImmer } from 'use-immer'
 import { SynthData } from '../data/schema'
 import { useQuery } from '@tanstack/react-query'
+import { Form, Radio } from 'antd'
 
 type State = {
   showRegions: SynthData[number]['region']
@@ -37,32 +38,36 @@ const RegionalElectricityPatterns = () => {
     queryKey: ['synthusage', state.season, state.showRegions],
   })
 
-  const toggleRegion = (region: State['showRegions']) => {
-    updateState((state) => {
-      state.showRegions = region
-    })
-  }
-
   // Vega-Lite specification
   const spec: VegaEmbedProps['spec'] = {
     $schema: 'https://vega.github.io/schema/vega-lite/v6.json',
     width: 'container',
     height: 400,
-    data: { values: synthdata },
-    mark: { type: 'line', point: false, strokeWidth: 3 },
+    data: { values: synthdata ?? [] },
+    transform: [
+      {
+        calculate: 'datetime(0, 0, 1,datum.hour, 0, 0, 0)',
+        as: 'datetime',
+      },
+    ],
+    mark: {
+      type: 'line',
+      point: false,
+      strokeWidth: 3,
+      interpolate: 'natural',
+    },
     encoding: {
       x: {
-        field: 'hour',
-        type: 'quantitative',
+        field: 'datetime',
+        type: 'temporal',
+        timeUnit: 'hours',
         title: 'Hour of Day',
         axis: {
-          values: [0, 3, 6, 9, 12, 15, 18, 21],
-          labelExpr:
-            "datum.value == 0 ? '12am' : datum.value < 12 ? datum.value + 'am' : datum.value == 12 ? '12pm' : (datum.value - 12) + 'pm'",
+          format: '%H',
+          tickCount: 8,
         },
         scale: {
           domain: [0, 24],
-          // range: ['#3b82f6', '#ef4444', '#f59e0b'],
         },
       },
       y: {
@@ -84,7 +89,7 @@ const RegionalElectricityPatterns = () => {
     },
     config: {
       view: { stroke: null },
-      axis: { grid: true, gridOpacity: 0.2 },
+      axis: { grid: true },
     },
   }
 
@@ -97,69 +102,38 @@ const RegionalElectricityPatterns = () => {
         <h2>Regional Electricity Usage Patterns</h2>
         <p>Compare heating vs. cooling loads across regions and seasons</p>
 
-        <div>
-          <button
-            onClick={() =>
-              updateState((state) => {
-                state.season = 'winter'
-              })
-            }
-            className={`px-6 py-2 rounded-lg font-medium transition-all ${
-              state.season === 'winter'
-                ? 'bg-cyan-500 text-white shadow-md'
-                : 'bg-white text-slate-400 border-2 border-slate-200'
-            }`}
-          >
-            ❄️ Winter (January)
-          </button>
-          <button
-            onClick={() =>
-              updateState((state) => {
-                state.season = 'summer'
-              })
-            }
-            className={`px-6 py-2 rounded-lg font-medium transition-all ${
-              state.season === 'summer'
-                ? 'bg-orange-500 text-white shadow-md'
-                : 'bg-white text-slate-400 border-2 border-slate-200'
-            }`}
-          >
-            ☀️ Summer (July)
-          </button>
-        </div>
+        <Form layout="vertical">
+          <Form.Item label="Season">
+            <Radio.Group
+              value={state.season}
+              onChange={(e) =>
+                updateState((state) => {
+                  state.season = e.target.value
+                })
+              }
+            >
+              <Radio.Button value="winter">❄️ Winter (January)</Radio.Button>
+              <Radio.Button value="summer">☀️ Summer (July)</Radio.Button>
+            </Radio.Group>
+          </Form.Item>
 
-        <div>
-          <button
-            onClick={() => toggleRegion('New England')}
-            className={`px-4 py-2 rounded-lg font-medium transition-all ${
-              state.showRegions === 'New England'
-                ? 'bg-blue-500 text-white shadow-md'
-                : 'bg-white text-slate-400 border-2 border-slate-200'
-            }`}
-          >
-            New England
-          </button>
-          <button
-            onClick={() => toggleRegion('Texas')}
-            className={`px-4 py-2 rounded-lg font-medium transition-all ${
-              state.showRegions === 'Texas'
-                ? 'bg-red-500 text-white shadow-md'
-                : 'bg-white text-slate-400 border-2 border-slate-200'
-            }`}
-          >
-            Texas
-          </button>
-          <button
-            onClick={() => toggleRegion('Southern California')}
-            className={`px-4 py-2 rounded-lg font-medium transition-all ${
-              state.showRegions === 'Southern California'
-                ? 'bg-amber-500 text-white shadow-md'
-                : 'bg-white text-slate-400 border-2 border-slate-200'
-            }`}
-          >
-            Southern California
-          </button>
-        </div>
+          <Form.Item label="Region">
+            <Radio.Group
+              value={state.showRegions}
+              onChange={(e) =>
+                updateState((state) => {
+                  state.showRegions = e.target.value
+                })
+              }
+            >
+              <Radio.Button value="New England">New England</Radio.Button>
+              <Radio.Button value="Texas">Texas</Radio.Button>
+              <Radio.Button value="Southern California">
+                Southern California
+              </Radio.Button>
+            </Radio.Group>
+          </Form.Item>
+        </Form>
       </div>
 
       <div>
