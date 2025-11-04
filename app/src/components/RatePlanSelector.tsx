@@ -1,4 +1,6 @@
+import { Select } from 'antd'
 import { useRatePlans } from '../hooks/useRatePlans'
+import { useMemo } from 'react'
 
 interface RatePlanSelectorProps {
   value?: string
@@ -13,6 +15,13 @@ export function RatePlanSelector({
 }: RatePlanSelectorProps) {
   const { data: ratePlans, isLoading, error } = useRatePlans()
 
+  const options = useMemo(() => {
+    return ratePlans?.map((plan) => ({
+      value: plan.label,
+      label: `${plan.utility}/${plan.name}/${plan.label}`,
+    }))
+  }, [ratePlans])
+
   if (error) {
     return <div>Error loading rate plans: {error.message}</div>
   }
@@ -20,21 +29,15 @@ export function RatePlanSelector({
   return (
     <label>
       {label}
-      <select
+      <Select
         value={value ?? ratePlans?.[0].label}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={onChange}
         disabled={isLoading}
-      >
-        {isLoading ? (
-          <option>Loading...</option>
-        ) : (
-          ratePlans?.map((plan) => (
-            <option key={plan.label} value={plan.label}>
-              {`${plan.utility}/${plan.name}/${plan.label}`}
-            </option>
-          ))
-        )}
-      </select>
+        loading={isLoading}
+        options={options}
+        showSearch
+        optionFilterProp="label"
+      ></Select>
     </label>
   )
 }
