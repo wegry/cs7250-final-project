@@ -14,7 +14,7 @@ export const selectList = `
     , enddate DESC NULLS FIRST
 `
 
-export const ratePlanInData = (label: string) => `SELECT 1 FROM ${usurdbName}
+export const ratePlanInData = (label: string) => `SELECT true FROM ${usurdbName}
  WHERE label = '${label}'
  LIMIT 1`
 

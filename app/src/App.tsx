@@ -5,7 +5,13 @@ import { BrowserRouter, Routes, Route, Link } from 'react-router-dom'
 const DetailView = lazy(() => import('./pages/DetailView'))
 const RegionalElectricityPatterns = lazy(() => import('./pages/ComparePlans'))
 
-const queryClient = new QueryClient()
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: false,
+    },
+  },
+})
 
 export function App() {
   return (

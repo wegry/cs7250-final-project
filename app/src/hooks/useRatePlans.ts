@@ -1,3 +1,4 @@
+import * as z from 'zod'
 import { useQuery } from '@tanstack/react-query'
 import { get_query } from '../data/duckdb'
 import { RatePlanSelect } from '../data/schema'
@@ -18,7 +19,17 @@ export function useRatePlans() {
 
 async function fetchRatePlanInData(label?: string | null) {
   const ratePlanInData = await get_query(queries.ratePlanInData(label ?? ''))
-  return ratePlanInData.toArray()[0] ?? false
+
+  const { data, error } = z
+    .array(z.object())
+    .optional()
+    .safeParse(ratePlanInData.toArray())
+
+  if (error) {
+    console.error(error)
+  }
+
+  return Boolean(data?.[0])
 }
 
 export function useRatePlanInData(label?: string | null) {

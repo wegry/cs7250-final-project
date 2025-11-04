@@ -21,7 +21,14 @@ async function getRatePlan(label?: string) {
     return
   }
   const raw = (await get_query(queries.ratePlanDetail(label))).toArray()
-  return RatePlan.parse(raw[0])
+
+  const { data, error } = RatePlan.safeParse(raw[0])
+  if (error) {
+    console.error(error)
+    throw error
+  }
+
+  return data
 }
 
 export default function DetailView() {
@@ -37,9 +44,12 @@ export default function DetailView() {
     queryFn: () => getRatePlan(ratePlanParam),
     queryKey: ['ratePlan', ratePlanParam],
     staleTime: Infinity,
+    retry: false,
   })
 
-  const supersedesExistsInData = useRatePlanInData(selectedPlan?.supersedes)
+  const { data: supersedesExistsInData } = useRatePlanInData(
+    selectedPlan?.supersedes
+  )
 
   useEffect(() => {
     if (selectedPlan && chartRef.current) {

@@ -70,6 +70,8 @@ export const RatePlan = z.object({
             z.object({
               adj: z.optional(z.number()),
               rate: z.optional(z.number()),
+              max: z.number().nullish(),
+              unit: z.string().nullish(),
             })
           )
         )

@@ -308,9 +308,9 @@ def _(data_structure, ends_after_start_of_2024, json, pl, re):
                         if val is not None:
                             # Some floats are encoded as strings for whatever reason
                             if (
-                                unit in ["adj", "rate"]
+                                unit in ["adj", "rate", "max"]
                                 and isinstance(val, str)
-                                and re.match(r"^(\d+\.\d+)$", val)
+                                and re.match(r"^(\d+?\.?\d+)$", val)
                             ):
                                 tier_data[unit.lstrip("/")] = float(val)
                             else:
