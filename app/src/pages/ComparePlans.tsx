@@ -95,16 +95,12 @@ const RegionalElectricityPatterns = () => {
   useVegaEmbed({ ref: chartRef, spec, options: { mode: 'vega-lite' } })
 
   return (
-    <div className="w-full max-w-6xl mx-auto p-6 bg-gradient-to-br from-slate-50 to-blue-50 rounded-xl shadow-lg">
-      <div className="mb-6">
-        <h2 className="text-3xl font-bold text-slate-800 mb-2">
-          Regional Electricity Usage Patterns
-        </h2>
-        <p className="text-slate-600 mb-2">
-          Compare heating vs. cooling loads across regions and seasons
-        </p>
+    <div>
+      <div>
+        <h2>Regional Electricity Usage Patterns</h2>
+        <p>Compare heating vs. cooling loads across regions and seasons</p>
 
-        <div className="mb-4 flex gap-2">
+        <div>
           <button
             onClick={() =>
               updateState((state) => {
@@ -135,7 +131,7 @@ const RegionalElectricityPatterns = () => {
           </button>
         </div>
 
-        <div className="flex flex-wrap gap-3 mb-4">
+        <div>
           <button
             onClick={() => toggleRegion('New England')}
             className={`px-4 py-2 rounded-lg font-medium transition-all ${
@@ -169,45 +165,39 @@ const RegionalElectricityPatterns = () => {
         </div>
       </div>
 
-      <div className="bg-white p-4 rounded-lg shadow-lg">
+      <div>
         <div ref={chartRef} style={{ width: 600, height: 200 }} />
       </div>
 
       {state.season === 'winter' ? (
         <>
-          <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-white p-4 rounded-lg border-l-4 border-blue-500 shadow">
-              <h3 className="font-bold text-blue-700 mb-2">
-                New England (Gas Heat)
-              </h3>
-              <p className="text-sm text-slate-600">
+          <div>
+            <div>
+              <h3>New England (Gas Heat)</h3>
+              <p>
                 Two distinct peaks for cooking and activities. No heating load
                 on electric grid since homes use natural gas or oil furnaces.
               </p>
             </div>
-            <div className="bg-white p-4 rounded-lg border-l-4 border-red-500 shadow">
-              <h3 className="font-bold text-red-700 mb-2">
-                Texas (Electric Heat)
-              </h3>
-              <p className="text-sm text-slate-600">
+            <div>
+              <h3>Texas (Electric Heat)</h3>
+              <p>
                 Higher overall usage with elevated morning and evening peaks.
                 Many homes use electric heat pumps or resistance heating.
               </p>
             </div>
-            <div className="bg-white p-4 rounded-lg border-l-4 border-amber-500 shadow">
-              <h3 className="font-bold text-amber-700 mb-2">
-                Southern California + EV
-              </h3>
-              <p className="text-sm text-slate-600">
+            <div>
+              <h3>Southern California + EV</h3>
+              <p>
                 Minimal heating needs create flat daytime profile. Large
                 overnight spike from EV charging (7.2 kW Level 2 charger).
               </p>
             </div>
           </div>
 
-          <div className="mt-6 bg-white p-4 rounded-lg shadow">
-            <h3 className="font-bold text-slate-700 mb-2">Winter Insights</h3>
-            <ul className="text-sm text-slate-600 space-y-1">
+          <div>
+            <h3>Winter Insights</h3>
+            <ul>
               <li>
                 • <strong>Peak Usage:</strong> Texas shows 50-75% higher peak
                 demand than New England due to electric heating
@@ -229,39 +219,33 @@ const RegionalElectricityPatterns = () => {
         </>
       ) : (
         <>
-          <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-white p-4 rounded-lg border-l-4 border-blue-500 shadow">
-              <h3 className="font-bold text-blue-700 mb-2">
-                New England (Moderate AC)
-              </h3>
-              <p className="text-sm text-slate-600">
+          <div>
+            <div>
+              <h3>New England (Moderate AC)</h3>
+              <p>
                 Afternoon AC load creates new peak (1-8pm). Less extreme than
                 heating season since gas furnaces don't help in summer.
               </p>
             </div>
-            <div className="bg-white p-4 rounded-lg border-l-4 border-red-500 shadow">
-              <h3 className="font-bold text-red-700 mb-2">
-                Texas (Extreme Cooling)
-              </h3>
-              <p className="text-sm text-slate-600">
+            <div>
+              <h3>Texas (Extreme Cooling)</h3>
+              <p>
                 Massive cooling loads dominate. Peak usage 2-3x higher than
                 winter as AC runs continuously during brutal heat.
               </p>
             </div>
-            <div className="bg-white p-4 rounded-lg border-l-4 border-amber-500 shadow">
-              <h3 className="font-bold text-amber-700 mb-2">
-                Southern California + EV
-              </h3>
-              <p className="text-sm text-slate-600">
+            <div>
+              <h3>Southern California + EV</h3>
+              <p>
                 Moderate afternoon AC peak plus overnight EV charging. Mild
                 climate keeps cooling needs reasonable.
               </p>
             </div>
           </div>
 
-          <div className="mt-6 bg-white p-4 rounded-lg shadow">
-            <h3 className="font-bold text-slate-700 mb-2">Summer Insights</h3>
-            <ul className="text-sm text-slate-600 space-y-1">
+          <div>
+            <h3>Summer Insights</h3>
+            <ul>
               <li>
                 • <strong>Texas Crisis:</strong> Summer peaks can reach 12+ kW
                 per home during heat waves—higher than winter
