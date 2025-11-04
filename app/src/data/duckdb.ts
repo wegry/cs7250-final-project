@@ -26,23 +26,25 @@ export const USURDB_NAME = 'flattened'
 
 // Setup and connect to the database
 // Initialize database
-const conn = Promise.withResolvers<duckdb.AsyncDuckDBConnection>()
+let c = Promise.withResolvers<duckdb.AsyncDuckDBConnection>()
+
+export const conn = c.promise
 
 async function init() {
   try {
-    const c = await db.connect()
-    await c.query(
+    const conn = await db.connect()
+    await conn.query(
       `ATTACH '${window.location.origin + '/flattened.duckdb'}' AS flattened (READ_ONLY)`
     )
-    conn.resolve(c)
+    c.resolve(conn)
   } catch (e) {
-    conn.reject(e)
+    c.reject(e)
   }
 }
 init()
 
 export async function get_query(q: string) {
   console.debug(q)
-  const results = (await conn.promise).query(q)
+  const results = await (await conn).query(q)
   return results
 }

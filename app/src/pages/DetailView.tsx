@@ -18,9 +18,9 @@ interface UiState {
 
 async function getRatePlan(label?: string) {
   if (!label) {
-    return
+    return null
   }
-  const raw = (await get_query(queries.ratePlanDetail(label))).toArray()
+  const raw = (await queries.ratePlanDetail(label)).toArray()
 
   const { data, error } = RatePlan.safeParse(raw[0])
   if (error) {
@@ -43,8 +43,6 @@ export default function DetailView() {
   const { data: selectedPlan } = useQuery({
     queryFn: () => getRatePlan(ratePlanParam),
     queryKey: ['ratePlan', ratePlanParam],
-    staleTime: Infinity,
-    retry: false,
   })
 
   const { data: supersedesExistsInData } = useRatePlanInData(

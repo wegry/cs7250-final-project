@@ -13,12 +13,11 @@ export function useRatePlans() {
   return useQuery({
     queryKey: ['ratePlans'],
     queryFn: fetchRatePlans,
-    staleTime: Infinity,
   })
 }
 
 async function fetchRatePlanInData(label?: string | null) {
-  const ratePlanInData = await get_query(queries.ratePlanInData(label ?? ''))
+  const ratePlanInData = await queries.ratePlanInData(label ?? '')
 
   const { data, error } = z
     .array(z.object())
@@ -36,6 +35,5 @@ export function useRatePlanInData(label?: string | null) {
   return useQuery({
     queryKey: ['ratePlan', 'exists', label ?? null],
     queryFn: () => fetchRatePlanInData(label),
-    staleTime: Infinity,
   })
 }

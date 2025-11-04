@@ -1,44 +1,41 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef } from 'react'
 import { useVegaEmbed, type VegaEmbedProps } from 'react-vega'
-import { get_query } from '../data/duckdb'
 import { synthUsage } from '../data/queries'
 import { useImmer } from 'use-immer'
 import { SynthData } from '../data/schema'
+import { useQuery } from '@tanstack/react-query'
 
 type State = {
   showRegions: SynthData[number]['region']
   season: 'winter' | 'summer'
 }
 
+async function getSynthdata(
+  season: State['season'],
+  region: State['showRegions']
+) {
+  const result = await synthUsage(season, region)
+
+  const { data, error } = SynthData.safeParse(result.toArray())
+
+  if (error) {
+    console.error(error)
+  }
+
+  return data
+}
+
 const RegionalElectricityPatterns = () => {
   // Vega mutates data in place.
-  const [data, setData] = useState<SynthData>([])
   const [state, updateState] = useImmer<State>({
     showRegions: 'New England',
     season: 'winter',
   })
 
-  // Try to load from DuckDB file on mount
-  useEffect(() => {
-    const loadFromDuckDB = async () => {
-      try {
-        // Query the synthetic_usage table
-        const result = await get_query(
-          synthUsage(state.season, state.showRegions)
-        )
-
-        const rows = SynthData.parse(result.toArray())
-
-        setData(rows)
-      } catch (error: unknown) {
-        if (error instanceof Error) {
-          console.log(error.message)
-        }
-      }
-    }
-
-    loadFromDuckDB()
-  }, [state.season, state.showRegions])
+  const { data: synthdata } = useQuery({
+    queryFn: () => getSynthdata(state.season, state.showRegions),
+    queryKey: ['synthusage', state.season, state.showRegions],
+  })
 
   const toggleRegion = (region: State['showRegions']) => {
     updateState((state) => {
@@ -51,7 +48,7 @@ const RegionalElectricityPatterns = () => {
     $schema: 'https://vega.github.io/schema/vega-lite/v6.json',
     width: 'container',
     height: 400,
-    data: { values: data },
+    data: { values: synthdata },
     mark: { type: 'line', point: false, strokeWidth: 3 },
     encoding: {
       x: {

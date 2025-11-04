@@ -1,12 +1,11 @@
-import { USURDB_NAME } from './duckdb'
+import { conn } from './duckdb'
 import type { SynthData } from './schema'
 
-const usurdbName = `${USURDB_NAME}.usurdb`
 /** For select list */
 export const selectList = `
   SELECT
     label, name, utility
-  FROM ${usurdbName}
+  FROM flattened.usurdb
   ORDER BY
     utility ASC
     , name ASC
@@ -14,23 +13,42 @@ export const selectList = `
     , enddate DESC NULLS FIRST
 `
 
-export const ratePlanInData = (label: string) => `SELECT true FROM ${usurdbName}
- WHERE label = '${label}'
- LIMIT 1`
+export async function ratePlanInData(label: string) {
+  const stmt = await (
+    await conn
+  ).prepare(`SELECT true FROM flattened.usurdb
+ WHERE label = ?
+ LIMIT 1`)
+  const result = await stmt.query(label)
+  return result
+}
 
-export const ratePlanDetail = (label: string) => `select * from ${usurdbName}
-  WHERE label = '${label}'`
+export async function ratePlanDetail(label: string) {
+  const stmt = await (
+    await conn
+  ).prepare(`select * from flattened.usurdb
+  WHERE label = ?`)
 
-export const all = `select * from ${usurdbName}`
+  const result = await stmt.query(label)
+  return result
+}
+
+export const all = `select * from flattened.usurdb`
 
 type SynthItem = SynthData[number]
 
-export const synthUsage = (
+export async function synthUsage(
   season: SynthItem['season'],
   region: SynthItem['region']
-) => `SELECT season, hour, region, usage_kw
+) {
+  const stmt = await (
+    await conn
+  ).prepare(`SELECT season, hour, region, usage_kw
           FROM flattened.synthetic_usage
           WHERE
-            season = '${season}' AND
-            region = '${region}'
-          ORDER BY season, hour, region`
+            season = ? AND
+            region = ?
+          ORDER BY season, hour, region`)
+
+  return await stmt.query(season, region)
+}
