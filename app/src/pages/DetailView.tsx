@@ -1,34 +1,17 @@
-import { useState, useEffect, useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import { useImmer } from 'use-immer'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { chart } from '../chart'
-import { get_query } from '../data/duckdb'
-import { RatePlan } from '../data/schema'
-import * as queries from '../data/queries'
 import { RatePlanSelector } from '../components/RatePlanSelector'
-import { useRatePlanInData } from '../hooks/useRatePlans'
-import { useQuery } from '@tanstack/react-query'
+import { useRatePlanInData } from '../hooks/useRateInPlanData'
 import * as s from './DetailView.module.css'
+import { useRatePlan } from '../hooks/useRatePlan'
+import { Form } from 'antd'
 
 interface UiState {
   rawData?: string
   adjustedIncluded: boolean
   date: Date | null
-}
-
-async function getRatePlan(label?: string) {
-  if (!label) {
-    return null
-  }
-  const raw = (await queries.ratePlanDetail(label)).toArray()
-
-  const { data, error } = RatePlan.safeParse(raw[0])
-  if (error) {
-    console.error(error)
-    throw error
-  }
-
-  return data
 }
 
 export default function DetailView() {
@@ -40,10 +23,7 @@ export default function DetailView() {
   })
   const chartRef = useRef<HTMLDivElement>(null)
 
-  const { data: selectedPlan } = useQuery({
-    queryFn: () => getRatePlan(ratePlanParam),
-    queryKey: ['ratePlan', ratePlanParam],
-  })
+  const { data: selectedPlan } = useRatePlan(ratePlanParam)
 
   const { data: supersedesExistsInData } = useRatePlanInData(
     selectedPlan?.supersedes
@@ -108,49 +88,50 @@ export default function DetailView() {
     <main className={s.main}>
       <h1>Visualizing Dynamic Electricity Pricing</h1>
 
-      <div>
-        <RatePlanSelector
-          value={ratePlanParam}
-          onChange={handleRatePlanChange}
-        />
-      </div>
+      <Form layout="horizontal">
+        <Form.Item label="Rate Plan">
+          <RatePlanSelector
+            value={ratePlanParam}
+            onChange={handleRatePlanChange}
+          />
+        </Form.Item>
+        <div>
+          <label>
+            For date:
+            <input
+              type="date"
+              id="date-picker"
+              min="2024-01-01"
+              max="2024-12-31"
+              value={state.date?.toISOString().slice(0, 10) || ''}
+              onChange={handleDateChange}
+            />
+          </label>
+        </div>
 
-      <div>
         <label>
-          For date:
+          Include Adjusted Rate?
           <input
-            type="date"
-            id="date-picker"
-            min="2024-01-01"
-            max="2024-12-31"
-            value={state.date?.toISOString().slice(0, 10) || ''}
-            onChange={handleDateChange}
+            id="include-adjusted-rate"
+            type="checkbox"
+            checked={state.adjustedIncluded}
+            onChange={handleAdjustedRateToggle}
           />
         </label>
-      </div>
 
-      <label>
-        Include Adjusted Rate?
-        <input
-          id="include-adjusted-rate"
-          type="checkbox"
-          checked={state.adjustedIncluded}
-          onChange={handleAdjustedRateToggle}
-        />
-      </label>
-
-      <div>
-        {supersedesExistsInData ? (
-          <>
-            Supersedes{' '}
-            <Link to={`/detail/${selectedPlan?.supersedes}`}>
-              {selectedPlan?.supersedes}{' '}
-            </Link>
-          </>
-        ) : (
-          'Latest Plan'
-        )}
-      </div>
+        <div>
+          {supersedesExistsInData ? (
+            <>
+              Supersedes{' '}
+              <Link to={`/detail/${selectedPlan?.supersedes}`}>
+                {selectedPlan?.supersedes}{' '}
+              </Link>
+            </>
+          ) : (
+            'Latest Plan'
+          )}
+        </div>
+      </Form>
 
       <div id="my-div" ref={chartRef}></div>
 

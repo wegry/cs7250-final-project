@@ -1,39 +1,30 @@
-import * as z from 'zod'
 import { useQuery } from '@tanstack/react-query'
 import { get_query } from '../data/duckdb'
 import { RatePlanSelect } from '../data/schema'
 import * as queries from '../data/queries'
+import type { Dayjs } from 'dayjs'
 
-async function fetchRatePlans() {
-  const result = await get_query(queries.selectList)
-  return RatePlanSelect.parse(result.toArray())
-}
-
-export function useRatePlans() {
-  return useQuery({
-    queryKey: ['ratePlans'],
-    queryFn: fetchRatePlans,
-  })
-}
-
-async function fetchRatePlanInData(label?: string | null) {
-  const ratePlanInData = await queries.ratePlanInData(label ?? '')
-
-  const { data, error } = z
-    .array(z.object())
-    .optional()
-    .safeParse(ratePlanInData.toArray())
+async function fetchRatePlans(byDate?: Dayjs) {
+  let raw
+  if (!byDate) {
+    raw = await get_query(queries.selectList)
+  } else {
+    raw = await queries.selectListForDate(byDate)
+  }
+  const { data, error } = RatePlanSelect.safeParse(raw.toArray())
 
   if (error) {
     console.error(error)
   }
 
-  return Boolean(data?.[0])
+  console.log(byDate?.format(), data?.length)
+
+  return data
 }
 
-export function useRatePlanInData(label?: string | null) {
+export function useRatePlans(byDate?: Dayjs) {
   return useQuery({
-    queryKey: ['ratePlan', 'exists', label ?? null],
-    queryFn: () => fetchRatePlanInData(label),
+    queryKey: ['ratePlans', byDate],
+    queryFn: () => fetchRatePlans(byDate),
   })
 }

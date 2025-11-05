@@ -1,3 +1,4 @@
+import type { Dayjs } from 'dayjs'
 import { conn } from './duckdb'
 import type { SynthData } from './schema'
 
@@ -12,6 +13,36 @@ export const selectList = `
     , startdate DESC NULLS LAST
     , enddate DESC NULLS FIRST
 `
+export async function selectListForDate(date: Dayjs) {
+  const stmt = await (
+    await conn
+  ).prepare(`
+  SELECT
+    label, name, utility
+  FROM flattened.usurdb
+  WHERE
+    (enddate IS NULL OR
+      (enddate IS NOT NULL AND enddate >= ?)
+    ) AND
+    (startdate IS NULL OR
+      (startdate IS NOT NULL AND startdate <= ?)
+    )
+  ORDER BY
+    utility ASC
+    , name ASC
+    , startdate DESC NULLS LAST
+    , enddate DESC NULLS FIRST
+  `)
+
+  const formattedDate = date.format()
+
+  /**
+   * `@duckdb/wasm` doesn't support named prepared statements.
+   * https://github.com/duckdb/duckdb/discussions/11782
+   */
+  const result = await stmt.query(formattedDate, formattedDate)
+  return result
+}
 
 export async function ratePlanInData(label: string) {
   const stmt = await (
@@ -33,13 +64,9 @@ export async function ratePlanDetail(label: string) {
   return result
 }
 
-export const all = `select * from flattened.usurdb`
-
-type SynthItem = SynthData[number]
-
 export async function synthUsage(
-  season: SynthItem['season'],
-  region: SynthItem['region']
+  season: SynthData['season'],
+  region: SynthData['region']
 ) {
   const stmt = await (
     await conn

@@ -1,23 +1,31 @@
-import { useRef } from 'react'
+import { useMemo, useRef } from 'react'
 import { useVegaEmbed, type VegaEmbedProps } from 'react-vega'
 import { synthUsage } from '../data/queries'
 import { useImmer } from 'use-immer'
-import { SynthData } from '../data/schema'
+import { SynthData, SynthDataArray } from '../data/schema'
 import { useQuery } from '@tanstack/react-query'
-import { Form, Radio } from 'antd'
+import { Form, Radio, DatePicker } from 'antd'
+import dayjs, { Dayjs } from 'dayjs'
+import { useRatePlan } from '../hooks/useRatePlan'
+import { RatePlanSelector } from '../components/RatePlanSelector'
+
+const DATE_MIN = dayjs('2024-01-01')
+const DATE_DEFAULT = dayjs().clone().set('year', 2024)
+const DATE_MAX = dayjs('2024-12-31')
 
 type State = {
-  showRegions: SynthData[number]['region']
-  season: 'winter' | 'summer'
+  region: SynthData['region']
+  date: Dayjs
+  ratePlanSelected?: string
 }
 
 async function getSynthdata(
-  season: State['season'],
-  region: State['showRegions']
+  season: SynthData['season'],
+  region: SynthData['region']
 ) {
   const result = await synthUsage(season, region)
 
-  const { data, error } = SynthData.safeParse(result.toArray())
+  const { data, error } = SynthDataArray.safeParse(result.toArray())
 
   if (error) {
     console.error(error)
@@ -29,13 +37,21 @@ async function getSynthdata(
 const RegionalElectricityPatterns = () => {
   // Vega mutates data in place.
   const [state, updateState] = useImmer<State>({
-    showRegions: 'New England',
-    season: 'winter',
+    region: 'New England',
+    date: DATE_DEFAULT,
   })
 
+  const season = useMemo(() => {
+    if (state.date.isAfter('2024-10-01') || state.date.isBefore('2024-03-01')) {
+      return 'winter'
+    }
+
+    return 'summer'
+  }, [state.date])
+
   const { data: synthdata } = useQuery({
-    queryFn: () => getSynthdata(state.season, state.showRegions),
-    queryKey: ['synthusage', state.season, state.showRegions],
+    queryFn: () => getSynthdata(season, state.region),
+    queryKey: ['synthusage', season, state.region],
   })
 
   // Vega-Lite specification
@@ -96,22 +112,43 @@ const RegionalElectricityPatterns = () => {
   const chartRef = useRef<HTMLDivElement>(null)
   useVegaEmbed({ ref: chartRef, spec, options: { mode: 'vega-lite' } })
 
+  const { data: ratePlan } = useRatePlan(state.ratePlanSelected)
+
+  console.log(ratePlan)
+
   return (
     <div>
       <div>
         <h2>Regional Electricity Usage Patterns</h2>
         <p>Compare heating vs. cooling loads across regions and seasons</p>
 
-        <Form layout="vertical">
-          <Form.Item label="Season">
-            <Radio.Group
-              value={state.season}
+        <Form layout="horizontal">
+          <Form.Item label="Date">
+            <DatePicker
+              minDate={DATE_MIN}
+              maxDate={DATE_MAX}
+              value={state.date}
+              onChange={(value) => {
+                updateState((state) => {
+                  state.date = value
+                })
+              }}
+            />
+          </Form.Item>
+          <Form.Item label="Rate Plan">
+            <RatePlanSelector
+              byDate={state.date}
+              value={state.ratePlanSelected}
               onChange={(e) =>
                 updateState((state) => {
-                  state.season = e.target.value
+                  state.ratePlanSelected = e
                 })
               }
-            >
+            />
+          </Form.Item>
+
+          <Form.Item label="Season">
+            <Radio.Group value={season}>
               <Radio.Button value="winter">❄️ Winter (January)</Radio.Button>
               <Radio.Button value="summer">☀️ Summer (July)</Radio.Button>
             </Radio.Group>
@@ -119,10 +156,10 @@ const RegionalElectricityPatterns = () => {
 
           <Form.Item label="Region">
             <Radio.Group
-              value={state.showRegions}
+              value={state.region}
               onChange={(e) =>
                 updateState((state) => {
-                  state.showRegions = e.target.value
+                  state.region = e.target.value
                 })
               }
             >
@@ -140,7 +177,7 @@ const RegionalElectricityPatterns = () => {
         <div ref={chartRef} style={{ width: 600, height: 200 }} />
       </div>
 
-      {state.season === 'winter' ? (
+      {season === 'winter' ? (
         <>
           <div>
             <div>

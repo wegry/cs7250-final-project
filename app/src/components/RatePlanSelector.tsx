@@ -1,8 +1,13 @@
 import { Select } from 'antd'
 import { useRatePlans } from '../hooks/useRatePlans'
 import { useMemo } from 'react'
+import type { Dayjs } from 'dayjs'
 
 interface RatePlanSelectorProps {
+  /**
+   * Use only plans active on this date
+   */
+  byDate?: Dayjs
   value?: string
   onChange: (value: string) => void
   label?: string
@@ -10,10 +15,10 @@ interface RatePlanSelectorProps {
 
 export function RatePlanSelector({
   value,
+  byDate,
   onChange,
-  label = 'Rate Plan Chooser',
 }: RatePlanSelectorProps) {
-  const { data: ratePlans, isLoading, error } = useRatePlans()
+  const { data: ratePlans, isLoading, error } = useRatePlans(byDate)
 
   const options = useMemo(() => {
     return ratePlans?.map((plan) => ({
@@ -27,17 +32,15 @@ export function RatePlanSelector({
   }
 
   return (
-    <label>
-      {label}
-      <Select
-        value={value ?? ratePlans?.[0].label}
-        onChange={onChange}
-        disabled={isLoading}
-        loading={isLoading}
-        options={options}
-        showSearch
-        optionFilterProp="label"
-      ></Select>
-    </label>
+    <Select
+      disabled={isLoading}
+      loading={isLoading}
+      onChange={onChange}
+      optionFilterProp="label"
+      options={options}
+      placeholder="Choose a rate plan"
+      showSearch
+      value={value}
+    ></Select>
   )
 }
