@@ -1,19 +1,38 @@
 import { Dayjs } from 'dayjs'
 import { RatePlan, SynthData } from './data/schema'
-import { mean } from 'es-toolkit'
+import { mean, range, sum } from 'es-toolkit'
 
 export function generationPriceInAMonth({
   ratePlan,
   synthData,
   monthStarting,
 }: {
-  ratePlan?: RatePlan
+  ratePlan?: RatePlan | null
   synthData?: SynthData[]
   monthStarting: Dayjs
-}) {
-  if (!ratePlan || !synthData) {
+}): { kWh?: number; cost?: number } {
+  if (!synthData) {
     return {}
   }
+  const hourlyUsage = []
+
+  for (const hour of range(0, 24)) {
+    const kWh = mean([
+      synthData[hour]['usage_kw'],
+      synthData[(hour + 1) % 24]['usage_kw'],
+    ])
+
+    hourlyUsage.push(kWh)
+  }
+
+  if (!ratePlan) {
+    return {
+      kWh:
+        sum(hourlyUsage) *
+        monthStarting.add(1, 'month').diff(monthStarting, 'days'),
+    }
+  }
+
   const {
     energyweekdayschedule,
     energyweekendschedule,
@@ -44,21 +63,19 @@ export function generationPriceInAMonth({
           totalCost += fixedchargefirstmeter ?? 0
         }
 
-        const hourlyAverage_kW = mean([
-          synthData[hour]['usage_kw'],
-          synthData[(hour + 1) % 24]['usage_kw'],
-        ])
         const period = periods[hour]
         const tiers = ratestructure?.energyrate?.[`period${period}`]
         const matchingTier = Object.entries(tiers ?? {}).find(([, v]) => {
-          if (v?.unit == 'kWh' && (v?.max ?? 0) >= totalUsage_kWh) {
+          if (v?.unit == 'kWh' && (v?.max ?? Infinity) >= totalUsage_kWh) {
             return true
           }
         })
         const energyrate = matchingTier?.[1]?.rate ?? 0
 
-        totalUsage_kWh += hourlyAverage_kW
-        totalCost += hourlyAverage_kW * energyrate
+        const usageThisHour = hourlyUsage[hour]
+
+        totalUsage_kWh += usageThisHour
+        totalCost += usageThisHour * energyrate
       }
     }
 

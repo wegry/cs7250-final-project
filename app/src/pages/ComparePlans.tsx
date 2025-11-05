@@ -4,11 +4,12 @@ import { synthUsage } from '../data/queries'
 import { useImmer } from 'use-immer'
 import { SynthData, SynthDataArray } from '../data/schema'
 import { useQuery } from '@tanstack/react-query'
-import { Form, Radio, DatePicker } from 'antd'
+import { Form, Radio, DatePicker, Statistic } from 'antd'
 import dayjs, { Dayjs } from 'dayjs'
 import { useRatePlan } from '../hooks/useRatePlan'
 import { RatePlanSelector } from '../components/RatePlanSelector'
 import { generationPriceInAMonth } from '../prices'
+import { useSearchParams } from 'react-router-dom'
 
 const DATE_MIN = dayjs('2024-01-01')
 const DATE_DEFAULT = dayjs().clone().set('year', 2024)
@@ -17,7 +18,6 @@ const DATE_MAX = dayjs('2024-12-31')
 type State = {
   region: SynthData['region']
   date: Dayjs
-  ratePlanSelected?: string
 }
 
 async function getSynthdata(
@@ -35,7 +35,12 @@ async function getSynthdata(
   return data
 }
 
-const RegionalElectricityPatterns = () => {
+const RATE_PLAN_QUERY_PARAM = 'rate-plan'
+
+function RegionalElectricityPatterns() {
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  const ratePlanSelected = searchParams.get(RATE_PLAN_QUERY_PARAM)
   // Vega mutates data in place.
   const [state, updateState] = useImmer<State>({
     region: 'New England',
@@ -113,9 +118,9 @@ const RegionalElectricityPatterns = () => {
   const chartRef = useRef<HTMLDivElement>(null)
   useVegaEmbed({ ref: chartRef, spec, options: { mode: 'vega-lite' } })
 
-  const { data: ratePlan } = useRatePlan(state.ratePlanSelected)
+  const { data: ratePlan } = useRatePlan(ratePlanSelected)
 
-  const { cost } = generationPriceInAMonth({
+  const usage = generationPriceInAMonth({
     ratePlan,
     synthData,
     monthStarting: state.date,
@@ -143,12 +148,8 @@ const RegionalElectricityPatterns = () => {
           <Form.Item label="Rate Plan">
             <RatePlanSelector
               byDate={state.date}
-              value={state.ratePlanSelected}
-              onChange={(e) =>
-                updateState((state) => {
-                  state.ratePlanSelected = e
-                })
-              }
+              value={ratePlanSelected}
+              onChange={(e) => setSearchParams({ [RATE_PLAN_QUERY_PARAM]: e })}
             />
           </Form.Item>
 
@@ -182,10 +183,19 @@ const RegionalElectricityPatterns = () => {
         <div ref={chartRef} style={{ width: 600, height: 200 }} />
       </div>
       <div>
-        <h2>Monthly cost on plan?</h2>
-        <h3>
-          {cost?.toLocaleString([], { currency: 'USD', style: 'currency' })}
-        </h3>
+        <Statistic
+          title="Monthly cost on plan"
+          value={usage.cost?.toLocaleString([], {
+            currency: 'USD',
+            style: 'currency',
+          })}
+        />
+        <Statistic
+          title="Monthly energy use"
+          value={`${usage.kWh?.toLocaleString([], {
+            style: 'decimal',
+          })} kWh`}
+        />
       </div>
 
       {season === 'winter' ? (

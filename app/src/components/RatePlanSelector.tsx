@@ -8,7 +8,7 @@ interface RatePlanSelectorProps {
    * Use only plans active on this date
    */
   byDate?: Dayjs
-  value?: string
+  value?: string | null
   onChange: (value: string) => void
   label?: string
 }

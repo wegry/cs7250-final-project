@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { RatePlan } from '../data/schema'
 import * as queries from '../data/queries'
 
-async function getRatePlan(label?: string) {
+async function getRatePlan(label?: string | null) {
   if (!label) {
     return null
   }
@@ -17,7 +17,7 @@ async function getRatePlan(label?: string) {
   return data ?? null
 }
 
-export function useRatePlan(label?: string) {
+export function useRatePlan(label?: string | null) {
   return useQuery({
     queryFn: () => getRatePlan(label),
     queryKey: ['ratePlan', label],
