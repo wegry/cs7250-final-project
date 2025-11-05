@@ -5,7 +5,8 @@ import type { SynthData } from './schema'
 /** For select list */
 export const selectList = `
   SELECT
-    label, name, utility
+    label as value
+    , concat_ws('/', utility, name, label) as label
   FROM flattened.usurdb
   ORDER BY
     utility ASC
@@ -18,7 +19,8 @@ export async function selectListForDate(date: Dayjs) {
     await conn
   ).prepare(`
   SELECT
-    label, name, utility
+    label as value
+    , concat_ws('/', utility, name, label) as label
   FROM flattened.usurdb
   WHERE
     (enddate IS NULL OR

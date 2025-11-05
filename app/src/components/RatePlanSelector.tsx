@@ -18,14 +18,7 @@ export function RatePlanSelector({
   byDate,
   onChange,
 }: RatePlanSelectorProps) {
-  const { data: ratePlans, isLoading, error } = useRatePlans(byDate)
-
-  const options = useMemo(() => {
-    return ratePlans?.map((plan) => ({
-      value: plan.label,
-      label: `${plan.utility}/${plan.name}/${plan.label}`,
-    }))
-  }, [ratePlans])
+  const { data: options, isLoading, error } = useRatePlans(byDate)
 
   if (error) {
     return <div>Error loading rate plans: {error.message}</div>

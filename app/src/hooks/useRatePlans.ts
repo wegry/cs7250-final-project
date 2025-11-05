@@ -17,8 +17,6 @@ async function fetchRatePlans(byDate?: Dayjs) {
     console.error(error)
   }
 
-  console.log(byDate?.format(), data?.length)
-
   return data
 }
 

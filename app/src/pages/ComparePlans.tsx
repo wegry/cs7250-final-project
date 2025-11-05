@@ -8,6 +8,7 @@ import { Form, Radio, DatePicker } from 'antd'
 import dayjs, { Dayjs } from 'dayjs'
 import { useRatePlan } from '../hooks/useRatePlan'
 import { RatePlanSelector } from '../components/RatePlanSelector'
+import { generationPriceInAMonth } from '../prices'
 
 const DATE_MIN = dayjs('2024-01-01')
 const DATE_DEFAULT = dayjs().clone().set('year', 2024)
@@ -49,7 +50,7 @@ const RegionalElectricityPatterns = () => {
     return 'summer'
   }, [state.date])
 
-  const { data: synthdata } = useQuery({
+  const { data: synthData } = useQuery({
     queryFn: () => getSynthdata(season, state.region),
     queryKey: ['synthusage', season, state.region],
   })
@@ -58,8 +59,8 @@ const RegionalElectricityPatterns = () => {
   const spec: VegaEmbedProps['spec'] = {
     $schema: 'https://vega.github.io/schema/vega-lite/v6.json',
     width: 'container',
-    height: 400,
-    data: { values: synthdata ?? [] },
+    height: 150,
+    data: { values: synthData ?? [] },
     transform: [
       {
         calculate: 'datetime(0, 0, 1,datum.hour, 0, 0, 0)',
@@ -114,7 +115,11 @@ const RegionalElectricityPatterns = () => {
 
   const { data: ratePlan } = useRatePlan(state.ratePlanSelected)
 
-  console.log(ratePlan)
+  const { cost } = generationPriceInAMonth({
+    ratePlan,
+    synthData,
+    monthStarting: state.date,
+  })
 
   return (
     <div>
@@ -175,6 +180,12 @@ const RegionalElectricityPatterns = () => {
 
       <div>
         <div ref={chartRef} style={{ width: 600, height: 200 }} />
+      </div>
+      <div>
+        <h2>Monthly cost on plan?</h2>
+        <h3>
+          {cost?.toLocaleString([], { currency: 'USD', style: 'currency' })}
+        </h3>
       </div>
 
       {season === 'winter' ? (
