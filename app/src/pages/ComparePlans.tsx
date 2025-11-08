@@ -10,7 +10,6 @@ import {
   Row,
   Col,
   Segmented,
-  Input,
   InputNumber,
 } from 'antd'
 import dayjs, { Dayjs } from 'dayjs'
@@ -20,6 +19,7 @@ import { generationPriceInAMonth } from '../prices'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useSynthData } from '../hooks/useSynthData'
 import { capitalize } from 'es-toolkit'
+import { RatePlanSummary } from '../components/RatePlanSummary'
 
 const DATE_MIN = dayjs('2024-01-01')
 const DATE_DEFAULT = dayjs().clone().set('year', 2024)
@@ -32,12 +32,14 @@ type State = {
 }
 
 const RATE_PLAN_QUERY_PARAM = 'rate-plan'
+const RATE_PLAN_2_QUERY_PARAM = 'other-rate-plan'
 const ENERGY_USAGE_QUERY_PARAM = 'energy-usage'
 
 function RegionalElectricityPatterns() {
   const [searchParams, setSearchParams] = useSearchParams()
 
   const ratePlanSelected = searchParams.get(RATE_PLAN_QUERY_PARAM)
+  const ratePlan2Selected = searchParams.get(RATE_PLAN_2_QUERY_PARAM)
   const energyUsage = searchParams.get(ENERGY_USAGE_QUERY_PARAM)
   // Vega mutates data in place.
   const [state, updateState] = useImmer<State>({
@@ -64,22 +66,29 @@ function RegionalElectricityPatterns() {
             region={name}
             season={season}
             selected={name == state.region}
+            targetUsage={state.targetUsage}
           />
         ),
         value: name,
       })
     )
-  }, [season, state.region])
+  }, [season, state.region, state.targetUsage])
 
   const { data: ratePlan } = useRatePlan(ratePlanSelected)
+  const { data: ratePlan2 } = useRatePlan(ratePlan2Selected)
   const { data: synthData } = useSynthData({
     season: season,
     region: state.region,
     targetUsage: state.targetUsage,
   })
 
-  const usage = generationPriceInAMonth({
+  const usagePlan1 = generationPriceInAMonth({
     ratePlan,
+    synthData: synthData,
+    monthStarting: state.date,
+  })
+  const usagePlan2 = generationPriceInAMonth({
+    ratePlan: ratePlan2,
     synthData: synthData,
     monthStarting: state.date,
   })
@@ -140,14 +149,17 @@ function RegionalElectricityPatterns() {
               </Form.Item>
             </Col>
           </Row>
-          <Form.Item label="Rate Plan">
+          <Form.Item label="Rate Plan" required>
             <Row gutter={16} align="middle">
               <Col span={14}>
                 <RatePlanSelector
                   byDate={state.date}
                   value={ratePlanSelected}
                   onChange={(e) =>
-                    setSearchParams({ [RATE_PLAN_QUERY_PARAM]: e })
+                    setSearchParams((prev) => {
+                      prev.set(RATE_PLAN_QUERY_PARAM, e)
+                      return prev
+                    })
                   }
                 />
               </Col>
@@ -156,8 +168,27 @@ function RegionalElectricityPatterns() {
               </Col>
             </Row>
           </Form.Item>
+          <Form.Item label="Other Rate Plan">
+            <Row gutter={16} align="middle">
+              <Col span={14}>
+                <RatePlanSelector
+                  byDate={state.date}
+                  value={ratePlan2Selected}
+                  onChange={(e) =>
+                    setSearchParams((prev) => {
+                      prev.set(RATE_PLAN_2_QUERY_PARAM, e)
+                      return prev
+                    })
+                  }
+                />
+              </Col>
+              <Col>
+                <Link to={`/detail/${ratePlan2Selected}`}>Details</Link>
+              </Col>
+            </Row>
+          </Form.Item>
 
-          <Form.Item label="Region">
+          <Form.Item label="Electricity Use Pattern">
             <Segmented
               value={state.region}
               onChange={(value) =>
@@ -220,23 +251,26 @@ function RegionalElectricityPatterns() {
           </div>
         </>
       )}
-      <div>
-        <Statistic
-          title="Monthly cost on plan"
-          value={usage.cost?.toLocaleString([], {
-            currency: 'USD',
-            style: 'currency',
-          })}
-        />
-        {!isNaN(Number(energyUsage)) ? null : (
-          <Statistic
-            title="Monthly energy use"
-            value={`${usage.kWh?.toLocaleString([], {
-              style: 'decimal',
-            })} kWh`}
-          />
+      <Row gutter={36}>
+        {ratePlan && (
+          <Col span={6}>
+            <RatePlanSummary
+              ratePlan={ratePlan}
+              usage={usagePlan1}
+              energyUsage={energyUsage}
+            />
+          </Col>
         )}
-      </div>
+        {ratePlan2 && (
+          <Col span={6}>
+            <RatePlanSummary
+              ratePlan={ratePlan2}
+              usage={usagePlan2}
+              energyUsage={energyUsage}
+            />
+          </Col>
+        )}
+      </Row>
     </div>
   )
 }
@@ -320,12 +354,14 @@ function Sparkline({
   season,
   region,
   selected,
+  targetUsage,
 }: {
   season: SynthData['season']
   region: SynthData['region']
   selected: boolean
+  targetUsage?: number
 }) {
-  const { data: synthData } = useSynthData({ season, region })
+  const { data: synthData } = useSynthData({ season, region, targetUsage })
 
   // Vega-Lite specification
   const spec: VegaEmbedProps['spec'] = {
