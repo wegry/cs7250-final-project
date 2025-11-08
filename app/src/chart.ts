@@ -84,7 +84,8 @@ export function chart(
         transform: [{ filter: "datum.name === 'Weekends'" }], // Filters data only for this layer
         mark: {
           type: 'line',
-          interpolate: 'step-after',
+          interpolate: 'catmull-rom',
+          tension: 0,
           opacity: 0.7,
           strokeDash: [5, 5],
         },

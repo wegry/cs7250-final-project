@@ -18,7 +18,7 @@ const MANUAL_BUNDLES: duckdb.DuckDBBundles = {
 const bundle = await duckdb.selectBundle(MANUAL_BUNDLES)
 // Instantiate the asynchronous version of DuckDB-wasm
 const worker = new Worker(bundle.mainWorker!)
-const logger = new duckdb.ConsoleLogger(duckdb.LogLevel.DEBUG)
+const logger = new duckdb.ConsoleLogger(duckdb.LogLevel.WARNING)
 const db = new duckdb.AsyncDuckDB(logger, worker)
 await db.instantiate(bundle.mainModule, bundle.pthreadWorker)
 
@@ -26,14 +26,25 @@ export const USURDB_NAME = 'flattened'
 
 // Setup and connect to the database
 // Initialize database
+let c = Promise.withResolvers<duckdb.AsyncDuckDBConnection>()
 
-const conn = await db.connect()
-await conn.query(
-  `ATTACH '${window.location.origin + '/flattened.duckdb'}' AS flattened (READ_ONLY)`
-)
+export const conn = c.promise
+
+async function init() {
+  try {
+    const conn = await db.connect()
+    await conn.query(
+      `ATTACH '${window.location.origin + '/flattened.duckdb'}' AS flattened (READ_ONLY)`
+    )
+    c.resolve(conn)
+  } catch (e) {
+    c.reject(e)
+  }
+}
+init()
 
 export async function get_query(q: string) {
   console.debug(q)
-  const results = await conn.query(q)
+  const results = await (await conn).query(q)
   return results
 }

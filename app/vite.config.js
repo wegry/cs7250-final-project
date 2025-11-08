@@ -1,8 +1,7 @@
 import { defineConfig } from 'vite'
-import netlify from '@netlify/vite-plugin'
 
 export default defineConfig({
-  plugins: [netlify()],
+  plugins: [],
   optimizeDeps: {
     exclude: ['@duckdb/duckdb-wasm'],
     esbuildOptions: {

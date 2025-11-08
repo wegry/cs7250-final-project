@@ -34,5 +34,5 @@ beforeAll(async () => {
 test('Schema parses on all USURDB records', async () => {
   const plans = await ratePlans.promise
   expect(plans.length).toBe(1577)
-  expect(RatePlanArray.parse(plans)).toBeDefined()
+  expect(RatePlanArray.parse(plans, { reportInput: true })).toBeDefined()
 })

@@ -12,6 +12,10 @@ function unionOfLiterals<T extends string | number>(constants: readonly T[]) {
   return z.union(literals)
 }
 
+const fixedChargeUnits = unionOfLiterals([
+  '$/month',
+  '$/day',
+] as const).nullish()
 const optionalSchedule = z
   .unknown()
   .nullish()
@@ -39,10 +43,13 @@ export const RatePlan = z.object({
   utility: z.string(),
   startdate: dates,
   enddate: dates,
+  latest_update: dates,
   supersedes: z.string().nullish(),
   flatdemandunit: z.string().nullish(),
   fixedchargefirstmeter: z.number().nullish(),
-  fixedchargeunits: z.string().nullish(),
+  fixedchargeunits: fixedChargeUnits,
+  mincharge: z.number().nullable(),
+  minchargeunits: fixedChargeUnits,
   demandweekendschedule: optionalSchedule,
   demandweekdayschedule: optionalSchedule,
   demandcomments: z.string().nullish(),
@@ -62,14 +69,20 @@ export const RatePlan = z.object({
           'demandrate',
           'flaterate',
           'flatdemand',
-        ]),
-        z.partialRecord(
-          z.string(),
-          z.partialRecord(
-            z.string(),
+        ] as const),
+        z.record(
+          z.templateLiteral(['period', z.number()]),
+          z.record(
+            z.templateLiteral(['tier', z.number()]),
             z.object({
               adj: z.optional(z.number()),
               rate: z.optional(z.number()),
+              max: z.number().nullish(),
+              unit: unionOfLiterals([
+                'kWh',
+                'kWh daily',
+                'kWh/kW',
+              ] as const).nullish(),
             })
           )
         )
@@ -82,11 +95,20 @@ export const RatePlanArray = z.array(RatePlan)
 
 export const RatePlanSelect = z.array(
   z.object({
+    value: z.string(),
     label: z.string(),
-    name: z.string(),
-    utility: z.string(),
   })
 )
 
 export type RatePlanSelect = z.infer<typeof RatePlanSelect>
 export type RatePlan = z.infer<typeof RatePlan>
+
+export const SynthData = z.object({
+  hour: z.number(),
+  usage_kw: z.number(),
+  season: unionOfLiterals(['winter', 'summer']),
+  region: unionOfLiterals(['New England', 'Texas', 'Southern California']),
+})
+
+export type SynthData = z.infer<typeof SynthData>
+export const SynthDataArray = z.array(SynthData)

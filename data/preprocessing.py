@@ -246,6 +246,70 @@ def _(pl, rates):
 
 
 @app.cell
+def _(alt):
+    _chart = (
+        alt.Chart([]) # <-- replace with data
+        .mark_bar()
+        .encode(
+            x=alt.X("fixedchargefirstmeter", type="quantitative", bin=True, title="fixedchargefirstmeter"),
+            y=alt.Y("count()", type="quantitative", title="Number of records"),
+            tooltip=[
+                alt.Tooltip(
+                    "fixedchargefirstmeter",
+                    type="quantitative",
+                    bin=True,
+                    title="fixedchargefirstmeter",
+                    format=",.2f",
+                ),
+                alt.Tooltip(
+                    "count()",
+                    type="quantitative",
+                    format=",.0f",
+                    title="Number of records",
+                ),
+            ],
+        ).properties(width="container").configure_view(stroke=None)
+    )
+    _chart
+    return
+
+
+@app.cell
+def _(alt):
+    _chart = (
+        alt.Chart([]) # <-- replace with data
+        .mark_bar()
+        .encode(
+            x=alt.X("fixedchargefirstmeter", type="quantitative", bin=True, title="fixedchargefirstmeter"),
+            y=alt.Y("count()", type="quantitative", title="Number of records"),
+            tooltip=[
+                alt.Tooltip(
+                    "fixedchargefirstmeter",
+                    type="quantitative",
+                    bin=True,
+                    title="fixedchargefirstmeter",
+                    format=",.2f",
+                ),
+                alt.Tooltip(
+                    "count()",
+                    type="quantitative",
+                    format=",.0f",
+                    title="Number of records",
+                ),
+            ],
+        ).properties(width="container").configure_view(stroke=None)
+    )
+    _chart
+    return
+
+
+@app.cell
+def _():
+    import altair as alt
+    return (alt,)
+
+
+@app.cell
 def _(ends_after_start_of_2024, pl):
     import json
     import numpy as np
@@ -308,9 +372,9 @@ def _(data_structure, ends_after_start_of_2024, json, pl, re):
                         if val is not None:
                             # Some floats are encoded as strings for whatever reason
                             if (
-                                unit in ["adj", "rate"]
+                                unit in ["adj", "rate", "max"]
                                 and isinstance(val, str)
-                                and re.match(r"^(\d+\.\d+)$", val)
+                                and re.match(r"^(\d+?\.?\d+)$", val)
                             ):
                                 tier_data[unit.lstrip("/")] = float(val)
                             else:
