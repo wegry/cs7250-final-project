@@ -68,16 +68,31 @@ export async function ratePlanDetail(label: string) {
 
 export async function synthUsage(
   season: SynthData['season'],
-  region: SynthData['region']
+  region: SynthData['region'],
+  targetUsage?: number
 ) {
   const stmt = await (
     await conn
-  ).prepare(`SELECT season, hour, region, usage_kw
-          FROM flattened.synthetic_usage
-          WHERE
-            season = ? AND
-            region = ?
-          ORDER BY season, hour, region`)
+  ).prepare(`
+    WITH monthly_totals AS (
+        SELECT
+            season,
+            region,
+            SUM(usage_kw) * 30 as month_total_kwh
+        FROM flattened.synthetic_usage
+        WHERE season = $1 AND region = $2
+        GROUP BY season, region
+    )
+    SELECT
+        s.season,
+        s.hour,
+        s.region,
+        (s.usage_kw / mt.month_total_kwh) * COALESCE($3, mt.month_total_kwh) as usage_kw
+    FROM flattened.synthetic_usage s
+    JOIN monthly_totals mt ON s.season = mt.season AND s.region = mt.region
+    WHERE s.season = $1 AND s.region = $2
+    ORDER BY s.season, s.hour, s.region
+`)
 
-  return await stmt.query(season, region)
+  return await stmt.query(season, region, targetUsage)
 }

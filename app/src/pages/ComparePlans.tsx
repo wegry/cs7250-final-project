@@ -2,7 +2,17 @@ import { useMemo, useRef } from 'react'
 import { useVegaEmbed, type VegaEmbedProps } from 'react-vega'
 import { useImmer } from 'use-immer'
 import { SynthData } from '../data/schema'
-import { Form, Radio, DatePicker, Statistic, Row, Col, Segmented } from 'antd'
+import {
+  Form,
+  Radio,
+  DatePicker,
+  Statistic,
+  Row,
+  Col,
+  Segmented,
+  Input,
+  InputNumber,
+} from 'antd'
 import dayjs, { Dayjs } from 'dayjs'
 import { useRatePlan } from '../hooks/useRatePlan'
 import { RatePlanSelector } from '../components/RatePlanSelector'
@@ -18,18 +28,24 @@ const DATE_MAX = dayjs('2024-12-31')
 type State = {
   region: SynthData['region']
   date: Dayjs
+  targetUsage?: number
 }
 
 const RATE_PLAN_QUERY_PARAM = 'rate-plan'
+const ENERGY_USAGE_QUERY_PARAM = 'energy-usage'
 
 function RegionalElectricityPatterns() {
   const [searchParams, setSearchParams] = useSearchParams()
 
   const ratePlanSelected = searchParams.get(RATE_PLAN_QUERY_PARAM)
+  const energyUsage = searchParams.get(ENERGY_USAGE_QUERY_PARAM)
   // Vega mutates data in place.
   const [state, updateState] = useImmer<State>({
     region: 'New England',
     date: DATE_DEFAULT,
+    targetUsage: isFinite(energyUsage as unknown as number)
+      ? parseFloat(energyUsage!)
+      : undefined,
   })
 
   const season = useMemo(() => {
@@ -59,6 +75,7 @@ function RegionalElectricityPatterns() {
   const { data: synthData } = useSynthData({
     season: season,
     region: state.region,
+    targetUsage: state.targetUsage,
   })
 
   const usage = generationPriceInAMonth({
@@ -74,7 +91,30 @@ function RegionalElectricityPatterns() {
         <p>Compare heating vs. cooling loads across regions and seasons</p>
 
         <Form layout="horizontal">
-          <Row>
+          <Row gutter={24}>
+            <Col>
+              <Form.Item label="Energy Usage (kWh)">
+                <InputNumber
+                  onChange={(value) => {
+                    updateState((v) => {
+                      v.targetUsage = value ?? undefined
+                    })
+                    setSearchParams((prev) => {
+                      prev.set(
+                        ENERGY_USAGE_QUERY_PARAM,
+                        value! as unknown as string
+                      )
+
+                      return prev
+                    })
+                  }}
+                  value={state.targetUsage}
+                  type="number"
+                  min={0.01}
+                  placeholder="380"
+                />
+              </Form.Item>
+            </Col>
             <Col>
               <Form.Item label="Date">
                 <DatePicker
@@ -89,7 +129,6 @@ function RegionalElectricityPatterns() {
                 />
               </Form.Item>
             </Col>
-            <Col md={1} />
             <Col>
               <Form.Item label="Season">
                 <Radio.Group value={season}>
@@ -131,10 +170,9 @@ function RegionalElectricityPatterns() {
           </Form.Item>
         </Form>
       </div>
+      <SeasonBlurb region={state.region} season={season} />
       {season === 'winter' ? (
         <>
-          <SeasonBlurb region={state.region} season={season} />
-
           <div>
             <h3>Winter Insights</h3>
             <ul>
@@ -190,12 +228,14 @@ function RegionalElectricityPatterns() {
             style: 'currency',
           })}
         />
-        <Statistic
-          title="Monthly energy use"
-          value={`${usage.kWh?.toLocaleString([], {
-            style: 'decimal',
-          })} kWh`}
-        />
+        {!isNaN(Number(energyUsage)) ? null : (
+          <Statistic
+            title="Monthly energy use"
+            value={`${usage.kWh?.toLocaleString([], {
+              style: 'decimal',
+            })} kWh`}
+          />
+        )}
       </div>
     </div>
   )
