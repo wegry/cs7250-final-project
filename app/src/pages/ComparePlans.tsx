@@ -1,15 +1,15 @@
 import { useMemo, useRef } from 'react'
 import { useVegaEmbed, type VegaEmbedProps } from 'react-vega'
-import { synthUsage } from '../data/queries'
 import { useImmer } from 'use-immer'
-import { SynthData, SynthDataArray } from '../data/schema'
-import { useQuery } from '@tanstack/react-query'
-import { Form, Radio, DatePicker, Statistic } from 'antd'
+import { SynthData } from '../data/schema'
+import { Form, Radio, DatePicker, Statistic, Row, Col, Segmented } from 'antd'
 import dayjs, { Dayjs } from 'dayjs'
 import { useRatePlan } from '../hooks/useRatePlan'
 import { RatePlanSelector } from '../components/RatePlanSelector'
 import { generationPriceInAMonth } from '../prices'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
+import { useSynthData } from '../hooks/useSynthData'
+import { capitalize } from 'es-toolkit'
 
 const DATE_MIN = dayjs('2024-01-01')
 const DATE_DEFAULT = dayjs().clone().set('year', 2024)
@@ -18,21 +18,6 @@ const DATE_MAX = dayjs('2024-12-31')
 type State = {
   region: SynthData['region']
   date: Dayjs
-}
-
-async function getSynthdata(
-  season: SynthData['season'],
-  region: SynthData['region']
-) {
-  const result = await synthUsage(season, region)
-
-  const { data, error } = SynthDataArray.safeParse(result.toArray())
-
-  if (error) {
-    console.error(error)
-  }
-
-  return data
 }
 
 const RATE_PLAN_QUERY_PARAM = 'rate-plan'
@@ -55,15 +40,257 @@ function RegionalElectricityPatterns() {
     return 'summer'
   }, [state.date])
 
-  const { data: synthData } = useQuery({
-    queryFn: () => getSynthdata(season, state.region),
-    queryKey: ['synthusage', season, state.region],
+  const usuageSparklines = useMemo(() => {
+    return (['New England', 'Texas', 'Southern California'] as const).map(
+      (name) => ({
+        label: (
+          <Sparkline
+            region={name}
+            season={season}
+            selected={name == state.region}
+          />
+        ),
+        value: name,
+      })
+    )
+  }, [season, state.region])
+
+  const { data: ratePlan } = useRatePlan(ratePlanSelected)
+  const { data: synthData } = useSynthData({
+    season: season,
+    region: state.region,
   })
+
+  const usage = generationPriceInAMonth({
+    ratePlan,
+    synthData: synthData,
+    monthStarting: state.date,
+  })
+
+  return (
+    <div>
+      <div>
+        <h2>Regional Electricity Usage Patterns</h2>
+        <p>Compare heating vs. cooling loads across regions and seasons</p>
+
+        <Form layout="horizontal">
+          <Row>
+            <Col>
+              <Form.Item label="Date">
+                <DatePicker
+                  minDate={DATE_MIN}
+                  maxDate={DATE_MAX}
+                  value={state.date}
+                  onChange={(value) => {
+                    updateState((state) => {
+                      state.date = value
+                    })
+                  }}
+                />
+              </Form.Item>
+            </Col>
+            <Col md={1} />
+            <Col>
+              <Form.Item label="Season">
+                <Radio.Group value={season}>
+                  <Radio.Button value="winter">
+                    ❄️ Winter (January)
+                  </Radio.Button>
+                  <Radio.Button value="summer">☀️ Summer (July)</Radio.Button>
+                </Radio.Group>
+              </Form.Item>
+            </Col>
+          </Row>
+          <Form.Item label="Rate Plan">
+            <Row gutter={16} align="middle">
+              <Col span={14}>
+                <RatePlanSelector
+                  byDate={state.date}
+                  value={ratePlanSelected}
+                  onChange={(e) =>
+                    setSearchParams({ [RATE_PLAN_QUERY_PARAM]: e })
+                  }
+                />
+              </Col>
+              <Col>
+                <Link to={`/detail/${ratePlanSelected}`}>Details</Link>
+              </Col>
+            </Row>
+          </Form.Item>
+
+          <Form.Item label="Region">
+            <Segmented
+              value={state.region}
+              onChange={(value) =>
+                updateState((state) => {
+                  state.region = value
+                })
+              }
+              options={usuageSparklines}
+            />
+          </Form.Item>
+        </Form>
+      </div>
+      {season === 'winter' ? (
+        <>
+          <SeasonBlurb region={state.region} season={season} />
+
+          <div>
+            <h3>Winter Insights</h3>
+            <ul>
+              <li>
+                <strong>Peak Usage:</strong> Texas shows 50-75% higher peak
+                demand than New England due to electric heating
+              </li>
+              <li>
+                <strong>EV Impact:</strong> California's overnight charging adds
+                6-7 kW but occurs during off-peak hours
+              </li>
+              <li>
+                <strong>Grid Impact:</strong> Electric heating creates sustained
+                evening loads that challenge grid capacity
+              </li>
+              <li>
+                <strong>Cost Advantage:</strong> California EV charging happens
+                when rates are lowest (overnight)
+              </li>
+            </ul>
+          </div>
+        </>
+      ) : (
+        <>
+          <div>
+            <h3>Summer Insights</h3>
+            <ul>
+              <li>
+                <strong>Texas Crisis:</strong> Summer peaks can reach 12+ kW per
+                home during heat waves—higher than winter
+              </li>
+              <li>
+                <strong>Peak Timing:</strong> AC loads peak 2-8pm, exactly when
+                solar production drops and grid stress is highest
+              </li>
+              <li>
+                <strong>New England Flip:</strong> Now shows electric load for
+                cooling, but still moderate vs. Texas extremes
+              </li>
+              <li>
+                <strong>California Strategy:</strong> EV owners can use TOU
+                rates effectively—charge at night, minimize AC during peak
+              </li>
+            </ul>
+          </div>
+        </>
+      )}
+      <div>
+        <Statistic
+          title="Monthly cost on plan"
+          value={usage.cost?.toLocaleString([], {
+            currency: 'USD',
+            style: 'currency',
+          })}
+        />
+        <Statistic
+          title="Monthly energy use"
+          value={`${usage.kWh?.toLocaleString([], {
+            style: 'decimal',
+          })} kWh`}
+        />
+      </div>
+    </div>
+  )
+}
+
+function SeasonBlurb({
+  season,
+  region,
+}: {
+  season: SynthData['season']
+  region: SynthData['region']
+}) {
+  const key = `${season}/${region}` as const
+
+  const capitalSeason = capitalize(season)
+
+  switch (key) {
+    case 'winter/New England':
+      return (
+        <div>
+          <h3>{capitalSeason} in New England (Gas Heat)</h3>
+          <p>
+            Two distinct peaks for cooking and activities. No heating load on
+            electric grid since homes use natural gas or oil furnaces.
+          </p>
+        </div>
+      )
+    case 'winter/Texas':
+      return (
+        <div>
+          <h3>Texas (Electric Heat)</h3>
+          <p>
+            Higher overall usage with elevated morning and evening peaks. Many
+            homes use electric heat pumps or resistance heating.
+          </p>
+        </div>
+      )
+    case 'winter/Southern California':
+      return (
+        <div>
+          <h3>Southern California + EV</h3>
+          <p>
+            Minimal heating needs create flat daytime profile. Large overnight
+            spike from EV charging (7.2 kW Level 2 charger).
+          </p>
+        </div>
+      )
+    case 'summer/New England':
+      return (
+        <div>
+          <h3>New England (Moderate AC)</h3>
+          <p>
+            Afternoon AC load creates new peak (1-8pm). Less extreme than
+            heating season since gas furnaces don't help in summer.
+          </p>
+        </div>
+      )
+    case 'summer/Texas':
+      return (
+        <div>
+          <h3>Texas (Extreme Cooling)</h3>
+          <p>
+            Massive cooling loads dominate. Peak usage 2-3x higher than winter
+            as AC runs continuously during brutal heat.
+          </p>
+        </div>
+      )
+    case 'summer/Southern California':
+      return (
+        <div>
+          <h3>Southern California + EV</h3>
+          <p>
+            Moderate afternoon AC peak plus overnight EV charging. Mild climate
+            keeps cooling needs reasonable.
+          </p>
+        </div>
+      )
+  }
+}
+
+function Sparkline({
+  season,
+  region,
+  selected,
+}: {
+  season: SynthData['season']
+  region: SynthData['region']
+  selected: boolean
+}) {
+  const { data: synthData } = useSynthData({ season, region })
 
   // Vega-Lite specification
   const spec: VegaEmbedProps['spec'] = {
     $schema: 'https://vega.github.io/schema/vega-lite/v6.json',
-    width: 'container',
+    width: 160,
     height: 150,
     data: { values: synthData ?? [] },
     transform: [
@@ -73,10 +300,11 @@ function RegionalElectricityPatterns() {
       },
     ],
     mark: {
-      type: 'line',
+      type: 'bar',
       point: false,
       strokeWidth: 3,
       interpolate: 'natural',
+      color: selected ? undefined : 'lightgray',
     },
     encoding: {
       x: {
@@ -116,185 +344,16 @@ function RegionalElectricityPatterns() {
   }
 
   const chartRef = useRef<HTMLDivElement>(null)
-  useVegaEmbed({ ref: chartRef, spec, options: { mode: 'vega-lite' } })
-
-  const { data: ratePlan } = useRatePlan(ratePlanSelected)
-
-  const usage = generationPriceInAMonth({
-    ratePlan,
-    synthData,
-    monthStarting: state.date,
+  useVegaEmbed({
+    ref: chartRef,
+    spec,
+    options: { mode: 'vega-lite', actions: false },
   })
 
   return (
-    <div>
-      <div>
-        <h2>Regional Electricity Usage Patterns</h2>
-        <p>Compare heating vs. cooling loads across regions and seasons</p>
-
-        <Form layout="horizontal">
-          <Form.Item label="Date">
-            <DatePicker
-              minDate={DATE_MIN}
-              maxDate={DATE_MAX}
-              value={state.date}
-              onChange={(value) => {
-                updateState((state) => {
-                  state.date = value
-                })
-              }}
-            />
-          </Form.Item>
-          <Form.Item label="Rate Plan">
-            <RatePlanSelector
-              byDate={state.date}
-              value={ratePlanSelected}
-              onChange={(e) => setSearchParams({ [RATE_PLAN_QUERY_PARAM]: e })}
-            />
-          </Form.Item>
-
-          <Form.Item label="Season">
-            <Radio.Group value={season}>
-              <Radio.Button value="winter">❄️ Winter (January)</Radio.Button>
-              <Radio.Button value="summer">☀️ Summer (July)</Radio.Button>
-            </Radio.Group>
-          </Form.Item>
-
-          <Form.Item label="Region">
-            <Radio.Group
-              value={state.region}
-              onChange={(e) =>
-                updateState((state) => {
-                  state.region = e.target.value
-                })
-              }
-            >
-              <Radio.Button value="New England">New England</Radio.Button>
-              <Radio.Button value="Texas">Texas</Radio.Button>
-              <Radio.Button value="Southern California">
-                Southern California
-              </Radio.Button>
-            </Radio.Group>
-          </Form.Item>
-        </Form>
-      </div>
-
-      <div>
-        <div ref={chartRef} style={{ width: 600, height: 200 }} />
-      </div>
-      <div>
-        <Statistic
-          title="Monthly cost on plan"
-          value={usage.cost?.toLocaleString([], {
-            currency: 'USD',
-            style: 'currency',
-          })}
-        />
-        <Statistic
-          title="Monthly energy use"
-          value={`${usage.kWh?.toLocaleString([], {
-            style: 'decimal',
-          })} kWh`}
-        />
-      </div>
-
-      {season === 'winter' ? (
-        <>
-          <div>
-            <div>
-              <h3>New England (Gas Heat)</h3>
-              <p>
-                Two distinct peaks for cooking and activities. No heating load
-                on electric grid since homes use natural gas or oil furnaces.
-              </p>
-            </div>
-            <div>
-              <h3>Texas (Electric Heat)</h3>
-              <p>
-                Higher overall usage with elevated morning and evening peaks.
-                Many homes use electric heat pumps or resistance heating.
-              </p>
-            </div>
-            <div>
-              <h3>Southern California + EV</h3>
-              <p>
-                Minimal heating needs create flat daytime profile. Large
-                overnight spike from EV charging (7.2 kW Level 2 charger).
-              </p>
-            </div>
-          </div>
-
-          <div>
-            <h3>Winter Insights</h3>
-            <ul>
-              <li>
-                • <strong>Peak Usage:</strong> Texas shows 50-75% higher peak
-                demand than New England due to electric heating
-              </li>
-              <li>
-                • <strong>EV Impact:</strong> California's overnight charging
-                adds 6-7 kW but occurs during off-peak hours
-              </li>
-              <li>
-                • <strong>Grid Impact:</strong> Electric heating creates
-                sustained evening loads that challenge grid capacity
-              </li>
-              <li>
-                • <strong>Cost Advantage:</strong> California EV charging
-                happens when rates are lowest (overnight)
-              </li>
-            </ul>
-          </div>
-        </>
-      ) : (
-        <>
-          <div>
-            <div>
-              <h3>New England (Moderate AC)</h3>
-              <p>
-                Afternoon AC load creates new peak (1-8pm). Less extreme than
-                heating season since gas furnaces don't help in summer.
-              </p>
-            </div>
-            <div>
-              <h3>Texas (Extreme Cooling)</h3>
-              <p>
-                Massive cooling loads dominate. Peak usage 2-3x higher than
-                winter as AC runs continuously during brutal heat.
-              </p>
-            </div>
-            <div>
-              <h3>Southern California + EV</h3>
-              <p>
-                Moderate afternoon AC peak plus overnight EV charging. Mild
-                climate keeps cooling needs reasonable.
-              </p>
-            </div>
-          </div>
-
-          <div>
-            <h3>Summer Insights</h3>
-            <ul>
-              <li>
-                • <strong>Texas Crisis:</strong> Summer peaks can reach 12+ kW
-                per home during heat waves—higher than winter
-              </li>
-              <li>
-                • <strong>Peak Timing:</strong> AC loads peak 2-8pm, exactly
-                when solar production drops and grid stress is highest
-              </li>
-              <li>
-                • <strong>New England Flip:</strong> Now shows electric load for
-                cooling, but still moderate vs. Texas extremes
-              </li>
-              <li>
-                • <strong>California Strategy:</strong> EV owners can use TOU
-                rates effectively—charge at night, minimize AC during peak
-              </li>
-            </ul>
-          </div>
-        </>
-      )}
+    <div style={{ width: 200 }}>
+      <div ref={chartRef} />
+      <div>{region} </div>
     </div>
   )
 }

@@ -8,7 +8,7 @@ export function generationPriceInAMonth({
   monthStarting,
 }: {
   ratePlan?: RatePlan | null
-  synthData?: SynthData[]
+  synthData?: SynthData[] | null
   monthStarting: Dayjs
 }): { kWh?: number; cost?: number } {
   if (!synthData) {
@@ -39,6 +39,8 @@ export function generationPriceInAMonth({
     ratestructure,
     fixedchargefirstmeter,
     fixedchargeunits,
+    mincharge,
+    minchargeunits,
   } = ratePlan
   const oneMonthLater = monthStarting.add(1, 'month')
 
@@ -76,6 +78,17 @@ export function generationPriceInAMonth({
 
         totalUsage_kWh += usageThisHour
         totalCost += usageThisHour * energyrate
+      }
+    }
+
+    if (mincharge) {
+      if (minchargeunits == '$/month') {
+        totalCost = Math.max(mincharge, totalCost)
+      } else if (minchargeunits == '$/day') {
+        totalCost = Math.max(
+          oneMonthLater.diff(monthStarting, 'day'),
+          totalCost
+        )
       }
     }
 
