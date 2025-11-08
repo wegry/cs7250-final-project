@@ -2,16 +2,7 @@ import { useMemo, useRef } from 'react'
 import { useVegaEmbed, type VegaEmbedProps } from 'react-vega'
 import { useImmer } from 'use-immer'
 import { SynthData } from '../data/schema'
-import {
-  Form,
-  Radio,
-  DatePicker,
-  Statistic,
-  Row,
-  Col,
-  Segmented,
-  InputNumber,
-} from 'antd'
+import { Form, Radio, DatePicker, Row, Col, Segmented, InputNumber } from 'antd'
 import dayjs, { Dayjs } from 'dayjs'
 import { useRatePlan } from '../hooks/useRatePlan'
 import { RatePlanSelector } from '../components/RatePlanSelector'

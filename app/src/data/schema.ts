@@ -43,6 +43,7 @@ export const RatePlan = z.object({
   utility: z.string(),
   startdate: dates,
   enddate: dates,
+  latest_update: dates,
   supersedes: z.string().nullish(),
   flatdemandunit: z.string().nullish(),
   fixedchargefirstmeter: z.number().nullish(),

@@ -1,4 +1,3 @@
-import * as z from 'zod'
 import { useQuery } from '@tanstack/react-query'
 import { SynthDataArray, type SynthData } from '../data/schema'
 import { synthUsage } from '../data/queries'
@@ -15,7 +14,6 @@ async function getSynthdata(
   if (error) {
     console.error(error)
   }
-  console.log(data)
 
   return data
 }
