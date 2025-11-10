@@ -1,3 +1,4 @@
+import dayjs from 'dayjs'
 import * as z from 'zod'
 
 /**
@@ -112,3 +113,30 @@ export const SynthData = z.object({
 
 export type SynthData = z.infer<typeof SynthData>
 export const SynthDataArray = z.array(SynthData)
+
+// Zod schemas for data structures
+export const RetailPriceDataSchema = z.object({
+  hour: z.number(),
+  value: z.number(),
+  series: z.string(),
+})
+
+export const WholesalePriceDataSchema = z.object({
+  hour: z.number(),
+  value: z.number(),
+  line: z.string(),
+})
+
+export type RetailPriceData = z.infer<typeof RetailPriceDataSchema>
+export type WholesalePriceData = z.infer<typeof WholesalePriceDataSchema>
+
+// Wholesale price info from query
+export const WholesalePrice = z.object({
+  'Price hub': z.string(),
+  'Trade date': z.number().transform((arg) => dayjs(arg)),
+  'High price $/MWh': z.number(),
+  'Low price $/MWh': z.number(),
+  'Wtd avg price $/MWh': z.number(),
+})
+
+export type WholesalePrice = z.infer<typeof WholesalePrice>
