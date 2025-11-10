@@ -1,12 +1,12 @@
 import { useEffect, useRef } from 'react'
 import { useImmer } from 'use-immer'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { chart } from '../chart'
 import { RatePlanSelector } from '../components/RatePlanSelector'
 import { useRatePlanInData } from '../hooks/useRateInPlanData'
 import * as s from './DetailView.module.css'
 import { useRatePlan } from '../hooks/useRatePlan'
 import { Form } from 'antd'
+import { useVegaEmbed } from 'react-vega'
 
 interface UiState {
   rawData?: string
@@ -22,21 +22,17 @@ export default function DetailView() {
     date: null,
   })
   const chartRef = useRef<HTMLDivElement>(null)
+  useVegaEmbed({
+    ref: chartRef,
+    spec: {},
+    options: { mode: 'vega-lite', actions: false },
+  })
 
   const { data: selectedPlan } = useRatePlan(ratePlanParam)
 
   const { data: supersedesExistsInData } = useRatePlanInData(
     selectedPlan?.supersedes
   )
-
-  useEffect(() => {
-    if (selectedPlan && chartRef.current) {
-      chart(selectedPlan, chartRef.current, {
-        includeAdjusted: state.adjustedIncluded,
-        month: (state.date ?? new Date()).getMonth(),
-      })
-    }
-  }, [state, selectedPlan])
 
   useEffect(() => {
     // Update raw view
