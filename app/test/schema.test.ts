@@ -1,8 +1,8 @@
-import { beforeAll, expect, test } from 'vitest'
+import { afterAll, beforeAll, expect, test } from 'vitest'
 import { RatePlan, RatePlanArray } from '../src/data/schema'
 import * as duckdb from '@duckdb/node-api'
 
-let instance,
+let instance: duckdb.DuckDBInstance,
   ratePlans = Promise.withResolvers<RatePlan[]>()
 
 // Helper to convert DuckDB Node timestamps to Dates
@@ -36,4 +36,8 @@ test('Schema parses on all USURDB records', async () => {
   const plans = await ratePlans.promise
   expect(plans.length).toBe(14190)
   expect(RatePlanArray.parse(plans, { reportInput: true })).toBeDefined()
+})
+
+afterAll(() => {
+  instance.closeSync()
 })
