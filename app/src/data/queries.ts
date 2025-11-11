@@ -1,6 +1,6 @@
 import type { Dayjs } from 'dayjs'
 import { conn } from './duckdb'
-import type { SynthData } from './schema'
+import { WholesalePrice, type SynthData } from './schema'
 
 /** For select list */
 export const selectList = `
@@ -95,4 +95,74 @@ export async function synthUsage(
 `)
 
   return await stmt.query(season, region, targetUsage)
+}
+
+// Hub mapping constant
+export const HUB_DICT = {
+  Midwest: 'Indiana Hub RT Peak',
+  Northwest: 'Mid C Peak',
+  'New England': 'Nepool MH DA LMP Peak',
+  'Northern California': 'NP15 EZ Gen DA LMP Peak',
+  'Southwest (Excluding Cali)': 'Palo Verde Peak',
+  'PJM/Mid-Atlantic': 'PJM WH Real Time Peak',
+  'Southern California': 'SP15 EZ Gen DA LMP Peak',
+} as const
+
+// Sample DuckDB query for wholesale data
+const WHOLESALE_QUERY = `
+  SELECT
+    "Price hub",
+    "Trade date",
+    "High price $/MWh",
+    "Low price $/MWh",
+    "Wtd avg price $/MWh"
+  FROM flattened.wholesale
+  WHERE "Price hub" = ?
+    AND "Trade date" = ?
+  ORDER BY "Trade date" DESC
+  LIMIT 1
+`
+
+// Example usage with DuckDB-WASM
+export async function getWholesalePrices(
+  hub: keyof typeof HUB_DICT,
+  targetDate: string
+): Promise<WholesalePrice | null> {
+  const hubName = HUB_DICT[hub]
+
+  try {
+    const c = await conn
+    const stmt = await c.prepare(WHOLESALE_QUERY)
+    const result = await stmt.query(hubName, targetDate)
+    const rows = result.toArray()
+
+    if (rows.length === 0) {
+      // Try to get next available date
+      const futureQuery = `
+        SELECT
+          "Price hub",
+          "Trade date",
+          "High price $/MWh",
+          "Low price $/MWh",
+          "Wtd avg price $/MWh"
+        FROM flattened.wholesale
+        WHERE "Price hub" = ?
+          AND "Trade date" > ?
+        ORDER BY "Trade date" ASC
+        LIMIT 1
+      `
+      const futureResult = await (
+        await c.prepare(futureQuery)
+      ).query(hubName, targetDate)
+      const futureRows = futureResult.toArray()
+
+      if (futureRows.length === 0) return null
+      return WholesalePrice.parse(futureRows[0])
+    }
+
+    return WholesalePrice.parse(rows[0])
+  } catch (error) {
+    console.error('Error querying wholesale prices:', error)
+    return null
+  }
 }
