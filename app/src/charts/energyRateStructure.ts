@@ -161,7 +161,6 @@ export function useTiersChart({
     ),
     ['rate']
   )
-  console.log(selectedTiers)
   const windowed = selectedTiers.flatMap((t, i) => {
     let prev = selectedTiers[i - 1]
 

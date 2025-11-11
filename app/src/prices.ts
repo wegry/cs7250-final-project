@@ -38,8 +38,8 @@ export function generationPriceInAMonth({
     energyWeekendSched: energyweekendschedule,
     // ratestructure,
     energyRate_tiers: ratestructure,
-    fixedchargefirstmeter,
-    fixedchargeunits,
+    fixedChargeFirstMeter: fixedchargefirstmeter,
+    fixedChargeUnits: fixedchargeunits,
     minCharge: mincharge,
     minChargeUnits: minchargeunits,
   } = ratePlan

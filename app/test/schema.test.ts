@@ -1,23 +1,24 @@
 import { beforeAll, expect, test } from 'vitest'
-import { RatePlanArray } from '../src/data/schema'
+import { RatePlan, RatePlanArray } from '../src/data/schema'
 import * as duckdb from '@duckdb/node-api'
 
 let instance,
-  ratePlans = Promise.withResolvers()
+  ratePlans = Promise.withResolvers<RatePlan[]>()
 
 // Helper to convert DuckDB Node timestamps to Dates
 function normalizeDuckDBRow(row: any) {
   const normalized = { ...row }
   for (const [key, value] of Object.entries(normalized)) {
     if (
-      key.endsWith('date') &&
-      value != null &&
-      typeof value === 'object' &&
-      'micros' in value &&
-      typeof value?.micros === 'bigint'
+      key.endsWith('date') ||
+      (key.endsWith('Date') &&
+        value != null &&
+        typeof value === 'object' &&
+        'micros' in value &&
+        typeof value?.micros === 'bigint')
     ) {
       // Convert microseconds to Date
-      normalized[key] = new Date(Number(value?.micros / 1000n))
+      normalized[key] = new Date(Number((value as any)?.micros / 1000n))
     }
   }
   return normalized
@@ -33,6 +34,6 @@ beforeAll(async () => {
 
 test('Schema parses on all USURDB records', async () => {
   const plans = await ratePlans.promise
-  expect(plans.length).toBe(1577)
+  expect(plans.length).toBe(14190)
   expect(RatePlanArray.parse(plans, { reportInput: true })).toBeDefined()
 })

@@ -8,7 +8,6 @@ export function RatePlanTimeline({ ratePlan }: { ratePlan?: RatePlan | null }) {
     const values = Object.entries({
       'Plan End': { date: ratePlan?.endDate, color: 'red' },
       'Effective Date': { date: ratePlan?.effectiveDate, color: 'green' },
-      'Last Update': { date: ratePlan?.latest_update, color: 'gray' },
     }).concat(
       ratePlan?.revisions?.map((x, i) => [
         `Revision ${i + 1}`,

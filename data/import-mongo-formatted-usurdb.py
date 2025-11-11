@@ -58,7 +58,7 @@ for col in [
         f"ALTER TABLE usurdb ALTER {col} SET DATA TYPE UTINYINT[24][12];",
     )
 
-conn.execute("ALTER TABLE usurdb ALTER eiaid SET DATA TYPE UHUGEINT")
+conn.execute("ALTER TABLE usurdb ALTER eiaid SET DATA TYPE BIGINT")
 conn.execute("ALTER TABLE usurdb ALTER flatdemandmonths SET DATA TYPE UTINYINT[12]")
 for col in ["effectiveDate", "endDate", "endDate_1"]:
     conn.execute(f"ALTER TABLE usurdb ALTER {col} SET DATA TYPE datetime")
@@ -87,3 +87,11 @@ FROM usurdb
 """
 
 conn.execute(query)
+
+conn.execute(
+    """
+ALTER TABLE usurdb
+ALTER COLUMN flatDemand_tiers
+TYPE STRUCT(rate DOUBLE, max DOUBLE, adj DOUBLE)[][]
+             """
+)

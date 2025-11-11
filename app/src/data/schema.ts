@@ -1,5 +1,6 @@
 import dayjs from 'dayjs'
 import * as z from 'zod'
+import type { SomeType } from 'zod/v4/core'
 
 /**
  * https://github.com/colinhacks/zod/discussions/2790#discussioncomment-7096060
@@ -16,6 +17,7 @@ function unionOfLiterals<T extends string | number>(constants: readonly T[]) {
 const fixedChargeUnits = unionOfLiterals([
   '$/month',
   '$/day',
+  '$/year',
 ] as const).nullish()
 const optionalSchedule = z.preprocess(
   (arg) => {
@@ -37,49 +39,82 @@ const dates = z
     }
   })
 
+function tierShape<T extends SomeType>(shape: T) {
+  return z.preprocess(
+    (arg) =>
+      arg == null
+        ? arg
+        : Array.from(arg as unknown[]).map((x) => Array.from(x as unknown[])),
+    z.array(z.array(shape)).nullish()
+  )
+}
+
 export const RatePlan = z.object({
   _id: z.string(),
-  eiaid: z.optional(z.bigint()),
+  eiaId: z.optional(z.bigint()),
   rateName: z.string(),
   utilityName: z.string(),
   effectiveDate: dates,
   endDate: dates,
-  latest_update: dates,
   supercedes: z.string().nullish(),
-  flatdemandunit: z.string().nullish(),
-  fixedchargefirstmeter: z.number().nullish(),
-  fixedchargeunits: fixedChargeUnits,
+  fixedChargeFirstMeter: z.number().nullish(),
+  fixedChargeUnits: fixedChargeUnits,
   minCharge: z.number().nullable(),
   minChargeUnits: fixedChargeUnits,
-  demandweekendschedule: optionalSchedule,
-  demandweekdayschedule: optionalSchedule,
-  demandcomments: z.string().nullish(),
+  coincidentSched: optionalSchedule,
+  coincidentRateUnits: unionOfLiterals(['kW']).nullish(),
+  coincidentRate_tiers: tierShape(
+    z.object({ rate: z.number().nullish(), adj: z.number().nullish() })
+  ).nullish(),
+  demandComments: z.string().nullish(),
+  demandHist: z.number().nullish(),
+  demandKeyVals: z.preprocess(
+    (arg) => (arg == null ? arg : Array.from(arg as unknown[])),
+    z.array(z.object({ key: z.string(), val: z.string() })).nullish()
+  ),
+  demandMax: z.number().nullish(),
+  demandMin: z.number().nullish(),
+  demandRatchetPercentage: z.preprocess(
+    (arg) => (arg == null ? arg : Array.from(arg as unknown[])),
+    z.array(z.number()).nullish()
+  ),
+  demandRateUnits: unionOfLiterals(['kW', 'kVA', 'hp', 'kVA daily']).nullish(),
+  demandReactPwrCharge: z.number().nullish(),
+  demandUnits: unionOfLiterals(['kW', 'kVA']).nullish(),
+  demandWeekdaySched: optionalSchedule,
+  demandWeekendSched: optionalSchedule,
+  demandWindow: z.number().nullish(),
+  demandRate_tiers: tierShape(
+    z.object({
+      rate: z.number().nullish(),
+      adj: z.number().nullish(),
+      max: z.number().nullish(),
+    })
+  ).nullish(),
   energycomments: z.string().nullish(),
   /** Hours of the day by months  */
   energyWeekdaySched: optionalSchedule,
   /** Hours of the day by months  */
   energyWeekendSched: optionalSchedule,
-  energyRate_tiers: z.preprocess(
-    (arg) =>
-      arg == null
-        ? arg
-        : Array.from(arg as unknown[]).map((x) => Array.from(x as unknown[])),
-    z
-      .array(
-        z.array(
-          z.object({
-            adj: z.number().nullish(),
-            rate: z.optional(z.number()),
-            max: z.number().nullish(),
-            unit: unionOfLiterals([
-              'kWh',
-              'kWh daily',
-              'kWh/kW',
-            ] as const).nullish(),
-          })
-        )
-      )
-      .optional()
+  energyRate_tiers: tierShape(
+    z.object({
+      adj: z.number().nullish(),
+      rate: z.optional(z.number()),
+      max: z.number().nullish(),
+      unit: unionOfLiterals(['kWh', 'kWh daily', 'kWh/kW'] as const).nullish(),
+    })
+  ).optional(),
+  flatDemand_tiers: tierShape(
+    z.object({
+      rate: z.number().nullish(),
+      adj: z.number().nullish(),
+      max: z.number().nullish(),
+    })
+  ).nullish(),
+  flatDemandUnits: unionOfLiterals(['kVA', 'kW', 'kVA daily', 'hp']).nullish(),
+  flatDemandMonths: z.preprocess(
+    (arg) => (arg == null ? arg : Array.from(arg as unknown[])),
+    z.array(z.number()).nullish()
   ),
   revisions: z.preprocess(
     (arg) => (arg == null ? arg : Array.from(arg as unknown[])),
