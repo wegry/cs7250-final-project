@@ -251,19 +251,20 @@ function pullData(
   data: RatePlan | null | undefined,
   month: number
 ): RetailPriceData[] {
+  const tiers = data?.energyRate_tiers
   return (
-    data?.energyweekdayschedule?.[month].flatMap((period, i) => {
-      const periodInfo = data?.ratestructure?.energyrate?.[`period${period}`]
+    data?.energyWeekdaySched?.[month].flatMap((period, i) => {
+      const periodInfo = tiers?.[period]
       if (!periodInfo) {
         return []
       }
 
-      return Object.entries(periodInfo).flatMap(([prefixedTier, tierInfo]) => {
+      return periodInfo.flatMap((tierInfo, j) => {
         if (!tierInfo) {
           return []
         }
 
-        const tier = prefixedTier.match(/\d+$/g)?.[0]
+        const tier = j
 
         const value = sum([tierInfo.rate].map((x) => x ?? 0))
 

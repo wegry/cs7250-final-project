@@ -34,13 +34,13 @@ export function generationPriceInAMonth({
   }
 
   const {
-    energyweekdayschedule,
-    energyweekendschedule,
+    energyWeekdaySched: energyweekdayschedule,
+    energyWeekendSched: energyweekendschedule,
     ratestructure,
     fixedchargefirstmeter,
     fixedchargeunits,
-    mincharge,
-    minchargeunits,
+    minCharge: mincharge,
+    minChargeUnits: minchargeunits,
   } = ratePlan
   const oneMonthLater = monthStarting.add(1, 'month')
 

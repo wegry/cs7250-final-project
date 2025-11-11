@@ -5,13 +5,14 @@ import { WholesalePrice, type SynthData } from './schema'
 /** For select list */
 export const selectList = `
   SELECT
-    label as value
-    , concat_ws('/', utility, name, label) as label
+    _id as value
+    , concat_ws('/', utilityName, rateName, _id) as label
   FROM flattened.usurdb
+  WHERE approved = TRUE
   ORDER BY
-    utility ASC
-    , name ASC
-    , startdate DESC NULLS LAST
+    utilityName ASC
+    , rateName ASC
+    , effectiveDate DESC NULLS LAST
     , enddate DESC NULLS FIRST
 `
 export async function selectListForDate(date: Dayjs) {
@@ -19,20 +20,20 @@ export async function selectListForDate(date: Dayjs) {
     await conn
   ).prepare(`
   SELECT
-    label as value
-    , concat_ws('/', utility, name, label) as label
+    _id as value
+    , concat_ws('/', utilityName, rateName, _id) as label
   FROM flattened.usurdb
   WHERE
     (enddate IS NULL OR
       (enddate IS NOT NULL AND enddate >= ?)
     ) AND
-    (startdate IS NULL OR
-      (startdate IS NOT NULL AND startdate <= ?)
+    (effectiveDate IS NULL OR
+      (effectiveDate IS NOT NULL AND effectiveDate <= ?)
     )
   ORDER BY
-    utility ASC
-    , name ASC
-    , startdate DESC NULLS LAST
+    utilityName ASC
+    , rateName ASC
+    , effectiveDate DESC NULLS LAST
     , enddate DESC NULLS FIRST
   `)
 
@@ -50,7 +51,7 @@ export async function ratePlanInData(label: string) {
   const stmt = await (
     await conn
   ).prepare(`SELECT true FROM flattened.usurdb
- WHERE label = ?
+ WHERE _id = ?
  LIMIT 1`)
   const result = await stmt.query(label)
   return result
@@ -60,7 +61,7 @@ export async function ratePlanDetail(label: string) {
   const stmt = await (
     await conn
   ).prepare(`select * from flattened.usurdb
-  WHERE label = ?`)
+  WHERE _id = ?`)
 
   const result = await stmt.query(label)
   return result
