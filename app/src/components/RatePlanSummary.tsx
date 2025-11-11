@@ -16,7 +16,7 @@ export function RatePlanSummary({
   const timelineEntries = useMemo(() => {
     const values = Object.entries({
       'Plan End': { date: ratePlan?.enddate, color: 'red' },
-      'Plan Start': { date: ratePlan?.startdate, color: 'green' },
+      'Plan Start': { date: ratePlan?.effectiveDate, color: 'green' },
       'Last Update': { date: ratePlan?.latest_update, color: 'gray' },
     })
     return sortBy(values, [([k, v]) => v.date]).flatMap(([k, v]) => {
@@ -25,7 +25,7 @@ export function RatePlanSummary({
       }
       return {
         label: k,
-        children: v.date.toLocaleDateString(),
+        children: v.date.format(),
         color: v.color,
       }
     })
@@ -34,7 +34,7 @@ export function RatePlanSummary({
   return (
     <div>
       <h3>
-        {ratePlan.utility}/{ratePlan.name}
+        {ratePlan.utilityName}/{ratePlan.rateName}
       </h3>
       <Statistic
         title="Monthly cost on plan"

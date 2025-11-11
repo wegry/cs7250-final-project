@@ -35,7 +35,7 @@ for doc in data:
     cleaned = clean_mongo_json(doc)
     f.write(json.dumps(cleaned) + "\n")
 
-conn = duckdb.connect("json.duckdb")
+conn = duckdb.connect("flattened.duckdb")
 # DuckDB can handle nested JSON structures
 conn.execute(
     f"""
@@ -60,3 +60,30 @@ for col in [
 
 conn.execute("ALTER TABLE usurdb ALTER eiaid SET DATA TYPE UHUGEINT")
 conn.execute("ALTER TABLE usurdb ALTER flatdemandmonths SET DATA TYPE UTINYINT[12]")
+for col in ["effectiveDate", "endDate", "endDate_1"]:
+    conn.execute(f"ALTER TABLE usurdb ALTER {col} SET DATA TYPE datetime")
+
+
+rate_columns = {
+    "coincidentRateStrux": "coincidentRateTiers",
+    "demandRateStrux": "demandRateTiers",
+    "flatDemandStrux": "flatDemandTiers",
+    "energyRateStrux": "energyRateTiers",
+}
+
+# Build the SELECT clause with flattened columns
+flatten_clauses = [
+    f"list_transform({strux_col}, x -> x.{tier_col}) as {strux_col.replace('Strux', '_tiers')}"
+    for strux_col, tier_col in rate_columns.items()
+]
+
+query = f"""
+CREATE OR REPLACE TABLE usurdb AS
+SELECT
+    *,
+    {''',
+    '''.join(flatten_clauses)}
+FROM usurdb
+"""
+
+conn.execute(query)
