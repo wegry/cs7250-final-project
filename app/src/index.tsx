@@ -2,6 +2,10 @@
 import '@ant-design/v5-patch-for-react-19'
 import { createRoot } from 'react-dom/client'
 import { App } from './App'
+import localizedFormat from 'dayjs/plugin/localizedFormat' // ES 2015
+import dayjs from 'dayjs'
+
+dayjs.extend(localizedFormat)
 
 const root = createRoot(document.getElementById('root')!)
 root.render(<App />)

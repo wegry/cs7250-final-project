@@ -8,17 +8,18 @@ import { useRatePlan } from '../hooks/useRatePlan'
 import { DatePicker, Form, Select } from 'antd'
 import { useVegaEmbed } from 'react-vega'
 
-import type { TopLevelSpec } from 'vega-lite'
-import type {
-  RatePlan,
-  RetailPriceData,
-  WholesalePrice,
-  WholesalePriceData,
-} from '../data/schema'
+import type { RatePlan, RetailPriceData } from '../data/schema'
 import dayjs, { Dayjs } from 'dayjs'
 import { useWholesaleData } from '../hooks/useWholesaleData'
 import { sum } from 'es-toolkit'
 import { HUB_DICT } from '../data/queries'
+import { RatePlanTimeline } from '../components/RatePlanTimeline'
+import {
+  createPricingChartSpec,
+  prepareWholesaleData,
+  useTiersChart,
+} from '../charts/energyRateStructure'
+import type { TopLevelSpec } from 'vega-lite'
 
 interface State {
   adjustedIncluded: boolean
@@ -30,22 +31,28 @@ export default function DetailView() {
   const { id: ratePlanParam } = useParams()
   const { data: selectedPlan } = useRatePlan(ratePlanParam)
 
-  const { data: supersedesExistsInData } = useRatePlanInData(
-    selectedPlan?.supersedes
+  const { data: supercedesExistsInData } = useRatePlanInData(
+    selectedPlan?.supercedes
   )
   const [state, updateState] = useImmer<State>({
     adjustedIncluded: true,
-    date: dayjs().set('year', 2024),
+    date: dayjs(),
     wholesale: 'New England',
   })
   const { data: wholesaleData } = useWholesaleData(state.wholesale, state.date)
-  const chartRef = useRef<HTMLDivElement>(null)
-  const retailData = pullData(selectedPlan, state.date.month())
+  const energyRateRef = useRef<HTMLDivElement>(null)
+  const tierRef = useRef<HTMLDivElement>(null)
+  const retailData = pullData(selectedPlan, state.date)
   const preparedWholesale = prepareWholesaleData(wholesaleData)
   useVegaEmbed({
-    ref: chartRef,
+    ref: energyRateRef,
     spec: createPricingChartSpec(retailData, preparedWholesale),
     options: { mode: 'vega-lite', actions: false },
+  })
+  useTiersChart({
+    tierRef: tierRef,
+    selectedPlan,
+    date: state.date,
   })
 
   const nav = useNavigate()
@@ -86,8 +93,6 @@ export default function DetailView() {
         <Form.Item label="For Date">
           <DatePicker
             allowClear={false}
-            minDate={dayjs('2024-01-01')}
-            maxDate={dayjs('2024-12-31')}
             value={state.date}
             onChange={(e) =>
               updateState((state) => {
@@ -97,163 +102,33 @@ export default function DetailView() {
           />
         </Form.Item>
 
-        <div>
-          {supersedesExistsInData ? (
-            <>
-              Supersedes{' '}
-              <Link to={`/detail/${selectedPlan?.supersedes}`}>
-                {selectedPlan?.supersedes}{' '}
-              </Link>
-            </>
-          ) : (
-            'Latest Plan'
-          )}
-        </div>
+        {supercedesExistsInData && (
+          <div>
+            Supercedes{' '}
+            <Link to={`/detail/${selectedPlan?.supercedes}`}>
+              {selectedPlan?.supercedes}{' '}
+            </Link>
+          </div>
+        )}
       </Form>
 
-      <div id="my-div" ref={chartRef}></div>
+      <div ref={energyRateRef}></div>
+      <div ref={tierRef}></div>
+      <RatePlanTimeline ratePlan={selectedPlan} />
     </main>
   )
 }
 
-// Function to prepare wholesale reference lines
-export function prepareWholesaleData(
-  wholesalePrice: WholesalePrice | undefined | null
-): WholesalePriceData[] {
-  if (!wholesalePrice) {
-    return []
-  }
-  const {
-    max: maxWholesale,
-    min: minWholesale,
-    avg: avgWholesale,
-  } = convertWholesaleToKwh(wholesalePrice)
-  return [
-    {
-      hour: 0,
-      value: maxWholesale,
-      line: `Max Wholesale (${maxWholesale.toFixed(3)})`,
-    },
-    {
-      hour: 24,
-      value: maxWholesale,
-      line: `Max Wholesale (${maxWholesale.toFixed(3)})`,
-    },
-    {
-      hour: 0,
-      value: minWholesale,
-      line: `Min Wholesale (${minWholesale.toFixed(3)})`,
-    },
-    {
-      hour: 24,
-      value: minWholesale,
-      line: `Min Wholesale (${minWholesale.toFixed(3)})`,
-    },
-    {
-      hour: 0,
-      value: avgWholesale,
-      line: `Avg Wholesale (${avgWholesale.toFixed(3)})`,
-    },
-    {
-      hour: 24,
-      value: avgWholesale,
-      line: `Avg Wholesale (${avgWholesale.toFixed(3)})`,
-    },
-  ]
-}
-
-// Vega-Lite spec generator
-export function createPricingChartSpec(
-  retailData: RetailPriceData[],
-  wholesaleData: WholesalePriceData[] | undefined | null
-): TopLevelSpec {
-  return {
-    $schema: 'https://vega.github.io/schema/vega-lite/v6.json',
-    width: 700,
-    height: 400,
-    title: '24-Hour Pricing Structure',
-    layer: [
-      // Reference lines layer (wholesale prices)
-      {
-        data: { values: wholesaleData ?? [] },
-        mark: {
-          type: 'line',
-          strokeWidth: 1,
-          opacity: 0.5,
-          strokeDash: [5, 5],
-        },
-        encoding: {
-          x: {
-            field: 'hour',
-            type: 'quantitative',
-          },
-          y: {
-            field: 'value',
-            type: 'quantitative',
-          },
-          color: {
-            field: 'line',
-            type: 'nominal',
-            title: 'Wholesale Prices',
-          },
-        },
-      },
-      // Main retail price lines layer
-      {
-        data: { values: retailData },
-        mark: {
-          type: 'line',
-          strokeWidth: 2,
-          interpolate: 'step-after',
-          tension: 0,
-        },
-        encoding: {
-          x: {
-            field: 'hour',
-            type: 'quantitative',
-            title: 'Hour of Day',
-            scale: { domain: [0, 24] },
-            axis: {
-              tickCount: 24,
-              labelAngle: 0,
-            },
-          },
-          y: {
-            field: 'value',
-            type: 'quantitative',
-            title: '$ per unit',
-          },
-          color: {
-            field: 'series',
-            type: 'nominal',
-            title: 'Retail Price',
-          },
-          detail: {
-            field: 'series',
-            type: 'nominal',
-          },
-        },
-      },
-    ],
-  }
-}
-
-// Helper to convert wholesale prices to per-kWh
-export function convertWholesaleToKwh(wholesalePrice: WholesalePrice) {
-  return {
-    max: wholesalePrice['High price $/MWh'] / 1000,
-    min: wholesalePrice['Low price $/MWh'] / 1000,
-    avg: wholesalePrice['Wtd avg price $/MWh'] / 1000,
-  }
-}
-
 function pullData(
   data: RatePlan | null | undefined,
-  month: number
+  date: Dayjs
 ): RetailPriceData[] {
   const tiers = data?.energyRate_tiers
+  const schedule = [0, 6].includes(date.day())
+    ? data?.energyWeekendSched
+    : data?.energyWeekdaySched
   return (
-    data?.energyWeekdaySched?.[month].flatMap((period, i) => {
+    schedule?.[date.month()].flatMap((period, i) => {
       const periodInfo = tiers?.[period]
       if (!periodInfo) {
         return []

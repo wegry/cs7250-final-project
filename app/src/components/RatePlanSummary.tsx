@@ -1,8 +1,7 @@
-import { Statistic, Timeline } from 'antd'
+import { Statistic } from 'antd'
 import type { generationPriceInAMonth } from '../prices'
 import { RatePlan } from '../data/schema'
-import { sortBy } from 'es-toolkit'
-import { useMemo } from 'react'
+import { RatePlanTimeline } from './RatePlanTimeline'
 
 export function RatePlanSummary({
   usage,
@@ -13,24 +12,6 @@ export function RatePlanSummary({
   energyUsage?: string | null
   ratePlan: RatePlan
 }) {
-  const timelineEntries = useMemo(() => {
-    const values = Object.entries({
-      'Plan End': { date: ratePlan?.enddate, color: 'red' },
-      'Plan Start': { date: ratePlan?.effectiveDate, color: 'green' },
-      'Last Update': { date: ratePlan?.latest_update, color: 'gray' },
-    })
-    return sortBy(values, [([k, v]) => v.date]).flatMap(([k, v]) => {
-      if (v.date == null) {
-        return []
-      }
-      return {
-        label: k,
-        children: v.date.format(),
-        color: v.color,
-      }
-    })
-  }, [ratePlan])
-
   return (
     <div>
       <h3>
@@ -51,12 +32,7 @@ export function RatePlanSummary({
           })} kWh`}
         />
       )}
-      {timelineEntries.length > 0 && (
-        <>
-          <h4>Timeline</h4>
-          <Timeline mode="left" items={timelineEntries} />
-        </>
-      )}
+      <RatePlanTimeline ratePlan={ratePlan} />
     </div>
   )
 }

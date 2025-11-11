@@ -17,15 +17,15 @@ const fixedChargeUnits = unionOfLiterals([
   '$/month',
   '$/day',
 ] as const).nullish()
-const optionalSchedule = z
-  .unknown()
-  .nullish()
-  .transform((arg) => {
+const optionalSchedule = z.preprocess(
+  (arg) => {
     if (arg == null) {
       return null
     }
-    return Array.from(arg as unknown as number[][]).map((x) => Array.from(x))
-  })
+    return Array.from(arg as unknown as unknown[][]).map((x) => Array.from(x))
+  },
+  z.array(z.array(z.number())).nullable()
+)
 const dates = z
   .union([z.date(), z.number(), z.string()])
   .nullish()
@@ -43,9 +43,9 @@ export const RatePlan = z.object({
   rateName: z.string(),
   utilityName: z.string(),
   effectiveDate: dates,
-  enddate: dates,
+  endDate: dates,
   latest_update: dates,
-  supersedes: z.string().nullish(),
+  supercedes: z.string().nullish(),
   flatdemandunit: z.string().nullish(),
   fixedchargefirstmeter: z.number().nullish(),
   fixedchargeunits: fixedChargeUnits,
@@ -80,6 +80,15 @@ export const RatePlan = z.object({
         )
       )
       .optional()
+  ),
+  revisions: z.preprocess(
+    (arg) => (arg == null ? arg : Array.from(arg as unknown[])),
+    z.array(
+      z.object({
+        date: z.string().transform((arg) => dayjs(arg)),
+        userid: z.string().optional(),
+      })
+    )
   ),
 })
 

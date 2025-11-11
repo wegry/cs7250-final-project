@@ -5,9 +5,11 @@ async function fetchRatePlanInData(label?: string | null) {
   const ratePlanInData = await queries.ratePlanInData(label ?? '')
 
   const { data, error } = z
-    .array(z.object())
-    .optional()
-    .safeParse(ratePlanInData.toArray())
+    .preprocess(
+      (arg) => (arg == null ? arg : arg.toArray()),
+      z.array(z.unknown())
+    )
+    .safeParse(ratePlanInData)
 
   if (error) {
     console.error(error)
