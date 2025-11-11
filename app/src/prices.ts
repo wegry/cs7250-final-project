@@ -36,7 +36,8 @@ export function generationPriceInAMonth({
   const {
     energyWeekdaySched: energyweekdayschedule,
     energyWeekendSched: energyweekendschedule,
-    ratestructure,
+    // ratestructure,
+    energyRate_tiers: ratestructure,
     fixedchargefirstmeter,
     fixedchargeunits,
     minCharge: mincharge,
@@ -66,7 +67,7 @@ export function generationPriceInAMonth({
         }
 
         const period = periods[hour]
-        const tiers = ratestructure?.energyrate?.[`period${period}`]
+        const tiers = ratestructure?.[period]
         const matchingTier = Object.entries(tiers ?? {}).find(([, v]) => {
           if (v?.unit == 'kWh' && (v?.max ?? Infinity) >= totalUsage_kWh) {
             return true
