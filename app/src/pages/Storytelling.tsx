@@ -14,14 +14,14 @@ function Storytelling() {
       <section>
         <h2>Time of Day</h2>
         Lorem Ipsum{' '}
-        <Link to="/detail/67cf29554def754a900b5f79?date=2025-06-11">
+        <Link to="/detail/677ec1cf74180cdbbe08888c?date=2025-06-11">
           Virginia Electric & Power Co
         </Link>
       </section>
       <section>
         <h2>Coincident Demand</h2>
         Coincident plans charge based usage during the peak hour (chosen by the
-        utility) per month.
+        utility) per month{' '}
         <Link to="/detail/539f6bceec4f024411eca1eb?date=2025-08-21">
           Oklahoma Electric Coop Inc
         </Link>
