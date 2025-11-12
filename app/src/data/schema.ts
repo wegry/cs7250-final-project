@@ -6,11 +6,9 @@ import type { SomeType } from 'zod/v4/core'
  * https://github.com/colinhacks/zod/discussions/2790#discussioncomment-7096060
  */
 function unionOfLiterals<T extends string | number>(constants: readonly T[]) {
-  const literals = constants.map((x) => z.literal(x)) as unknown as readonly [
-    z.ZodLiteral<T>,
-    z.ZodLiteral<T>,
-    ...z.ZodLiteral<T>[],
-  ]
+  const literals = constants.map((x) =>
+    z.literal(x)
+  ) as unknown as readonly z.ZodLiteral<T>[]
   return z.union(literals)
 }
 

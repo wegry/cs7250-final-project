@@ -5,10 +5,10 @@ import type {
   WholesalePrice,
   WholesalePriceData,
 } from '../data/schema'
-import type { Ref, RefObject } from 'react'
+import type { RefObject } from 'react'
 import { useVegaEmbed } from 'react-vega'
 import type { Dayjs } from 'dayjs'
-import { sortBy, uniqBy, uniqWith } from 'es-toolkit'
+import { sortBy, uniqWith } from 'es-toolkit'
 
 // Helper to convert wholesale prices to per-kWh
 export function convertWholesaleToKwh(wholesalePrice: WholesalePrice) {

@@ -8,7 +8,6 @@ export const selectList = `
     _id as value
     , concat_ws('/', utilityName, rateName, _id) as label
   FROM flattened.usurdb
-  WHERE approved = TRUE
   ORDER BY
     utilityName ASC
     , rateName ASC

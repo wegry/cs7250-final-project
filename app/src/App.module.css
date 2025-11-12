@@ -1,7 +1,28 @@
 .nav {
+  display: flex;
+  --bg-color: lch(61% 64 145);
+  background-color: var(--bg-color);
+  padding: 12px 16px;
+
+  & a,
+  & > div {
+    color: lch(from var(--bg-color) calc(l * 2) 0 h);
+  }
+}
+
+.title {
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.links {
   display: grid;
   grid-template-columns: repeat(3, min-content);
   column-gap: 16px;
+  margin-left: auto;
 
   & > a {
     white-space: nowrap;

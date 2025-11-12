@@ -1,11 +1,11 @@
 import { useRef } from 'react'
 import { useImmer } from 'use-immer'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { RatePlanSelector } from '../components/RatePlanSelector'
 import { useRatePlanInData } from '../hooks/useRateInPlanData'
 import * as s from './DetailView.module.css'
 import { useRatePlan } from '../hooks/useRatePlan'
-import { DatePicker, Form, Select } from 'antd'
+import { Col, DatePicker, Form, Row, Select } from 'antd'
 import { useVegaEmbed } from 'react-vega'
 
 import type { RatePlan, RetailPriceData } from '../data/schema'
@@ -19,16 +19,23 @@ import {
   prepareWholesaleData,
   useTiersChart,
 } from '../charts/energyRateStructure'
-import type { TopLevelSpec } from 'vega-lite'
+import {
+  useCoincidentRateChart,
+  useDemandRateChart,
+  useFlatDemandChart,
+} from '../charts/otherRateStructures'
 
 interface State {
   adjustedIncluded: boolean
-  date: Dayjs
   wholesale: keyof typeof HUB_DICT
 }
 
+const DATE_PARAM = 'date'
+
 export default function DetailView() {
   const { id: ratePlanParam } = useParams()
+  const [params, setParams] = useSearchParams()
+  const date = dayjs(params.get(DATE_PARAM) || undefined)
   const { data: selectedPlan } = useRatePlan(ratePlanParam)
 
   const { data: supercedesExistsInData } = useRatePlanInData(
@@ -36,13 +43,15 @@ export default function DetailView() {
   )
   const [state, updateState] = useImmer<State>({
     adjustedIncluded: true,
-    date: dayjs(),
     wholesale: 'New England',
   })
-  const { data: wholesaleData } = useWholesaleData(state.wholesale, state.date)
+  const { data: wholesaleData } = useWholesaleData(state.wholesale, date)
   const energyRateRef = useRef<HTMLDivElement>(null)
   const tierRef = useRef<HTMLDivElement>(null)
-  const retailData = pullData(selectedPlan, state.date)
+  const flatdemandRef = useRef<HTMLDivElement>(null)
+  const demandRef = useRef<HTMLDivElement>(null)
+  const coincidentRef = useRef<HTMLDivElement>(null)
+  const retailData = pullData(selectedPlan, date)
   const preparedWholesale = prepareWholesaleData(wholesaleData)
   useVegaEmbed({
     ref: energyRateRef,
@@ -52,7 +61,22 @@ export default function DetailView() {
   useTiersChart({
     tierRef: tierRef,
     selectedPlan,
-    date: state.date,
+    date: date,
+  })
+  useDemandRateChart({
+    chartRef: demandRef,
+    selectedPlan,
+    date: date,
+  })
+  useFlatDemandChart({
+    chartRef: flatdemandRef,
+    date: date,
+    selectedPlan,
+  })
+  useCoincidentRateChart({
+    chartRef: coincidentRef,
+    date: date,
+    selectedPlan,
   })
 
   const nav = useNavigate()
@@ -63,44 +87,55 @@ export default function DetailView() {
 
   return (
     <main className={s.main}>
-      <h1>Visualizing Dynamic Electricity Pricing</h1>
+      <h1>Details</h1>
 
-      <Form layout="horizontal">
-        <Form.Item label="Rate Plan">
-          <RatePlanSelector
-            value={ratePlanParam}
-            onChange={handleRatePlanChange}
-          />
-        </Form.Item>
-        <Form.Item label="Wholesale Market">
-          <Select
-            options={Object.keys(HUB_DICT)
-              .toSorted()
-              .map((x) => {
-                return {
-                  label: x,
-                  value: x,
+      <Form layout="horizontal" className={s.form}>
+        <Row>
+          <Col span={16}>
+            <Form.Item label="Rate Plan">
+              <RatePlanSelector
+                value={ratePlanParam}
+                onChange={handleRatePlanChange}
+              />
+            </Form.Item>
+          </Col>
+        </Row>
+        <Row gutter={24}>
+          <Col span={8}>
+            <Form.Item label="Wholesale Market">
+              <Select
+                options={Object.keys(HUB_DICT)
+                  .toSorted()
+                  .map((x) => {
+                    return {
+                      label: x,
+                      value: x,
+                    }
+                  })}
+                onChange={(e) => {
+                  updateState((state) => {
+                    state.wholesale = e
+                  })
+                }}
+                value={state.wholesale}
+              />
+            </Form.Item>
+          </Col>
+          <Col>
+            <Form.Item label="For Date">
+              <DatePicker
+                allowClear={false}
+                value={date}
+                onChange={(e) =>
+                  setParams((params) => {
+                    params.set(DATE_PARAM, e.format('YYYY-MM-DD'))
+                    return params
+                  })
                 }
-              })}
-            onChange={(e) => {
-              updateState((state) => {
-                state.wholesale = e
-              })
-            }}
-            value={state.wholesale}
-          />
-        </Form.Item>
-        <Form.Item label="For Date">
-          <DatePicker
-            allowClear={false}
-            value={state.date}
-            onChange={(e) =>
-              updateState((state) => {
-                state.date = e
-              })
-            }
-          />
-        </Form.Item>
+              />
+            </Form.Item>
+          </Col>
+        </Row>
 
         {supercedesExistsInData && (
           <div>
@@ -114,6 +149,9 @@ export default function DetailView() {
 
       <div ref={energyRateRef}></div>
       <div ref={tierRef}></div>
+      <div ref={coincidentRef}></div>
+      <div ref={demandRef}></div>
+      <div ref={flatdemandRef}></div>
       <RatePlanTimeline ratePlan={selectedPlan} />
     </main>
   )

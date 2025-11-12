@@ -1,6 +1,5 @@
 import { Select } from 'antd'
 import { useRatePlans } from '../hooks/useRatePlans'
-import { useMemo } from 'react'
 import type { Dayjs } from 'dayjs'
 
 interface RatePlanSelectorProps {
