@@ -62,91 +62,6 @@ export function prepareWholesaleData(
     },
   ]
 }
-// Vega-Lite spec generator
-export function createPricingChartSpec(
-  retailData: RetailPriceData[],
-  wholesaleData: WholesalePriceData[] | undefined | null
-): TopLevelSpec {
-  return {
-    $schema: 'https://vega.github.io/schema/vega-lite/v6.json',
-    width: 400,
-    height: 200,
-    title: 'Energy Rate Structure',
-    resolve: {
-      legend: { color: 'independent' },
-      scale: { color: 'independent' },
-    },
-    layer: [
-      // Reference lines layer (wholesale prices)
-      {
-        data: { values: wholesaleData ?? [] },
-        mark: {
-          type: 'line',
-          strokeWidth: 1,
-          opacity: 0.5,
-          strokeDash: [5, 5],
-        },
-        encoding: {
-          x: {
-            field: 'hour',
-            type: 'quantitative',
-          },
-          y: {
-            field: 'value',
-            type: 'quantitative',
-          },
-          color: {
-            field: 'line',
-            type: 'nominal',
-            scale: {
-              scheme: 'magma',
-            },
-            title: 'Wholesale Prices',
-          },
-        },
-      },
-      // Main retail price lines layer
-      {
-        data: { values: retailData },
-        mark: {
-          type: 'line',
-          strokeWidth: 2,
-          interpolate: 'step-after',
-          tension: 0,
-        },
-        encoding: {
-          x: {
-            field: 'hour',
-            type: 'quantitative',
-            title: 'Hour of Day',
-            scale: { domain: [0, 24] },
-            axis: {
-              tickCount: 24,
-              labelAngle: 0,
-            },
-          },
-          y: {
-            field: 'value',
-            type: 'quantitative',
-            title: '$ per kWh',
-          },
-          color: {
-            field: 'series',
-            type: 'nominal',
-            title: 'Retail Price',
-            scale: {
-              scheme: 'viridis',
-            },
-          },
-          detail: {
-            field: 'series',
-            type: 'nominal',
-          },
-        },
-      },
-    ],
-  }
-}
 
 export function EnergyRateChart({
   date,
@@ -165,7 +80,93 @@ export function EnergyRateChart({
 
   return (
     <VegaEmbed
-      spec={createPricingChartSpec(retailData, wholesaleData)}
+      spec={
+        {
+          $schema: 'https://vega.github.io/schema/vega-lite/v6.json',
+          width: 400,
+          height: 200,
+          title: 'Energy Rate Structure',
+          resolve: {
+            legend: { color: 'independent' },
+            scale: { color: 'independent' },
+          },
+          layer: [
+            // Reference lines layer (wholesale prices)
+            wholesaleData && {
+              data: { values: wholesaleData ?? [] },
+              mark: {
+                type: 'line',
+                strokeWidth: 1,
+                opacity: 0.5,
+                strokeDash: [5, 5],
+              },
+              encoding: {
+                x: {
+                  field: 'hour',
+                  type: 'quantitative',
+                },
+                y: {
+                  field: 'value',
+                  type: 'quantitative',
+                },
+                color: {
+                  field: 'line',
+                  type: 'nominal',
+                  scale: {
+                    scheme: 'magma',
+                  },
+                  title: 'Wholesale Prices',
+                },
+              },
+            },
+            // Main retail price lines layer
+            {
+              data: { values: retailData },
+              mark: {
+                type: 'line',
+                strokeWidth: 2,
+                interpolate: 'step-after',
+                tension: 0,
+              },
+              encoding: {
+                x: {
+                  field: 'hour',
+                  type: 'quantitative',
+                  title: 'Hour of Day',
+                  scale: { domain: [0, 24] },
+                  axis: {
+                    tickCount: 24,
+                    labelAngle: 0,
+                  },
+                },
+                y: {
+                  field: 'value',
+                  type: 'quantitative',
+                  title: '$ per kWh',
+                  scale: {
+                    domainMax: Math.max(
+                      ...retailData.map((x) => x.value * 1.05)
+                    ),
+                  },
+                },
+                color: {
+                  field: 'series',
+                  type: 'nominal',
+                  title: 'Retail Price',
+                  scale: {
+                    scheme: 'viridis',
+                  },
+                },
+                tooltip: { field: 'value', format: ',.3f' },
+                detail: {
+                  field: 'series',
+                  type: 'nominal',
+                },
+              },
+            },
+          ],
+        } satisfies TopLevelSpec
+      }
       options={{ mode: 'vega-lite', actions: false }}
     />
   )
