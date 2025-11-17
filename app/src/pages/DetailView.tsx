@@ -1,29 +1,25 @@
-import { useRef } from 'react'
-import { useImmer } from 'use-immer'
+import { Col, DatePicker, Form, Row, Select } from 'antd'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { useImmer } from 'use-immer'
 import { RatePlanSelector } from '../components/RatePlanSelector'
 import { useRatePlanInData } from '../hooks/useRateInPlanData'
-import * as s from './DetailView.module.css'
 import { useRatePlan } from '../hooks/useRatePlan'
-import { Col, DatePicker, Form, Row, Select } from 'antd'
-import { useVegaEmbed } from 'react-vega'
+import * as s from './DetailView.module.css'
 
-import type { RatePlan, RetailPriceData } from '../data/schema'
-import dayjs, { Dayjs } from 'dayjs'
-import { useWholesaleData } from '../hooks/useWholesaleData'
-import { sum } from 'es-toolkit'
-import { HUB_DICT } from '../data/queries'
-import { RatePlanTimeline } from '../components/RatePlanTimeline'
+import dayjs from 'dayjs'
 import {
-  createPricingChartSpec,
+  EnergyRateChart,
   prepareWholesaleData,
-  useTiersChart,
+  TiersChart,
 } from '../charts/energyRateStructure'
 import {
-  useCoincidentRateChart,
-  useDemandRateChart,
-  useFlatDemandChart,
+  CoincidentRateChart,
+  DemandRateChart,
+  FlatDemandChart,
 } from '../charts/otherRateStructures'
+import { RatePlanTimeline } from '../components/RatePlanTimeline'
+import { HUB_DICT } from '../data/queries'
+import { useWholesaleData } from '../hooks/useWholesaleData'
 
 interface State {
   adjustedIncluded: boolean
@@ -46,38 +42,7 @@ export default function DetailView() {
     wholesale: 'New England',
   })
   const { data: wholesaleData } = useWholesaleData(state.wholesale, date)
-  const energyRateRef = useRef<HTMLDivElement>(null)
-  const tierRef = useRef<HTMLDivElement>(null)
-  const flatdemandRef = useRef<HTMLDivElement>(null)
-  const demandRef = useRef<HTMLDivElement>(null)
-  const coincidentRef = useRef<HTMLDivElement>(null)
-  const retailData = pullData(selectedPlan, date)
   const preparedWholesale = prepareWholesaleData(wholesaleData)
-  useVegaEmbed({
-    ref: energyRateRef,
-    spec: createPricingChartSpec(retailData, preparedWholesale),
-    options: { mode: 'vega-lite', actions: false },
-  })
-  useTiersChart({
-    tierRef: tierRef,
-    selectedPlan,
-    date: date,
-  })
-  useDemandRateChart({
-    chartRef: demandRef,
-    selectedPlan,
-    date: date,
-  })
-  useFlatDemandChart({
-    chartRef: flatdemandRef,
-    date: date,
-    selectedPlan,
-  })
-  useCoincidentRateChart({
-    chartRef: coincidentRef,
-    date: date,
-    selectedPlan,
-  })
 
   const nav = useNavigate()
 
@@ -147,53 +112,16 @@ export default function DetailView() {
         )}
       </Form>
 
-      <div ref={energyRateRef}></div>
-      <div ref={tierRef}></div>
-      <div ref={coincidentRef}></div>
-      <div ref={demandRef}></div>
-      <div ref={flatdemandRef}></div>
+      <EnergyRateChart
+        selectedPlan={selectedPlan}
+        date={date}
+        wholesaleData={preparedWholesale}
+      />
+      <TiersChart selectedPlan={selectedPlan} date={date} />
+      <CoincidentRateChart selectedPlan={selectedPlan} date={date} />
+      <DemandRateChart selectedPlan={selectedPlan} date={date} />
+      <FlatDemandChart selectedPlan={selectedPlan} date={date} />
       <RatePlanTimeline ratePlan={selectedPlan} />
     </main>
-  )
-}
-
-function pullData(
-  data: RatePlan | null | undefined,
-  date: Dayjs
-): RetailPriceData[] {
-  const tiers = data?.energyRate_tiers
-  const schedule = [0, 6].includes(date.day())
-    ? data?.energyWeekendSched
-    : data?.energyWeekdaySched
-  return (
-    schedule?.[date.month()].flatMap((period, i) => {
-      const periodInfo = tiers?.[period]
-      if (!periodInfo) {
-        return []
-      }
-
-      return periodInfo.flatMap((tierInfo, j) => {
-        if (!tierInfo) {
-          return []
-        }
-
-        const tier = j
-
-        const value = sum([tierInfo.rate].map((x) => x ?? 0))
-
-        const result = {
-          hour: i,
-          value,
-          series: `Tier ${tier}`,
-          period,
-        }
-
-        if (result.hour == 23) {
-          return [result, { ...result, hour: 24 }]
-        }
-
-        return result ?? []
-      })
-    }) ?? []
   )
 }

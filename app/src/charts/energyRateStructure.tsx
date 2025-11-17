@@ -5,10 +5,9 @@ import type {
   WholesalePrice,
   WholesalePriceData,
 } from '../data/schema'
-import type { RefObject } from 'react'
-import { useVegaEmbed } from 'react-vega'
+import { VegaEmbed } from 'react-vega'
 import type { Dayjs } from 'dayjs'
-import { sortBy, uniqWith } from 'es-toolkit'
+import { sum, windowed } from 'es-toolkit'
 
 // Helper to convert wholesale prices to per-kWh
 export function convertWholesaleToKwh(wholesalePrice: WholesalePrice) {
@@ -72,7 +71,11 @@ export function createPricingChartSpec(
     $schema: 'https://vega.github.io/schema/vega-lite/v6.json',
     width: 400,
     height: 200,
-    title: '24-Hour Pricing Structure',
+    title: 'Energy Rate Structure',
+    resolve: {
+      legend: { color: 'independent' },
+      scale: { color: 'independent' },
+    },
     layer: [
       // Reference lines layer (wholesale prices)
       {
@@ -95,6 +98,9 @@ export function createPricingChartSpec(
           color: {
             field: 'line',
             type: 'nominal',
+            scale: {
+              scheme: 'magma',
+            },
             title: 'Wholesale Prices',
           },
         },
@@ -142,72 +148,140 @@ export function createPricingChartSpec(
   }
 }
 
-export function useTiersChart({
+export function EnergyRateChart({
   date,
   selectedPlan,
-  tierRef,
+  wholesaleData,
 }: {
-  tierRef: RefObject<HTMLDivElement | null>
+  selectedPlan?: RatePlan | null
+  date: Dayjs
+  wholesaleData: WholesalePriceData[]
+}) {
+  const retailData = pullData(selectedPlan, date)
+
+  if (!(retailData.length || wholesaleData.length)) {
+    return null
+  }
+
+  return (
+    <VegaEmbed
+      spec={createPricingChartSpec(retailData, wholesaleData)}
+      options={{ mode: 'vega-lite', actions: false }}
+    />
+  )
+}
+
+function pullData(
+  data: RatePlan | null | undefined,
+  date: Dayjs
+): RetailPriceData[] {
+  const tiers = data?.energyRate_tiers
+  const schedule = [0, 6].includes(date.day())
+    ? data?.energyWeekendSched
+    : data?.energyWeekdaySched
+  return (
+    schedule?.[date.month()].flatMap((period, i) => {
+      const periodInfo = tiers?.[period]
+      if (!periodInfo) {
+        return []
+      }
+
+      return periodInfo.flatMap((tierInfo, j) => {
+        if (!tierInfo) {
+          return []
+        }
+
+        const tier = j
+
+        const value = sum([tierInfo.rate].map((x) => x ?? 0))
+
+        const result = {
+          hour: i,
+          value,
+          series: `Tier ${tier}`,
+          period,
+        }
+
+        if (result.hour == 23) {
+          return [result, { ...result, hour: 24 }]
+        }
+
+        return result ?? []
+      })
+    }) ?? []
+  )
+}
+
+export function TiersChart({
+  date,
+  selectedPlan,
+}: {
   selectedPlan?: RatePlan | null
   date: Dayjs
 }) {
   const periods = new Set(selectedPlan?.energyWeekdaySched?.[date.month()])
-  const selectedTiers = sortBy(
-    uniqWith(
-      Array.from(periods).flatMap(
-        (p) => selectedPlan?.energyRate_tiers?.[p] ?? []
-      ),
-      (a, b) => a.max === b.max && a.rate === b.rate
-    ),
-    ['rate']
+
+  const selectedTiers = Array.from(periods).flatMap(
+    (p) => selectedPlan?.energyRate_tiers?.[p] ?? []
   )
-  const windowed = selectedTiers.flatMap((t, i) => {
-    let prev = selectedTiers[i - 1]
 
-    let next = { ...t, tier: i }
+  if (selectedTiers.length <= 1) {
+    return null
+  }
 
-    if (!prev) {
-      prev = { ...next, max: 0 }
+  /** We want a graph where the tier boundaries are tier 'max' to next tier 'max' */
+  const windows = windowed(selectedTiers, 2).flatMap(([x, y], tier) => {
+    if (!(x.max || y.max)) {
+      return []
     }
-    if (t.max == null) {
-      next = {
-        ...next,
-        max: (prev.max ?? 0) * 1.5,
-      }
+    let padFirst = null
+    if (tier == 0) {
+      padFirst = { ...x, max: 0, tier }
+    }
+    if (!y.max && x.max) {
+      return [
+        padFirst,
+        { ...x, tier },
+        { ...y, tier: tier + 1, max: x.max },
+        { ...y, tier: tier + 1, max: x.max * 1.5 },
+      ]
     }
 
-    return [{ ...prev, tier: i, rate: next.rate }, next]
+    return [x, y]
   })
 
-  useVegaEmbed({
-    ref: tierRef,
-    spec: {
-      $schema: 'https://vega.github.io/schema/vega-lite/v6.json',
-      width: 400,
-      height: 200,
-      data: { values: windowed },
-      mark: {
-        type: 'line',
-        interpolate: 'step-after',
-      },
-      title: 'Energy Usage Tiers',
-      encoding: {
-        y: { field: 'rate', type: 'quantitative', title: 'Rate' },
-        x: {
-          field: 'max',
-          type: 'quantitative',
-          title: 'Max Usage ' + selectedTiers?.[0]?.unit,
-        },
-        color: {
-          field: 'tier',
-          type: 'nominal',
-          title: 'Tier',
-          scale: {
-            scheme: 'viridis',
+  return (
+    <VegaEmbed
+      spec={
+        {
+          $schema: 'https://vega.github.io/schema/vega-lite/v6.json',
+          width: 400,
+          height: 200,
+          data: { values: windows },
+          mark: {
+            type: 'line',
+            interpolate: 'step-after',
           },
-        },
-      },
-    } satisfies TopLevelSpec,
-    options: { mode: 'vega-lite', actions: false },
-  })
+          title: 'Energy Usage Tiers',
+          encoding: {
+            y: { field: 'rate', type: 'quantitative', title: '$ per kWh' },
+            x: {
+              field: 'max',
+              type: 'quantitative',
+              title: 'Max Usage ' + selectedTiers?.[0]?.unit,
+            },
+            color: {
+              field: 'tier',
+              type: 'nominal',
+              title: 'Tier',
+              scale: {
+                scheme: 'viridis',
+              },
+            },
+          },
+        } satisfies TopLevelSpec
+      }
+      options={{ mode: 'vega-lite', actions: false }}
+    />
+  )
 }
