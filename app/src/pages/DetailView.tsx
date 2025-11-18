@@ -1,4 +1,5 @@
 import { Col, DatePicker, Form, Row, Select } from 'antd'
+import clsx from 'clsx'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useImmer } from 'use-immer'
 import { RatePlanSelector } from '../components/RatePlanSelector'
@@ -21,7 +22,7 @@ import {
   FlatDemandChart,
 } from '../charts/otherRateStructures'
 import { RatePlanTimeline } from '../components/RatePlanTimeline'
-import { HUB_DICT, supercededBy } from '../data/queries'
+import { HUB_DICT } from '../data/queries'
 import { useWholesaleData } from '../hooks/useWholesaleData'
 
 interface State {
@@ -35,11 +36,13 @@ export default function DetailView() {
   const { id: ratePlanParam } = useParams()
   const [params, setParams] = useSearchParams()
   const date = dayjs(params.get(DATE_PARAM) || undefined)
-  const { data: selectedPlan } = useRatePlan(ratePlanParam)
+  const { data: selectedPlan, isLoading: selectedPlanLoading } =
+    useRatePlan(ratePlanParam)
 
-  const { data: supercedesExistsInData } = useRatePlanInData(
-    selectedPlan?.supercedes
-  )
+  const {
+    data: supercedesExistsInData,
+    isLoading: supercedesExistsInDataLoading,
+  } = useRatePlanInData(selectedPlan?.supercedes)
   const [state, updateState] = useImmer<State>({
     adjustedIncluded: true,
     wholesale: 'New England',
@@ -107,44 +110,61 @@ export default function DetailView() {
         </Row>
       </Form>
 
-      <EnergyRateChart
-        selectedPlan={selectedPlan}
-        date={date}
-        wholesaleData={preparedWholesale}
-      />
-      <TiersChart selectedPlan={selectedPlan} date={date} />
-      <CoincidentRateChart selectedPlan={selectedPlan} date={date} />
-      <DemandRateChart selectedPlan={selectedPlan} date={date} />
-      <FlatDemandChart selectedPlan={selectedPlan} date={date} />
-      <Row gutter={16}>
-        {supercedesExistsInData && (
-          <Col>
+      <div
+        className={clsx(s.charts, { [s.chartLoading]: selectedPlanLoading })}
+      >
+        <EnergyRateChart
+          selectedPlan={selectedPlan}
+          date={date}
+          wholesaleData={preparedWholesale}
+        />
+        <TiersChart selectedPlan={selectedPlan} date={date} />
+        <CoincidentRateChart selectedPlan={selectedPlan} date={date} />
+        <DemandRateChart selectedPlan={selectedPlan} date={date} />
+        <FlatDemandChart selectedPlan={selectedPlan} date={date} />
+      </div>
+      <div className={s.supercedesRow}>
+        <Row gutter={16}>
+          <Col className={s.supercedes}>
             Supercedes{' '}
-            <Link to={`/detail/${selectedPlan?.supercedes}`}>
-              {selectedPlan?.supercedes}{' '}
-            </Link>
+            {selectedPlan?.supercedes ? (
+              <Link to={`/detail/${selectedPlan?.supercedes}`}>
+                {selectedPlan?.supercedes}
+              </Link>
+            ) : (
+              '\u00A0'.repeat('569d8d215457a38b683910b8'.length)
+            )}
           </Col>
-        )}
-        {(supercededBy?.length ?? 0) >= 1 && (
-          <Col>
+          <Col className={s.supercedes}>
             Superceded by{' '}
-            <Link to={`/detail/${supercededBy![0]._id}`}>
-              {supercededBy![0]._id}
-            </Link>
+            {supercededBy?.[0] ? (
+              <Link to={`/detail/${supercededBy?.[0]?._id}`}>
+                {supercededBy?.[0]?._id}
+              </Link>
+            ) : (
+              '\u00A0'.repeat('569d8d215457a38b683910b8'.length)
+            )}
           </Col>
-        )}
-      </Row>
+        </Row>
+      </div>
       <Row style={{ marginTop: '24px' }}>
         <Col>
-          <div style={{ border: '1px solid #d9d9d9', padding: '8px', borderRadius: '4px', width: '400px' }}>
-            <div 
-              style={{ 
-                width: '384px', 
-                height: '250px', 
+          <div
+            style={{
+              border: '1px solid #d9d9d9',
+              padding: '8px',
+              borderRadius: '4px',
+              width: '400px',
+            }}
+          >
+            <div
+              style={{
+                width: '384px',
+                height: '250px',
                 backgroundColor: '#f0f0f0',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center'
+                justifyContent: 'center',
               }}
               role="img"
               aria-label="Map of United States showing counties served by this utility highlighted in color against a base map"
@@ -159,10 +179,18 @@ export default function DetailView() {
                   lineHeight: 1.4,
                 }}
               >
-                Map of United States showing counties served by this utility highlighted in color against a base map
+                Map of United States showing counties served by this utility
+                highlighted in color against a base map
               </span>
             </div>
-            <p style={{ textAlign: 'center', marginTop: '8px', marginBottom: '0', color: '#666' }}>
+            <p
+              style={{
+                textAlign: 'center',
+                marginTop: '8px',
+                marginBottom: '0',
+                color: '#666',
+              }}
+            >
               Counties covered by Utility
             </p>
           </div>

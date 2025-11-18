@@ -1,5 +1,5 @@
 .main {
-  width: 100vw;
+  max-width: calc(100vw - 16px);
   height: 100vw;
   scrollbar-gutter: preserve;
 
@@ -11,4 +11,23 @@
     margin-left: 16px;
     margin-right: 16px;
   }
+}
+
+.supercedesRow {
+  padding: 0px 16px;
+}
+
+.supercedes {
+  font-family: monospace;
+}
+
+.charts {
+  transition-delay: 50ms;
+  transition-property: height;
+}
+
+.chartLoading {
+  min-height: 263px;
+
+  /* background-color: hotpink; */
 }

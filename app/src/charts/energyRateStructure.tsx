@@ -80,7 +80,7 @@ export function EnergyRateChart({
     return null
   }
 
-  const layer: UnitSpec<'value' | 'hour' | 'line' | 'series'>[] = []
+  const layer: UnitSpec<'value' | 'hour' | 'line' | 'tier' | 'period'>[] = []
   // Reference lines layer (wholesale prices)
   if (wholesaleData.length) {
     layer.push({
@@ -139,18 +139,23 @@ export function EnergyRateChart({
           title: '$ per kWh',
         },
         color: {
-          field: 'series',
+          field: 'tier',
           type: 'nominal',
-          title: 'Retail Price',
+          title: 'Tier',
           scale: {
             scheme: 'viridis',
           },
         },
-        tooltip: { field: 'value', format: ',.3f' },
         detail: {
-          field: 'series',
+          field: 'tier',
           type: 'nominal',
         },
+        tooltip: [
+          { field: 'hour', title: 'Hour' },
+          { field: 'value', title: '$ per kWh', format: '.3f' },
+          { field: 'period', title: 'Period' },
+          { field: 'tier', title: 'Tier' },
+        ],
       },
     })
   }
@@ -202,7 +207,7 @@ function pullData(
         const result = {
           hour: i,
           value,
-          series: `Tier ${tier}`,
+          tier,
           period,
         }
 
@@ -275,6 +280,7 @@ export function TiersChart({
           mark: {
             type: 'line',
             interpolate: 'step-after',
+            tooltip: true,
           },
           title: 'Energy Usage Tiers',
           encoding: {
@@ -282,7 +288,7 @@ export function TiersChart({
             x: {
               field: 'max',
               type: 'quantitative',
-              title: 'Max Usage ' + selectedTiers?.[0]?.unit,
+              title: `Usage (${selectedTiers?.[0]?.unit})`,
               scale: {
                 domainMax:
                   Math.max(...windows.map((x) => x.max ?? 0)) || undefined,

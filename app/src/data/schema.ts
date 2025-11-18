@@ -151,7 +151,8 @@ export const SynthDataArray = z.array(SynthData)
 export const RetailPriceDataSchema = z.object({
   hour: z.number(),
   value: z.number(),
-  series: z.string(),
+  tier: z.number(),
+  period: z.number(),
 })
 
 export const WholesalePriceDataSchema = z.object({
