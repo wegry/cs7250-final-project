@@ -11,13 +11,19 @@ export function CoincidentRateChart({
   date: Dayjs
 }) {
   const periods = selectedPlan?.coincidentSched?.[date.month()]
-  const values = periods?.flatMap((p) =>
-    selectedPlan?.coincidentRate_tiers?.[p].map((x, i) => ({ ...x, tier: i }))
+  const values = periods?.flatMap((p, i) =>
+    selectedPlan?.coincidentRate_tiers?.[p].map((x) => ({
+      ...x,
+      tier: p,
+      hour: i,
+    }))
   )
 
   if (values == null) {
     return null
   }
+
+  values.push({ ...values.at(-1)!, hour: 24 })
 
   return (
     <VegaEmbed
@@ -29,16 +35,22 @@ export function CoincidentRateChart({
           data: { values },
           mark: {
             type: 'line',
+            strokeWidth: 2,
+            tooltip: true,
             interpolate: 'step-after',
           },
           title: 'Coincident Demand Rate',
           encoding: {
             x: {
-              field: 'tier',
-              type: 'ordinal',
-              title: 'Period',
+              field: 'hour',
+              type: 'quantitative',
+              title: 'Hour of Day',
               axis: {
                 labelAngle: 0,
+                tickCount: 24,
+              },
+              scale: {
+                domain: [0, 24],
               },
             },
             y: {
@@ -47,7 +59,7 @@ export function CoincidentRateChart({
               title: `Rate (${selectedPlan?.coincidentRateUnits ?? 'kW'})`,
             },
             color: {
-              field: 'tier',
+              // field: 'tier',
               type: 'nominal',
               legend: null,
               scale: {
@@ -221,6 +233,9 @@ export function FlatDemandChart({
               field: 'max',
               type: 'quantitative',
               title: `Max Demand (${selectedPlan?.flatDemandUnits ?? 'kW'})`,
+              scale: {
+                domainMax: Math.max(...windowed.map((x) => x.max ?? 0)),
+              },
             },
             color: {
               field: 'tier',
