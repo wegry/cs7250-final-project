@@ -7,7 +7,9 @@ import type {
 } from '../data/schema'
 import { VegaEmbed } from 'react-vega'
 import type { Dayjs } from 'dayjs'
-import { sum, windowed } from 'es-toolkit'
+import { maxBy, sum, windowed } from 'es-toolkit'
+import type { LayerSpec } from 'vega-lite/types_unstable/spec/layer.js'
+import type { UnitSpec } from 'vega-lite/types_unstable/spec/unit.js'
 
 // Helper to convert wholesale prices to per-kWh
 export function convertWholesaleToKwh(wholesalePrice: WholesalePrice) {
@@ -26,8 +28,8 @@ export function prepareWholesaleData(
   }
   const {
     max: maxWholesale,
-    min: minWholesale,
     avg: avgWholesale,
+    min: minWholesale,
   } = convertWholesaleToKwh(wholesalePrice)
   return [
     {
@@ -78,6 +80,84 @@ export function EnergyRateChart({
     return null
   }
 
+  const layer: UnitSpec<'value' | 'hour' | 'line' | 'series'>[] = []
+  // Reference lines layer (wholesale prices)
+  if (wholesaleData.length) {
+    layer.push({
+      data: { values: wholesaleData ?? [] },
+      mark: {
+        type: 'line',
+        strokeWidth: 1,
+        opacity: 0.5,
+        strokeDash: [5, 5],
+      },
+      encoding: {
+        x: {
+          field: 'hour',
+          type: 'quantitative',
+        },
+        y: {
+          field: 'value',
+          type: 'quantitative',
+        },
+        color: {
+          field: 'line',
+          type: 'nominal',
+          scale: {
+            scheme: 'magma',
+          },
+          title: 'Wholesale Prices',
+        },
+      },
+    })
+  }
+
+  if (retailData.length) {
+    // Main retail price lines layer
+    layer.push({
+      data: { values: retailData },
+      mark: {
+        type: 'line',
+        strokeWidth: 2,
+        interpolate: 'step-after',
+        tension: 0,
+      },
+      encoding: {
+        x: {
+          field: 'hour',
+          type: 'quantitative',
+          title: 'Hour of Day',
+          scale: { domain: [0, 24] },
+          axis: {
+            tickCount: 24,
+            labelAngle: 0,
+          },
+        },
+        y: {
+          field: 'value',
+          type: 'quantitative',
+          title: '$ per kWh',
+          scale: {
+            domainMax: Math.max(...retailData.map((x) => x.value * 1.05)),
+          },
+        },
+        color: {
+          field: 'series',
+          type: 'nominal',
+          title: 'Retail Price',
+          scale: {
+            scheme: 'viridis',
+          },
+        },
+        tooltip: { field: 'value', format: ',.3f' },
+        detail: {
+          field: 'series',
+          type: 'nominal',
+        },
+      },
+    })
+  }
+
   return (
     <VegaEmbed
       spec={
@@ -90,81 +170,7 @@ export function EnergyRateChart({
             legend: { color: 'independent' },
             scale: { color: 'independent' },
           },
-          layer: [
-            // Reference lines layer (wholesale prices)
-            wholesaleData && {
-              data: { values: wholesaleData ?? [] },
-              mark: {
-                type: 'line',
-                strokeWidth: 1,
-                opacity: 0.5,
-                strokeDash: [5, 5],
-              },
-              encoding: {
-                x: {
-                  field: 'hour',
-                  type: 'quantitative',
-                },
-                y: {
-                  field: 'value',
-                  type: 'quantitative',
-                },
-                color: {
-                  field: 'line',
-                  type: 'nominal',
-                  scale: {
-                    scheme: 'magma',
-                  },
-                  title: 'Wholesale Prices',
-                },
-              },
-            },
-            // Main retail price lines layer
-            {
-              data: { values: retailData },
-              mark: {
-                type: 'line',
-                strokeWidth: 2,
-                interpolate: 'step-after',
-                tension: 0,
-              },
-              encoding: {
-                x: {
-                  field: 'hour',
-                  type: 'quantitative',
-                  title: 'Hour of Day',
-                  scale: { domain: [0, 24] },
-                  axis: {
-                    tickCount: 24,
-                    labelAngle: 0,
-                  },
-                },
-                y: {
-                  field: 'value',
-                  type: 'quantitative',
-                  title: '$ per kWh',
-                  scale: {
-                    domainMax: Math.max(
-                      ...retailData.map((x) => x.value * 1.05)
-                    ),
-                  },
-                },
-                color: {
-                  field: 'series',
-                  type: 'nominal',
-                  title: 'Retail Price',
-                  scale: {
-                    scheme: 'viridis',
-                  },
-                },
-                tooltip: { field: 'value', format: ',.3f' },
-                detail: {
-                  field: 'series',
-                  type: 'nominal',
-                },
-              },
-            },
-          ],
+          layer,
         } satisfies TopLevelSpec
       }
       options={{ mode: 'vega-lite', actions: false }}
@@ -226,30 +232,40 @@ export function TiersChart({
     (p) => selectedPlan?.energyRate_tiers?.[p] ?? []
   )
 
-  if (selectedTiers.length <= 1) {
+  /** We want a graph where the tier boundaries are tier 'max' to next tier 'max' */
+  const windows = windowed(structuredClone(selectedTiers), 2)
+    .flatMap(([x, y], tier) => {
+      if (!(x.max || y.max)) {
+        return []
+      }
+      const nextTier = tier + 1
+      let padFirst = null
+      if (tier == 0) {
+        padFirst = { ...x, max: 0, tier }
+      }
+      if (!y.max && x.max) {
+        return [
+          padFirst,
+          { ...x, tier },
+          { ...y, tier: nextTier, max: x.max },
+          { ...y, tier: nextTier, max: x.max * 1.5 },
+        ]
+      } else if (y.max && x.max) {
+        return [
+          padFirst,
+          { ...x, tier },
+          { ...y, tier: nextTier, max: x.max },
+          { ...y, tier: nextTier },
+        ]
+      }
+
+      return [padFirst, { ...x, tier }, { ...y, tier: tier + 1 }]
+    })
+    .filter((x) => x != null)
+
+  if (windows.length <= 1) {
     return null
   }
-
-  /** We want a graph where the tier boundaries are tier 'max' to next tier 'max' */
-  const windows = windowed(selectedTiers, 2).flatMap(([x, y], tier) => {
-    if (!(x.max || y.max)) {
-      return []
-    }
-    let padFirst = null
-    if (tier == 0) {
-      padFirst = { ...x, max: 0, tier }
-    }
-    if (!y.max && x.max) {
-      return [
-        padFirst,
-        { ...x, tier },
-        { ...y, tier: tier + 1, max: x.max },
-        { ...y, tier: tier + 1, max: x.max * 1.5 },
-      ]
-    }
-
-    return [x, y]
-  })
 
   return (
     <VegaEmbed
@@ -270,6 +286,10 @@ export function TiersChart({
               field: 'max',
               type: 'quantitative',
               title: 'Max Usage ' + selectedTiers?.[0]?.unit,
+              scale: {
+                domainMax:
+                  Math.max(...windows.map((x) => x.max ?? 0)) || undefined,
+              },
             },
             color: {
               field: 'tier',
