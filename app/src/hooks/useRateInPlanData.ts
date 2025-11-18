@@ -6,7 +6,13 @@ async function fetchRatePlanInData(label?: string | null) {
 
   const { data, error } = z
     .preprocess(
-      (arg) => (arg == null ? arg : arg.toArray()),
+      (arg: unknown) =>
+        arg != null &&
+        typeof arg == 'object' &&
+        'toArray' in arg &&
+        arg.toArray instanceof Function
+          ? arg.toArray()
+          : arg,
       z.array(z.unknown())
     )
     .safeParse(ratePlanInData)
@@ -18,9 +24,39 @@ async function fetchRatePlanInData(label?: string | null) {
   return Boolean(data?.[0])
 }
 
+async function fetchSupercededBy(label?: string | null) {
+  const superceders = await queries.supercededBy(label ?? '')
+
+  const { data, error } = z
+    .preprocess(
+      (arg: unknown) =>
+        arg != null &&
+        typeof arg == 'object' &&
+        'toArray' in arg &&
+        arg.toArray instanceof Function
+          ? arg.toArray()
+          : arg,
+      z.array(z.object({ _id: z.string() }))
+    )
+    .safeParse(superceders)
+
+  if (error) {
+    console.error(error)
+  }
+
+  return data
+}
+
 export function useRatePlanInData(label?: string | null) {
   return useQuery({
     queryKey: ['ratePlan', 'exists', label ?? null],
     queryFn: () => fetchRatePlanInData(label),
+  })
+}
+
+export function useRateSupercededBy(label?: string | null) {
+  return useQuery({
+    queryKey: ['ratePlan', 'supercededBy', label ?? null],
+    queryFn: () => fetchSupercededBy(label),
   })
 }

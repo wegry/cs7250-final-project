@@ -46,6 +46,17 @@ export async function selectListForDate(date: Dayjs) {
   return result
 }
 
+export async function supercededBy(label: string) {
+  const stmt = await (
+    await conn
+  ).prepare(`SELECT _id FROM flattened.usurdb
+ WHERE supercedes = ?
+ ORDER BY effectiveDate DESC
+ LIMIT 1`)
+  const result = await stmt.query(label)
+  return result
+}
+
 export async function ratePlanInData(label: string) {
   const stmt = await (
     await conn

@@ -2,7 +2,10 @@ import { Col, DatePicker, Form, Row, Select } from 'antd'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useImmer } from 'use-immer'
 import { RatePlanSelector } from '../components/RatePlanSelector'
-import { useRatePlanInData } from '../hooks/useRateInPlanData'
+import {
+  useRatePlanInData,
+  useRateSupercededBy,
+} from '../hooks/useRateInPlanData'
 import { useRatePlan } from '../hooks/useRatePlan'
 import * as s from './DetailView.module.css'
 
@@ -18,7 +21,7 @@ import {
   FlatDemandChart,
 } from '../charts/otherRateStructures'
 import { RatePlanTimeline } from '../components/RatePlanTimeline'
-import { HUB_DICT } from '../data/queries'
+import { HUB_DICT, supercededBy } from '../data/queries'
 import { useWholesaleData } from '../hooks/useWholesaleData'
 
 interface State {
@@ -43,6 +46,7 @@ export default function DetailView() {
   })
   const { data: wholesaleData } = useWholesaleData(state.wholesale, date)
   const preparedWholesale = prepareWholesaleData(wholesaleData)
+  const { data: supercededBy } = useRateSupercededBy(ratePlanParam)
 
   const nav = useNavigate()
 
@@ -101,15 +105,6 @@ export default function DetailView() {
             </Form.Item>
           </Col>
         </Row>
-
-        {supercedesExistsInData && (
-          <div>
-            Supercedes{' '}
-            <Link to={`/detail/${selectedPlan?.supercedes}`}>
-              {selectedPlan?.supercedes}{' '}
-            </Link>
-          </div>
-        )}
       </Form>
 
       <EnergyRateChart
@@ -121,7 +116,27 @@ export default function DetailView() {
       <CoincidentRateChart selectedPlan={selectedPlan} date={date} />
       <DemandRateChart selectedPlan={selectedPlan} date={date} />
       <FlatDemandChart selectedPlan={selectedPlan} date={date} />
-      <RatePlanTimeline ratePlan={selectedPlan} />
+      <Row gutter={16}>
+        {supercedesExistsInData && (
+          <Col>
+            Supercedes{' '}
+            <Link to={`/detail/${selectedPlan?.supercedes}`}>
+              {selectedPlan?.supercedes}{' '}
+            </Link>
+          </Col>
+        )}
+        {(supercededBy?.length ?? 0) >= 1 && (
+          <Col>
+            Superceded by{' '}
+            <Link to={`/detail/${supercededBy![0]._id}`}>
+              {supercededBy![0]._id}
+            </Link>
+          </Col>
+        )}
+      </Row>
+      <Col span={4}>
+        <RatePlanTimeline ratePlan={selectedPlan} />
+      </Col>
     </main>
   )
 }
