@@ -1,6 +1,8 @@
 import { defineConfig } from 'vite'
+import { copyFileSync } from 'node:fs'
 
-export default defineConfig({
+/** @type {import('vite').UserConfig} */
+export default {
   plugins: [],
   optimizeDeps: {
     exclude: ['@duckdb/duckdb-wasm'],
@@ -20,4 +22,4 @@ export default defineConfig({
       'Cross-Origin-Opener-Policy': 'same-origin',
     },
   },
-})
+}
