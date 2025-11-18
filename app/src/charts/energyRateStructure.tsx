@@ -137,9 +137,6 @@ export function EnergyRateChart({
           field: 'value',
           type: 'quantitative',
           title: '$ per kWh',
-          scale: {
-            domainMax: Math.max(...retailData.map((x) => x.value * 1.05)),
-          },
         },
         color: {
           field: 'series',
