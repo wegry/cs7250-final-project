@@ -23,10 +23,11 @@
 
 .charts {
   display: grid;
-  grid-template-columns: repeat(auto-fill, 500px);
-  column-gap: 16px;
-  transition-delay: 50ms;
-  transition-property: height;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 600px));
+
+  & > div {
+    width: fit-content;
+  }
 }
 
 .chartLoading {
