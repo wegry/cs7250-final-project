@@ -134,7 +134,7 @@ export default function DetailView() {
           </Col>
         )}
       </Row>
-      <Col span={4}>
+      <Col sm={10} md={10} lg={6}>
         <RatePlanTimeline ratePlan={selectedPlan} />
       </Col>
     </main>
