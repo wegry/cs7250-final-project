@@ -134,6 +134,40 @@ export default function DetailView() {
           </Col>
         )}
       </Row>
+      <Row style={{ marginTop: '24px' }}>
+        <Col>
+          <div style={{ border: '1px solid #d9d9d9', padding: '8px', borderRadius: '4px', width: '400px' }}>
+            <div 
+              style={{ 
+                width: '384px', 
+                height: '250px', 
+                backgroundColor: '#f0f0f0',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+              role="img"
+              aria-label="Map of United States showing counties served by this utility highlighted in color against a base map"
+            >
+              <span
+                style={{
+                  color: '#999',
+                  textAlign: 'center',
+                  display: 'block',
+                  padding: '8px',
+                  maxWidth: '92%',
+                  lineHeight: 1.4,
+                }}
+              >
+                Map of United States showing counties served by this utility highlighted in color against a base map
+              </span>
+            </div>
+            <p style={{ textAlign: 'center', marginTop: '8px', marginBottom: '0', color: '#666' }}>
+              Counties covered by Utility
+            </p>
+          </div>
+        </Col>
+      </Row>
       <Col sm={10} md={10} lg={6}>
         <RatePlanTimeline ratePlan={selectedPlan} />
       </Col>
