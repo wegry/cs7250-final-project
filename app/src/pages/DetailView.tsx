@@ -16,6 +16,7 @@ import {
 import {
   CoincidentRateChart,
   DemandRateChart,
+  DemandTierRateChart,
   FlatDemandChart,
 } from '../charts/otherRateStructures'
 import { RatePlanTimeline } from '../components/RatePlanTimeline'
@@ -114,6 +115,7 @@ export default function DetailView() {
         <TiersChart selectedPlan={selectedPlan} date={date} />
         <CoincidentRateChart selectedPlan={selectedPlan} date={date} />
         <DemandRateChart selectedPlan={selectedPlan} date={date} />
+        <DemandTierRateChart selectedPlan={selectedPlan} date={date} />
         <FlatDemandChart selectedPlan={selectedPlan} date={date} />
       </div>
       <div className={s.supercedesRow}>
