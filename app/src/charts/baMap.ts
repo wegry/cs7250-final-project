@@ -2,7 +2,7 @@ import type { TopLevelSpec } from 'vega-lite'
 
 export function createBAMapSpec(): TopLevelSpec {
   return {
-    $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
+    $schema: 'https://vega.github.io/schema/vega-lite/v6.json',
     width: 'container',
     height: 550,
     background: '#ffffff',
@@ -26,8 +26,9 @@ export function createBAMapSpec(): TopLevelSpec {
         },
         transform: [
           {
-            filter: "datum.properties.NAME !== 'Alaska' && datum.properties.NAME !== 'Hawaii'"
-          }
+            filter:
+              "datum.properties.NAME !== 'Alaska' && datum.properties.NAME !== 'Hawaii'",
+          },
         ],
         mark: {
           type: 'geoshape',
@@ -46,8 +47,8 @@ export function createBAMapSpec(): TopLevelSpec {
         },
         transform: [
           {
-            filter: "!test(/US-AK|US-HI/, datum.properties.zoneName)"
-          }
+            filter: '!test(/US-AK|US-HI/, datum.properties.zoneName)',
+          },
         ],
         mark: {
           type: 'geoshape',
