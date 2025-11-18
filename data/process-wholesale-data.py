@@ -4,7 +4,7 @@ from pathlib import Path
 df = pl.read_excel(
     [
         Path("raw") / "wholesale" / f"ice_electric-202{year}final.xlsx"
-        for year in range(0, 5)
+        for year in range(0, 6)
     ]
 )
 df = df.rename({"Delivery \r\nend date": "Delivery end date"})
