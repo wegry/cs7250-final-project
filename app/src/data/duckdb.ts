@@ -33,9 +33,14 @@ export const conn = c.promise
 async function init() {
   try {
     const conn = await db.connect()
-    await conn.query(
-      `ATTACH '${window.location.origin + '/flattened.duckdb'}' AS flattened (READ_ONLY)`
+    await db.registerFileURL(
+      'flattened',
+      window.location.origin + '/flattened.duckdb',
+      duckdb.DuckDBDataProtocol.HTTP,
+      true
     )
+    await conn.query(`ATTACH 'flattened' AS flattened (READ_ONLY)`)
+
     c.resolve(conn)
   } catch (e) {
     c.reject(e)

@@ -1,0 +1,17 @@
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/*.duckdb"
+  [headers.values]
+    # Cache for 1 hour, then must check with server
+    Cache-Control = "public, max-age=3600, must-revalidate"
+    # Enable range requests for partial loading
+    Accept-Ranges = "bytes"

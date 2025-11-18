@@ -1,9 +1,8 @@
-import { defineConfig } from 'vite'
-import { copyFileSync } from 'node:fs'
+import netlify from '@netlify/vite-plugin'
 
 /** @type {import('vite').UserConfig} */
 export default {
-  plugins: [],
+  plugins: [netlify()],
   optimizeDeps: {
     exclude: ['@duckdb/duckdb-wasm'],
     esbuildOptions: {
