@@ -22,6 +22,9 @@
 }
 
 .charts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 500px);
+  column-gap: 16px;
   transition-delay: 50ms;
   transition-property: height;
 }

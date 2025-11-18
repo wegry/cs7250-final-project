@@ -46,6 +46,14 @@ function Storytelling() {
           Pudget Sound Energy Inc
         </Link>
       </section>
+      <section>
+        <h2>All of the Above</h2>
+        Some plans use energy rates and usage tiers, coincident demand rate,
+        demand rates, and flat demand rates like{' '}
+        <Link to="/detail/5da604f35457a3624a6dbecf?date=2025-11-18">
+          Jacksonville Electric Authority
+        </Link>
+      </section>
     </main>
   )
 }

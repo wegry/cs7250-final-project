@@ -25,7 +25,7 @@ async function fetchRatePlanInData(label?: string | null) {
 }
 
 async function fetchSupercededBy(label?: string | null) {
-  const superceders = await queries.supercededBy(label ?? '')
+  const superceders = await queries.supercededBy(label ?? 'fake')
 
   const { data, error } = z
     .preprocess(

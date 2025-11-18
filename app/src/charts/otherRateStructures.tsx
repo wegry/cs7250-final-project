@@ -144,7 +144,7 @@ export function DemandRateChart({
             type: 'line',
             interpolate: 'step-after',
           },
-          title: 'Demand Rate Tiers',
+          title: 'Demand Rate',
           encoding: {
             y: {
               field: 'rate',
@@ -159,14 +159,6 @@ export function DemandRateChart({
               axis: {
                 tickCount: 24,
                 labelAngle: 0,
-              },
-            },
-            color: {
-              field: 'tier',
-              type: 'nominal',
-              title: 'Tier',
-              scale: {
-                scheme: 'viridis',
               },
             },
           },
@@ -193,22 +185,31 @@ export function FlatDemandChart({
     return null
   }
 
-  const windowed = selectedTiers.flatMap((t, i) => {
-    let prev = selectedTiers[i - 1]
-    let next = { ...t, tier: i }
+  let windowed = []
+  if (selectedTiers.length == 1 && selectedTiers[0].max == null) {
+    const only = selectedTiers[0]
+    windowed = [
+      { ...only, max: 0, tier: 0 },
+      { ...only, max: 1000, tier: 0 },
+    ]
+  } else {
+    windowed = selectedTiers.flatMap((t, i) => {
+      let prev = selectedTiers[i - 1]
+      let next = { ...t, tier: i }
 
-    if (!prev) {
-      prev = { ...next, max: 0 }
-    }
-    if (t.max == null) {
-      next = {
-        ...next,
-        max: (prev.max ?? 0) * 1.5,
+      if (!prev) {
+        prev = { ...next, max: 0 }
       }
-    }
+      if (t.max == null) {
+        next = {
+          ...next,
+          max: (prev.max ?? 0) * 1.5,
+        }
+      }
 
-    return [{ ...prev, tier: i, rate: next.rate }, next]
-  })
+      return [{ ...prev, tier: i, rate: next.rate }, next]
+    })
+  }
 
   return (
     <VegaEmbed
@@ -222,7 +223,7 @@ export function FlatDemandChart({
             type: 'line',
             interpolate: 'step-after',
           },
-          title: `Flat Demand Rate Tiers`,
+          title: `Flat Demand Rate`,
           encoding: {
             y: {
               field: 'rate',
@@ -235,14 +236,6 @@ export function FlatDemandChart({
               title: `Max Demand (${selectedPlan?.flatDemandUnits ?? 'kW'})`,
               scale: {
                 domainMax: Math.max(...windowed.map((x) => x.max ?? 0)),
-              },
-            },
-            color: {
-              field: 'tier',
-              type: 'nominal',
-              title: 'Tier',
-              scale: {
-                scheme: 'viridis',
               },
             },
           },

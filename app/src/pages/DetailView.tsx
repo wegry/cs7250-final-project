@@ -3,10 +3,7 @@ import clsx from 'clsx'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useImmer } from 'use-immer'
 import { RatePlanSelector } from '../components/RatePlanSelector'
-import {
-  useRatePlanInData,
-  useRateSupercededBy,
-} from '../hooks/useRateInPlanData'
+import { useRateSupercededBy } from '../hooks/useRateInPlanData'
 import { useRatePlan } from '../hooks/useRatePlan'
 import * as s from './DetailView.module.css'
 
@@ -39,10 +36,6 @@ export default function DetailView() {
   const { data: selectedPlan, isLoading: selectedPlanLoading } =
     useRatePlan(ratePlanParam)
 
-  const {
-    data: supercedesExistsInData,
-    isLoading: supercedesExistsInDataLoading,
-  } = useRatePlanInData(selectedPlan?.supercedes)
   const [state, updateState] = useImmer<State>({
     adjustedIncluded: true,
     wholesale: 'New England',
