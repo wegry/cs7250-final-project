@@ -10,7 +10,8 @@ export function generationPriceInAMonth({
   ratePlan?: RatePlan | null
   synthData?: SynthData[] | null
   monthStarting: Dayjs
-}): { kWh?: number; cost?: number } {
+}): { kWh?: number; cost?: number ; flatDemandCost?: number ; 
+  energyRateCost?: number ; fixedChargeCost?: number ; demandCost?: number } {
   if (!synthData) {
     return {}
   }
@@ -42,14 +43,29 @@ export function generationPriceInAMonth({
     fixedChargeUnits: fixedchargeunits,
     minCharge: mincharge,
     minChargeUnits: minchargeunits,
+
+    flatDemandUnits: flatdemandunits,//unionOfLiterals(['kVA', 'kW', 'kVA daily', 'hp']).nullish(),
+    flatDemandMonths: flatdemandmonths,//z.preprocess(
+    flatDemand_tiers: flatdemand_tiers,//tierShape(
+
+    demandWeekendSched: demandweekendschedule,
+    demandWeekdaySched: demandweekdayschedule,
+    demandUnits: demandunits,
+    demandRate_tiers: demand_tiers
+
   } = ratePlan
   const oneMonthLater = monthStarting.add(1, 'month')
 
   let totalUsage_kWh = 0
   let totalCost = 0
+  let fixedChargeCost = 0
+  let flatDemandCost=0
+  let energyRateCost = 0
+  let demandCost = 0
 
   if (fixedchargeunits == '$/month') {
     totalCost += fixedchargefirstmeter ?? 0
+    fixedChargeCost += fixedchargefirstmeter ?? 0
   }
   let curr = monthStarting
 
@@ -64,8 +80,9 @@ export function generationPriceInAMonth({
       for (let hour = 0; hour < 24; hour++) {
         if (fixedchargeunits == '$/day') {
           totalCost += fixedchargefirstmeter ?? 0
+          fixedChargeCost += fixedchargefirstmeter ?? 0
         }
-
+        // Energy Rate Calculation
         const period = periods[hour]
         const tiers = ratestructure?.[period]
         const matchingTier = Object.entries(tiers ?? {}).find(([, v]) => {
@@ -79,6 +96,32 @@ export function generationPriceInAMonth({
 
         totalUsage_kWh += usageThisHour
         totalCost += usageThisHour * energyrate
+        energyRateCost += usageThisHour * energyrate
+
+        // Flat Demand Calculation
+        if (flatdemandmonths) {
+          const period_flat_demand = flatdemandmonths[curr.month()]
+          const tiers_flat_demand = flatdemand_tiers?.[period_flat_demand]
+
+          const usageThisHour_flat = hourlyUsage[hour]
+
+          const threshold = flatdemandunits === 'kVA'
+            ? usageThisHour_flat / 0.8
+            : usageThisHour_flat
+
+          const matchingTierFlat = Object.entries(tiers_flat_demand ?? {}).find(
+            ([, v]) =>
+              v?.unit &&
+              (v?.max ?? Infinity) >= threshold
+          )
+
+          const flatrate = matchingTierFlat?.[1]?.rate ?? 0
+
+          totalCost += usageThisHour_flat * flatrate
+          flatDemandCost += usageThisHour_flat * flatrate
+        }
+
+
       }
     }
 
@@ -96,5 +139,6 @@ export function generationPriceInAMonth({
     curr = curr.add(1, 'day')
   }
 
-  return { kWh: totalUsage_kWh, cost: totalCost }
+  return { kWh: totalUsage_kWh, cost: totalCost, flatDemandCost: flatDemandCost, 
+    energyRateCost: energyRateCost, fixedChargeCost: fixedChargeCost, demandCost: demandCost  }
 }
