@@ -12,6 +12,7 @@ import type { UnitSpec } from 'vega-lite/types_unstable/spec/unit.js'
 import { Card, Statistic } from 'antd'
 import { price } from '../formatters'
 import { useMemo } from 'react'
+import { ratePlanDetail } from '../data/queries'
 
 // Helper to convert wholesale prices to per-kWh
 export function convertWholesaleToKwh(wholesalePrice: WholesalePrice) {
@@ -169,13 +170,23 @@ export function EnergyRateChart({
     [retailData]
   )
 
+  const sameAllYearLong = useMemo(
+    () =>
+      new Set(
+        selectedPlan?.energyWeekdaySched
+          ?.concat(selectedPlan.energyWeekdaySched)
+          ?.flat()
+      ).size === 1,
+    [retailData]
+  )
+
   if (isBoring) {
     return (
       <Card>
         <Statistic
           title={`Energy Price`}
           value={price.format(retailData?.[0].value)}
-          suffix="per kWh all day"
+          suffix={`/ kWh all day ${sameAllYearLong && 'all year'}`}
         ></Statistic>
       </Card>
     )
