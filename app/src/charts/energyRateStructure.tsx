@@ -7,9 +7,11 @@ import type {
 } from '../data/schema'
 import { VegaEmbed } from 'react-vega'
 import type { Dayjs } from 'dayjs'
-import { maxBy, sum, windowed } from 'es-toolkit'
-import type { LayerSpec } from 'vega-lite/types_unstable/spec/layer.js'
+import { sum, uniqBy, windowed } from 'es-toolkit'
 import type { UnitSpec } from 'vega-lite/types_unstable/spec/unit.js'
+import { Card, Statistic } from 'antd'
+import { price } from '../formatters'
+import { useMemo } from 'react'
 
 // Helper to convert wholesale prices to per-kWh
 export function convertWholesaleToKwh(wholesalePrice: WholesalePrice) {
@@ -158,6 +160,25 @@ export function EnergyRateChart({
         ],
       },
     })
+  }
+
+  const isBoring = useMemo(
+    () =>
+      uniqBy(retailData, (x) => [x.period, x.tier, x.value].join('/')).length ==
+      1,
+    [retailData]
+  )
+
+  if (isBoring) {
+    return (
+      <Card>
+        <Statistic
+          title={`Energy Price`}
+          value={price.format(retailData?.[0].value)}
+          suffix="per kWh all day"
+        ></Statistic>
+      </Card>
+    )
   }
 
   return (
