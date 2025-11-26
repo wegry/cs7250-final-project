@@ -6,7 +6,7 @@ import { WholesalePrice, type SynthData } from './schema'
 export const selectList = `
   SELECT
     _id as value
-    , concat_ws('/', utilityName, rateName, _id) as label
+    , concat_ws(' / ', utilityName, rateName ) as label
   FROM flattened.usurdb
   ORDER BY
     utilityName ASC
