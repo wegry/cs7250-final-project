@@ -49,6 +49,7 @@ function tierShape<T extends SomeType>(shape: T) {
 
 export const RatePlan = z.object({
   _id: z.string(),
+  is_default: z.boolean().nullish(),
   eiaId: z.optional(z.bigint()),
   rateName: z.string(),
   utilityName: z.string(),
@@ -89,6 +90,7 @@ export const RatePlan = z.object({
       max: z.number().nullish(),
     })
   ).nullish(),
+  description: z.string().nullish(),
   energycomments: z.string().nullish(),
   /** Hours of the day by months  */
   energyWeekdaySched: optionalSchedule,
@@ -123,6 +125,8 @@ export const RatePlan = z.object({
       })
     )
   ),
+  sourceParent: z.string().nullish(),
+  sourceReference: z.string().nullish(),
 })
 
 export const RatePlanArray = z.array(RatePlan)
