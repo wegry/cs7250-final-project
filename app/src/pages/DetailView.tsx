@@ -1,4 +1,4 @@
-import { Col, DatePicker, Form, Row, Select } from 'antd'
+import { Button, Col, DatePicker, Form, Row, Select } from 'antd'
 import clsx from 'clsx'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useImmer } from 'use-immer'
@@ -22,6 +22,7 @@ import {
 import { RatePlanTimeline } from '../components/RatePlanTimeline'
 import { HUB_DICT } from '../data/queries'
 import { useWholesaleData } from '../hooks/useWholesaleData'
+import AnchorLink from 'antd/es/anchor/AnchorLink'
 
 interface State {
   adjustedIncluded: boolean
@@ -56,14 +57,21 @@ export default function DetailView() {
       <h1>Details</h1>
 
       <Form layout="horizontal" className={s.form}>
-        <Row>
-          <Col span={16}>
+        <Row gutter={16} align="top">
+          <Col span={15}>
             <Form.Item label="Rate Plan">
               <RatePlanSelector
                 value={ratePlanParam}
                 onChange={handleRatePlanChange}
               />
             </Form.Item>
+          </Col>
+          <Col>
+            <Button
+              href={`https://apps.openei.org/USURDB/rate/view/${selectedPlan?._id}`}
+            >
+              View on USURDB
+            </Button>
           </Col>
         </Row>
         <Row gutter={24}>
