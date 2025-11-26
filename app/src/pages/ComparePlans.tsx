@@ -11,6 +11,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { useSynthData } from '../hooks/useSynthData'
 import { capitalize } from 'es-toolkit'
 import { RatePlanSummary } from '../components/RatePlanSummary'
+import s from './ComparePlans.module.css'
 
 const DATE_MIN = dayjs('2024-01-01')
 const DATE_DEFAULT = dayjs().clone().set('year', 2024)
@@ -85,7 +86,7 @@ function RegionalElectricityPatterns() {
   })
 
   return (
-    <div>
+    <div className={s.main}>
       <div>
         <h2>Regional Electricity Usage Patterns</h2>
         <p>Compare heating vs. cooling loads across regions and seasons</p>

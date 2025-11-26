@@ -1,0 +1,11 @@
+.main {
+  max-width: calc(100vw - 16px);
+  height: 100vw;
+  scrollbar-gutter: preserve;
+  margin: 0 16px;
+
+  .form {
+    margin-left: 16px;
+    margin-right: 16px;
+  }
+}
