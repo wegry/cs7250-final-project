@@ -118,6 +118,7 @@ function RegionalElectricityPatterns() {
             <Col>
               <Form.Item label="Date">
                 <DatePicker
+                  allowClear={false}
                   minDate={DATE_MIN}
                   maxDate={DATE_MAX}
                   value={state.date}
@@ -131,7 +132,29 @@ function RegionalElectricityPatterns() {
             </Col>
             <Col>
               <Form.Item label="Season">
-                <Radio.Group value={season}>
+                <Radio.Group
+                  value={season}
+                  onChange={(e) => {
+                    console.log('mmm')
+                    debugger
+                    if (
+                      e.target.value === 'winter' &&
+                      state.date.month() > 2 &&
+                      state.date.month() < 10
+                    ) {
+                      updateState((state) => {
+                        state.date = state.date.set('month', 0)
+                      })
+                    } else if (
+                      e.target.value === 'summer' &&
+                      !(state.date.month() <= 2 && state.date.month() > 9)
+                    ) {
+                      updateState((state) => {
+                        state.date = state.date.set('month', 7)
+                      })
+                    }
+                  }}
+                >
                   <Radio.Button value="winter">
                     ❄️ Winter (January)
                   </Radio.Button>
