@@ -2,7 +2,8 @@ import type { TopLevelSpec } from 'vega-lite'
 import type { RatePlan } from '../data/schema'
 import type { Dayjs } from 'dayjs'
 import { VegaEmbed } from 'react-vega'
-import { minBy, windowed } from 'es-toolkit'
+import { windowed } from 'es-toolkit'
+import { Card } from 'antd'
 
 export function CoincidentRateChart({
   date,
@@ -26,7 +27,7 @@ export function CoincidentRateChart({
 
   values.push({ ...values.at(-1)!, hour: 24 })
 
-  return (
+  const chart = (
     <VegaEmbed
       spec={
         {
@@ -73,6 +74,8 @@ export function CoincidentRateChart({
       options={{ mode: 'vega-lite', actions: false }}
     />
   )
+
+  return <Card>{chart}</Card>
 }
 
 interface DayAndPlan {
@@ -114,7 +117,6 @@ export function DemandRateChart({ date, selectedPlan }: DayAndPlan) {
           !demandRate_tiers[periods[hour + 1]]?.[tier]?.rate &&
           !demandRate_tiers[periods[hour + 2]]?.[tier]?.rate
         ) {
-          console.log('hmm')
           return [
             next,
             { ...next, hour: hour + 1 },
@@ -148,7 +150,7 @@ export function DemandRateChart({ date, selectedPlan }: DayAndPlan) {
     return [x, y]
   })
 
-  return (
+  const chart = (
     <VegaEmbed
       spec={
         {
@@ -192,6 +194,8 @@ export function DemandRateChart({ date, selectedPlan }: DayAndPlan) {
       options={{ mode: 'vega-lite', actions: false }}
     />
   )
+
+  return <Card>{chart}</Card>
 }
 
 export function DemandTierRateChart({ date, selectedPlan }: DayAndPlan) {
@@ -242,7 +246,7 @@ export function DemandTierRateChart({ date, selectedPlan }: DayAndPlan) {
     selectedTiers = [{ ...selectedTiers[0], max: 0 }, ...selectedTiers]
   }
 
-  return (
+  const chart = (
     <VegaEmbed
       spec={
         {
@@ -284,6 +288,8 @@ export function DemandTierRateChart({ date, selectedPlan }: DayAndPlan) {
       options={{ mode: 'vega-lite', actions: false }}
     />
   )
+
+  return <Card>{chart}</Card>
 }
 
 export function FlatDemandChart({
@@ -328,7 +334,7 @@ export function FlatDemandChart({
     })
   }
 
-  return (
+  const chart = (
     <VegaEmbed
       spec={
         {
@@ -361,4 +367,6 @@ export function FlatDemandChart({
       options={{ mode: 'vega-lite', actions: false }}
     />
   )
+
+  return <Card>{chart}</Card>
 }

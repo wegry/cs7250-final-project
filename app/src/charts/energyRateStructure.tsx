@@ -181,7 +181,7 @@ export function EnergyRateChart({
     )
   }
 
-  return (
+  const chart = (
     <VegaEmbed
       spec={
         {
@@ -199,6 +199,8 @@ export function EnergyRateChart({
       options={{ mode: 'vega-lite', actions: false }}
     />
   )
+
+  return <Card>{chart}</Card>
 }
 
 function pullData(
@@ -290,7 +292,7 @@ export function TiersChart({
     return null
   }
 
-  return (
+  const chart = (
     <VegaEmbed
       spec={
         {
@@ -329,4 +331,6 @@ export function TiersChart({
       options={{ mode: 'vega-lite', actions: false }}
     />
   )
+
+  return <Card>{chart}</Card>
 }

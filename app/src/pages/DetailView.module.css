@@ -16,11 +16,12 @@
 
 .charts {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(400px, 600px));
+  grid-template-columns: repeat(auto-fit, minmax(400px, 550px));
   margin-bottom: 16px;
+  gap: 16px;
 
-  & > div {
-    width: fit-content;
+  & :global(.ant-card-body) > div {
+    width: -webkit-fill-available;
   }
 }
 
