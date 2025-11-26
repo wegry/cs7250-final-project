@@ -14,23 +14,19 @@ const MANUAL_BUNDLES: duckdb.DuckDBBundles = {
     mainWorker: eh_worker,
   },
 }
-// Select a bundle based on browser checks
-const bundle = await duckdb.selectBundle(MANUAL_BUNDLES)
-// Instantiate the asynchronous version of DuckDB-wasm
-const worker = new Worker(bundle.mainWorker!)
-const logger = new duckdb.ConsoleLogger(duckdb.LogLevel.WARNING)
-const db = new duckdb.AsyncDuckDB(logger, worker)
-await db.instantiate(bundle.mainModule, bundle.pthreadWorker)
-
-export const USURDB_NAME = 'flattened'
-
-// Setup and connect to the database
-// Initialize database
 let c = Promise.withResolvers<duckdb.AsyncDuckDBConnection>()
 
 export const conn = c.promise
 
 async function init() {
+  const bundle = await duckdb.selectBundle(MANUAL_BUNDLES)
+  // Instantiate the asynchronous version of DuckDB-wasm
+  const worker = new Worker(bundle.mainWorker!)
+  const logger = new duckdb.ConsoleLogger(duckdb.LogLevel.WARNING)
+  // Initialize database
+  const db = new duckdb.AsyncDuckDB(logger, worker)
+  await db.instantiate(bundle.mainModule, bundle.pthreadWorker)
+
   try {
     const conn = await db.connect()
     await db.registerFileURL(
