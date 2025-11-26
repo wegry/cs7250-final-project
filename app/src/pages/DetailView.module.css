@@ -1,16 +1,9 @@
 .main {
-  max-width: calc(100vw - 16px);
+  --x-padding: 32px;
+  max-width: calc(100vw - calc(--x-padding * 2));
   height: 100vw;
   scrollbar-gutter: preserve;
-
-  h1,
-  h2,
-  h3,
-  h4,
-  .form {
-    margin-left: 16px;
-    margin-right: 16px;
-  }
+  margin: 0 var(--x-padding);
 }
 
 .supercedesRow {
@@ -24,6 +17,7 @@
 .charts {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(400px, 600px));
+  margin-bottom: 16px;
 
   & > div {
     width: fit-content;
@@ -34,4 +28,12 @@
   min-height: 263px;
 
   /* background-color: hotpink; */
+}
+
+.copy {
+  > p {
+    max-width: 40ch;
+  }
+  max-height: calc(40ch / 1.61);
+  overflow: scroll;
 }

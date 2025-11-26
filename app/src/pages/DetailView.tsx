@@ -1,4 +1,13 @@
-import { Button, Col, DatePicker, Form, Row, Select } from 'antd'
+import {
+  Button,
+  Col,
+  DatePicker,
+  Descriptions,
+  type DescriptionsProps,
+  Form,
+  Row,
+  Select,
+} from 'antd'
 import clsx from 'clsx'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useImmer } from 'use-immer'
@@ -22,7 +31,8 @@ import {
 import { RatePlanTimeline } from '../components/RatePlanTimeline'
 import { HUB_DICT } from '../data/queries'
 import { useWholesaleData } from '../hooks/useWholesaleData'
-import AnchorLink from 'antd/es/anchor/AnchorLink'
+import { useMemo } from 'react'
+import DescriptionsItem from 'antd/es/descriptions/Item'
 
 interface State {
   adjustedIncluded: boolean
@@ -51,6 +61,46 @@ export default function DetailView() {
   const handleRatePlanChange = async (value: string) => {
     nav(`/detail/${value}`)
   }
+
+  const descriptions = useMemo(() => {
+    if (!selectedPlan) {
+      return []
+    }
+
+    return [
+      {
+        label: 'Is Default?',
+        children: selectedPlan.is_default === true ? 'Yes' : 'No',
+      },
+      selectedPlan.description && {
+        label: 'Description',
+        children: (
+          <div className={s.copy}>
+            <p>{selectedPlan.description}</p>
+          </div>
+        ),
+      },
+      {
+        label: 'Source',
+        children: (
+          <a
+            href={selectedPlan.sourceReference!}
+            style={{ whiteSpace: 'nowrap' }}
+          >
+            Link
+          </a>
+        ),
+      },
+      {
+        label: 'Source Parent',
+        children: (
+          <a href={selectedPlan.sourceParent!} style={{ whiteSpace: 'nowrap' }}>
+            Link
+          </a>
+        ),
+      },
+    ].flatMap((x) => x || []) satisfies DescriptionsProps['items']
+  }, [selectedPlan])
 
   return (
     <main className={s.main}>
@@ -202,6 +252,8 @@ export default function DetailView() {
       <Col sm={10} md={10} lg={6}>
         <RatePlanTimeline ratePlan={selectedPlan} />
       </Col>
+      <h2>Other info</h2>
+      <Descriptions items={descriptions} bordered />
     </main>
   )
 }
