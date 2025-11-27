@@ -186,7 +186,7 @@ export function EnergyRateChart({
         <Statistic
           title={`Energy Price`}
           value={price.format(retailData?.[0].value)}
-          suffix={`/ kWh all day ${sameAllYearLong && 'all year'}`}
+          suffix={`/ kWh all day ${sameAllYearLong ? 'all year' : ''}`}
         ></Statistic>
       </Card>
     )
