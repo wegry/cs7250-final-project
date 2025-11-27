@@ -6,12 +6,13 @@
   margin: 0 var(--x-padding);
 }
 
-.supercedesRow {
-  padding: 0px 16px;
+.meta {
+  margin-bottom: 16px;
 }
 
 .supercedes {
   font-family: monospace;
+  white-space: nowrap;
 }
 
 .charts {
@@ -36,5 +37,5 @@
     max-width: 40ch;
   }
   max-height: calc(40ch / 1.61);
-  overflow: scroll;
+  overflow: auto;
 }

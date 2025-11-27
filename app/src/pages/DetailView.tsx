@@ -1,10 +1,12 @@
 import {
   Button,
   Col,
+  Collapse,
   DatePicker,
   Descriptions,
   type DescriptionsProps,
   Form,
+  Popover,
   Row,
   Select,
 } from 'antd'
@@ -43,7 +45,7 @@ const DATE_PARAM = 'date'
 export default function DetailView() {
   const { id: ratePlanParam } = useParams()
   const [params, setParams] = useSearchParams()
-  const date = dayjs(params.get(DATE_PARAM) || undefined)
+  const date = dayjs(params.get(DATE_PARAM) || '2025-10-01')
   const { data: selectedPlan, isLoading: selectedPlanLoading } =
     useRatePlan(ratePlanParam)
 
@@ -62,22 +64,39 @@ export default function DetailView() {
   }
 
   const descriptions = useMemo(() => {
-    if (!selectedPlan) {
-      return []
-    }
-
     return [
-      { label: 'Utility Name', children: selectedPlan.utilityName },
-      { label: 'Rate Name', children: selectedPlan.rateName },
+      { label: 'Utility Name', children: selectedPlan?.utilityName },
+      { label: 'Rate Name', children: selectedPlan?.rateName },
+
+      selectedPlan?.supercedes && {
+        label: 'Supercedes',
+
+        children: (
+          <Link
+            className={s.supercedes}
+            to={`/detail/${selectedPlan?.supercedes}`}
+          >
+            {selectedPlan?.supercedes}
+          </Link>
+        ),
+      },
+      supercededBy?.[0]?._id && {
+        label: 'Superceded By',
+        children: (
+          <Link className={s.supercedes} to={`/detail/${supercededBy[0]._id}`}>
+            {supercededBy[0]._id}
+          </Link>
+        ),
+      },
       {
         label: 'Is Default?',
-        children: selectedPlan.is_default === true ? 'Yes' : 'No',
+        children: selectedPlan?.is_default === true ? 'Yes' : 'No',
       },
       {
         label: 'Source',
         children: (
           <a
-            href={selectedPlan.sourceReference!}
+            href={selectedPlan?.sourceReference!}
             style={{ whiteSpace: 'nowrap' }}
           >
             Link
@@ -87,21 +106,31 @@ export default function DetailView() {
       {
         label: 'Source Parent',
         children: (
-          <a href={selectedPlan.sourceParent!} style={{ whiteSpace: 'nowrap' }}>
+          <a
+            href={selectedPlan?.sourceParent!}
+            style={{ whiteSpace: 'nowrap' }}
+          >
             Link
           </a>
         ),
       },
-      selectedPlan.description && {
+      selectedPlan?.description && {
         label: 'Description',
         children: (
-          <div className={s.copy}>
-            <p>{selectedPlan.description}</p>
-          </div>
+          <Popover
+            content={
+              <div className={s.copy}>
+                <p>{selectedPlan.description}</p>
+              </div>
+            }
+            trigger="click"
+          >
+            <Button>Click me</Button>
+          </Popover>
         ),
       },
     ].flatMap((x) => x || []) satisfies DescriptionsProps['items']
-  }, [selectedPlan])
+  }, [selectedPlan, supercededBy])
 
   return (
     <main className={s.main}>
@@ -125,6 +154,23 @@ export default function DetailView() {
             </Button>
           </Col>
         </Row>
+        <Collapse
+          className={s.meta}
+          defaultActiveKey={1}
+          items={[
+            {
+              key: 1,
+              label: 'Rate Plan Metadata',
+              children: (
+                <Descriptions
+                  items={descriptions}
+                  layout="vertical"
+                  size="small"
+                />
+              ),
+            },
+          ]}
+        />
         <Row gutter={24}>
           <Col span={8}>
             <Form.Item label="Wholesale Market">
@@ -176,30 +222,6 @@ export default function DetailView() {
         <DemandRateChart selectedPlan={selectedPlan} date={date} />
         <DemandTierRateChart selectedPlan={selectedPlan} date={date} />
         <FlatDemandChart selectedPlan={selectedPlan} date={date} />
-      </div>
-      <div className={s.supercedesRow}>
-        <Row gutter={16}>
-          <Col className={s.supercedes}>
-            Supercedes{' '}
-            {selectedPlan?.supercedes ? (
-              <Link to={`/detail/${selectedPlan?.supercedes}`}>
-                {selectedPlan?.supercedes}
-              </Link>
-            ) : (
-              '\u00A0'.repeat('569d8d215457a38b683910b8'.length)
-            )}
-          </Col>
-          <Col className={s.supercedes}>
-            Superceded by{' '}
-            {supercededBy?.[0] ? (
-              <Link to={`/detail/${supercededBy?.[0]?._id}`}>
-                {supercededBy?.[0]?._id}
-              </Link>
-            ) : (
-              '\u00A0'.repeat('569d8d215457a38b683910b8'.length)
-            )}
-          </Col>
-        </Row>
       </div>
       <Row style={{ marginTop: '24px' }}>
         <Col>
@@ -253,8 +275,6 @@ export default function DetailView() {
       <Col sm={10} md={10} lg={6}>
         <RatePlanTimeline ratePlan={selectedPlan} />
       </Col>
-      <h2>Other info</h2>
-      <Descriptions items={descriptions} bordered />
     </main>
   )
 }

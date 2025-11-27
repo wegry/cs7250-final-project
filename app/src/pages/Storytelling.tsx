@@ -7,7 +7,11 @@ function Storytelling() {
       <h1>How is electricity priced in the US?</h1>
       This app uses{' '}
       <a href="https://openei.org/wiki/Utility_Rate_Database">OpenEI data</a> to
-      try and show what rates are in use across the country.
+      try and show what rates are in use across the country.{' '}
+      <i>
+        Note: these rates and prices are mostly generation charges and do not
+        include distribution charges.
+      </i>
       <section>
         <h2>Flat Rate Plans</h2>
         Flat rate plans are the simplest form of electricity pricing—you pay the

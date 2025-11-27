@@ -136,8 +136,6 @@ function RegionalElectricityPatterns() {
                 <Radio.Group
                   value={season}
                   onChange={(e) => {
-                    console.log('mmm')
-                    debugger
                     if (
                       e.target.value === 'winter' &&
                       state.date.month() > 2 &&
