@@ -38,11 +38,9 @@ export function prepareWholesaleData(
 export function EnergyRateChart({
   date,
   selectedPlan,
-  wholesaleData,
 }: {
   selectedPlan?: RatePlan | null
   date: Dayjs
-  wholesaleData: WholesalePriceData[]
 }) {
   const retailData = pullData(selectedPlan, date)
 
@@ -63,7 +61,7 @@ export function EnergyRateChart({
     [selectedPlan]
   )
 
-  if (!(retailData.length || wholesaleData.length)) return null
+  if (!retailData.length) return null
 
   if (isBoring && retailData.length) {
     return (
@@ -87,31 +85,6 @@ export function EnergyRateChart({
       scale: { color: 'independent' },
     },
     layer: [
-      // Wholesale reference lines
-      ...(wholesaleData.length
-        ? [
-            {
-              data: { values: wholesaleData },
-              mark: {
-                type: 'line' as const,
-                strokeWidth: 1,
-                opacity: 0.5,
-                strokeDash: [5, 5],
-              },
-              encoding: {
-                x: { field: 'hour', type: 'quantitative' as const },
-                y: { field: 'value', type: 'quantitative' as const },
-                color: {
-                  field: 'line',
-                  type: 'nominal' as const,
-                  scale: { scheme: 'magma' },
-                  title: 'Wholesale Prices',
-                },
-              },
-            },
-          ]
-        : []),
-      // Retail price lines with inline points for hover
       ...(retailData.length
         ? [
             {
@@ -150,7 +123,7 @@ export function EnergyRateChart({
                   field: 'tier',
                   type: 'nominal' as const,
                   title: 'Tier',
-                  scale: { scheme: 'viridis' },
+                  scale: { scheme: 'viridis' as const },
                 },
                 tooltip: [
                   { field: 'hour', title: 'Hour' },

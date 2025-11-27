@@ -4,6 +4,19 @@
   height: 100vw;
   scrollbar-gutter: preserve;
   margin: 0 var(--x-padding);
+
+  & .header {
+    align-items: baseline;
+    margin-bottom: 8px;
+  }
+
+  & .noMargin {
+    margin-bottom: 0 !important;
+  }
+
+  & h1 {
+    margin: 0;
+  }
 }
 
 .meta {
@@ -12,7 +25,10 @@
 
 .supercedes {
   font-family: monospace;
-  white-space: nowrap;
+  white-space: pre;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: initial;
 }
 
 .charts {

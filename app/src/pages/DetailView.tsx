@@ -1,5 +1,6 @@
 import {
   Button,
+  Card,
   Col,
   Collapse,
   DatePicker,
@@ -8,22 +9,16 @@ import {
   Form,
   Popover,
   Row,
-  Select,
 } from 'antd'
 import clsx from 'clsx'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { useImmer } from 'use-immer'
 import { RatePlanSelector } from '../components/RatePlanSelector'
 import { useRateSupercededBy } from '../hooks/useRateInPlanData'
 import { useRatePlan } from '../hooks/useRatePlan'
 import * as s from './DetailView.module.css'
 
 import dayjs from 'dayjs'
-import {
-  EnergyRateChart,
-  prepareWholesaleData,
-  TiersChart,
-} from '../charts/energyRateStructure'
+import { EnergyRateChart, TiersChart } from '../charts/energyRateStructure'
 import {
   CoincidentRateChart,
   DemandRateChart,
@@ -31,15 +26,8 @@ import {
   FlatDemandChart,
 } from '../charts/otherRateStructures'
 import { RatePlanTimeline } from '../components/RatePlanTimeline'
-import { HUB_DICT } from '../data/queries'
-import { useWholesaleData } from '../hooks/useWholesaleData'
 import { useMemo } from 'react'
 import { ScheduleHeatmap } from '../components/Schedule'
-
-interface State {
-  adjustedIncluded: boolean
-  wholesale: keyof typeof HUB_DICT
-}
 
 const DATE_PARAM = 'date'
 
@@ -50,12 +38,6 @@ export default function DetailView() {
   const { data: selectedPlan, isLoading: selectedPlanLoading } =
     useRatePlan(ratePlanParam)
 
-  const [state, updateState] = useImmer<State>({
-    adjustedIncluded: true,
-    wholesale: 'New England',
-  })
-  const { data: wholesaleData } = useWholesaleData(state.wholesale, date)
-  const preparedWholesale = prepareWholesaleData(wholesaleData)
   const { data: supercededBy } = useRateSupercededBy(ratePlanParam)
 
   const nav = useNavigate()
@@ -71,7 +53,6 @@ export default function DetailView() {
 
       selectedPlan?.supercedes && {
         label: 'Supercedes',
-
         children: (
           <Link
             className={s.supercedes}
@@ -95,24 +76,25 @@ export default function DetailView() {
       },
       {
         label: 'Source',
-        children: (
+        children: selectedPlan?.sourceReference ? (
           <a
             href={selectedPlan?.sourceReference!}
             style={{ whiteSpace: 'nowrap' }}
           >
             Link
           </a>
+        ) : (
+          <>&mdash;</>
         ),
       },
       {
         label: 'Source Parent',
-        children: (
-          <a
-            href={selectedPlan?.sourceParent!}
-            style={{ whiteSpace: 'nowrap' }}
-          >
+        children: selectedPlan?.sourceParent ? (
+          <a href={selectedPlan.sourceParent} style={{ whiteSpace: 'nowrap' }}>
             Link
           </a>
+        ) : (
+          <>&mdash;</>
         ),
       },
       selectedPlan?.description && {
@@ -135,12 +117,13 @@ export default function DetailView() {
 
   return (
     <main className={s.main}>
-      <h1>Details</h1>
-
       <Form layout="horizontal" className={s.form}>
-        <Row gutter={16} align="top">
+        <Row gutter={16} className={s.header}>
+          <Col>
+            <h1>Details</h1>
+          </Col>
           <Col span={15}>
-            <Form.Item label="Rate Plan">
+            <Form.Item label="Rate Plan" className={s.noMargin}>
               <RatePlanSelector
                 value={ratePlanParam}
                 onChange={handleRatePlanChange}
@@ -162,37 +145,11 @@ export default function DetailView() {
             {
               key: 1,
               label: 'Rate Plan Metadata',
-              children: (
-                <Descriptions
-                  items={descriptions}
-                  layout="vertical"
-                  size="small"
-                />
-              ),
+              children: <Descriptions items={descriptions} size="small" />,
             },
           ]}
         />
         <Row gutter={24}>
-          <Col span={8}>
-            <Form.Item label="Wholesale Market">
-              <Select
-                options={Object.keys(HUB_DICT)
-                  .toSorted()
-                  .map((x) => {
-                    return {
-                      label: x,
-                      value: x,
-                    }
-                  })}
-                onChange={(e) => {
-                  updateState((state) => {
-                    state.wholesale = e
-                  })
-                }}
-                value={state.wholesale}
-              />
-            </Form.Item>
-          </Col>
           <Col>
             <Form.Item label="For Date">
               <DatePicker
@@ -216,13 +173,9 @@ export default function DetailView() {
         <ScheduleHeatmap
           selectedPlan={selectedPlan}
           date={date}
-          type={'energy'}
+          type="energy"
         />
-        <EnergyRateChart
-          selectedPlan={selectedPlan}
-          date={date}
-          wholesaleData={preparedWholesale}
-        />
+        <EnergyRateChart selectedPlan={selectedPlan} date={date} />
         <TiersChart selectedPlan={selectedPlan} date={date} />
         <CoincidentRateChart selectedPlan={selectedPlan} date={date} />
         <ScheduleHeatmap
@@ -233,56 +186,45 @@ export default function DetailView() {
         <DemandRateChart selectedPlan={selectedPlan} date={date} />
         <DemandTierRateChart selectedPlan={selectedPlan} date={date} />
         <FlatDemandChart selectedPlan={selectedPlan} date={date} />
-      </div>
-      <Row style={{ marginTop: '24px' }}>
-        <Col>
+        <Card>
           <div
             style={{
-              border: '1px solid #d9d9d9',
-              padding: '8px',
-              borderRadius: '4px',
-              width: '400px',
+              width: '384px',
+              height: '250px',
+              backgroundColor: '#f0f0f0',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+            role="img"
+            aria-label="Map of United States showing counties served by this utility highlighted in color against a base map"
+          >
+            <span
+              style={{
+                color: '#999',
+                textAlign: 'center',
+                display: 'block',
+                padding: '8px',
+                maxWidth: '92%',
+                lineHeight: 1.4,
+              }}
+            >
+              Map of United States showing counties served by this utility
+              highlighted in color against a base map
+            </span>
+          </div>
+          <p
+            style={{
+              textAlign: 'center',
+              marginTop: '8px',
+              marginBottom: '0',
+              color: '#666',
             }}
           >
-            <div
-              style={{
-                width: '384px',
-                height: '250px',
-                backgroundColor: '#f0f0f0',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-              role="img"
-              aria-label="Map of United States showing counties served by this utility highlighted in color against a base map"
-            >
-              <span
-                style={{
-                  color: '#999',
-                  textAlign: 'center',
-                  display: 'block',
-                  padding: '8px',
-                  maxWidth: '92%',
-                  lineHeight: 1.4,
-                }}
-              >
-                Map of United States showing counties served by this utility
-                highlighted in color against a base map
-              </span>
-            </div>
-            <p
-              style={{
-                textAlign: 'center',
-                marginTop: '8px',
-                marginBottom: '0',
-                color: '#666',
-              }}
-            >
-              Counties covered by Utility
-            </p>
-          </div>
-        </Col>
-      </Row>
+            Counties covered by Utility
+          </p>
+        </Card>
+      </div>
       <Col sm={10} md={10} lg={6}>
         <RatePlanTimeline ratePlan={selectedPlan} />
       </Col>
