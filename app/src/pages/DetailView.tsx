@@ -68,17 +68,11 @@ export default function DetailView() {
     }
 
     return [
+      { label: 'Utility Name', children: selectedPlan.utilityName },
+      { label: 'Rate Name', children: selectedPlan.rateName },
       {
         label: 'Is Default?',
         children: selectedPlan.is_default === true ? 'Yes' : 'No',
-      },
-      selectedPlan.description && {
-        label: 'Description',
-        children: (
-          <div className={s.copy}>
-            <p>{selectedPlan.description}</p>
-          </div>
-        ),
       },
       {
         label: 'Source',
@@ -97,6 +91,14 @@ export default function DetailView() {
           <a href={selectedPlan.sourceParent!} style={{ whiteSpace: 'nowrap' }}>
             Link
           </a>
+        ),
+      },
+      selectedPlan.description && {
+        label: 'Description',
+        children: (
+          <div className={s.copy}>
+            <p>{selectedPlan.description}</p>
+          </div>
         ),
       },
     ].flatMap((x) => x || []) satisfies DescriptionsProps['items']
