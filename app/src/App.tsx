@@ -1,20 +1,13 @@
-import { QueryClientProvider, QueryClient } from '@tanstack/react-query'
-import { lazy, StrictMode, Suspense } from 'react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { StrictMode, Suspense } from 'react'
 import {
-  BrowserRouter,
-  Routes,
-  Route,
-  Link,
-  createRoutesFromElements,
   createBrowserRouter,
-  RouterProvider,
+  Link,
   Outlet,
+  RouterProvider,
 } from 'react-router-dom'
-import './global.css'
 import * as s from './App.module.css'
-
-const Storytelling = lazy(() => import('./pages/Storytelling'))
-const RegionalElectricityPatterns = lazy(() => import('./pages/ComparePlans'))
+import './global.css'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -37,7 +30,7 @@ function Layout() {
           <Link to="/">Home</Link>
           <Link to="/detail">Detail View</Link>
           <Link to="/compare">Compare Plans</Link>
-          <Link to="/map">BA Map</Link>  {/* ADD THIS */}
+          <Link to="/map">BA Map</Link> {/* ADD THIS */}
         </div>
       </nav>
       <Suspense fallback={<div>Loading...</div>}>

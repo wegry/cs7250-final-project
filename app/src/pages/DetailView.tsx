@@ -32,7 +32,6 @@ import { RatePlanTimeline } from '../components/RatePlanTimeline'
 import { HUB_DICT } from '../data/queries'
 import { useWholesaleData } from '../hooks/useWholesaleData'
 import { useMemo } from 'react'
-import DescriptionsItem from 'antd/es/descriptions/Item'
 
 interface State {
   adjustedIncluded: boolean

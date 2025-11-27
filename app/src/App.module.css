@@ -6,7 +6,15 @@
 
   & a,
   & > div {
-    color: lch(from var(--bg-color) calc(l * 2) 0 h);
+    color: lch(92% 0 0);
+  }
+
+  a {
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
   }
 }
 
