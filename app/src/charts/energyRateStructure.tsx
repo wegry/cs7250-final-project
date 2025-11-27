@@ -293,8 +293,13 @@ export function TiersChart({
   }
 
   return (
-    <Card>
-      <VegaEmbed spec={spec} options={{ mode: 'vega-lite', actions: false }} />
-    </Card>
+    <>
+      <Card>
+        <VegaEmbed
+          spec={spec}
+          options={{ mode: 'vega-lite', actions: false }}
+        />
+      </Card>
+    </>
   )
 }

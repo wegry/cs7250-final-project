@@ -34,6 +34,7 @@ import { RatePlanTimeline } from '../components/RatePlanTimeline'
 import { HUB_DICT } from '../data/queries'
 import { useWholesaleData } from '../hooks/useWholesaleData'
 import { useMemo } from 'react'
+import { ScheduleHeatmap } from '../components/Schedule'
 
 interface State {
   adjustedIncluded: boolean
@@ -212,6 +213,11 @@ export default function DetailView() {
       <div
         className={clsx(s.charts, { [s.chartLoading]: selectedPlanLoading })}
       >
+        <ScheduleHeatmap
+          selectedPlan={selectedPlan}
+          date={date}
+          type={'energy'}
+        />
         <EnergyRateChart
           selectedPlan={selectedPlan}
           date={date}
@@ -219,6 +225,11 @@ export default function DetailView() {
         />
         <TiersChart selectedPlan={selectedPlan} date={date} />
         <CoincidentRateChart selectedPlan={selectedPlan} date={date} />
+        <ScheduleHeatmap
+          selectedPlan={selectedPlan}
+          date={date}
+          type={'demand'}
+        />
         <DemandRateChart selectedPlan={selectedPlan} date={date} />
         <DemandTierRateChart selectedPlan={selectedPlan} date={date} />
         <FlatDemandChart selectedPlan={selectedPlan} date={date} />
