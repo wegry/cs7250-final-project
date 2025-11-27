@@ -25,12 +25,13 @@ const hoverParams = [
 
 export function CoincidentRateChart({ date, selectedPlan }: DayAndPlan) {
   const periods = selectedPlan?.coincidentSched?.[date.month()]
-  const values = periods?.flatMap((p, i) =>
-    selectedPlan?.coincidentRate_tiers?.[p].map((x) => ({
-      ...x,
-      tier: p,
-      hour: i,
-    }))
+  const values = periods?.flatMap(
+    (p, i) =>
+      selectedPlan?.coincidentRate_tiers?.[p].map((x) => ({
+        ...x,
+        tier: p,
+        hour: i,
+      })) ?? []
   )
 
   if (values == null) {
