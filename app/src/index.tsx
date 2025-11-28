@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client'
 import { App } from './App'
 import localizedFormat from 'dayjs/plugin/localizedFormat' // ES 2015
 import dayjs from 'dayjs'
+import './data/duckdb'
 
 dayjs.extend(localizedFormat)
 
