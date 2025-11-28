@@ -27,7 +27,7 @@ export function CoincidentRateChart({ date, selectedPlan }: DayAndPlan) {
   const periods = selectedPlan?.coincidentSched?.[date.month()]
   const values = periods?.flatMap(
     (p, i) =>
-      selectedPlan?.coincidentRate_tiers?.[p].map((x) => ({
+      selectedPlan?.coincidentRate_tiers?.[p]?.map((x) => ({
         ...x,
         tier: p,
         hour: i,
@@ -47,7 +47,7 @@ export function CoincidentRateChart({ date, selectedPlan }: DayAndPlan) {
       <Card>
         <Statistic
           title="Coincident Demand Rate"
-          value={price.format(values[0].rate ?? 0)}
+          value={price.format(values[0]?.rate ?? 0)}
           suffix={`/ ${selectedPlan?.coincidentRateUnits ?? 'kW'} all day`}
         />
       </Card>
@@ -109,15 +109,15 @@ export function DemandRateChart({ date, selectedPlan }: DayAndPlan) {
     const { demandRate_tiers } = selectedPlan
 
     return (
-      demandRate_tiers?.[p].flatMap((x, tier) => {
+      demandRate_tiers?.[p]?.flatMap((x, tier) => {
         if (x.rate == 0) return []
         const next = { ...x, hour, period: p, tier }
 
         if (hour == 23) {
           return [next, { ...next, hour: 24 }]
         } else if (
-          !demandRate_tiers[periods[hour + 1]]?.[tier]?.rate &&
-          !demandRate_tiers[periods[hour + 2]]?.[tier]?.rate
+          !demandRate_tiers[periods[hour + 1]!]?.[tier]?.rate &&
+          !demandRate_tiers[periods[hour + 2]!]?.[tier]?.rate
         ) {
           return [
             next,
@@ -133,15 +133,16 @@ export function DemandRateChart({ date, selectedPlan }: DayAndPlan) {
   if (selectedTiers == null) return null
 
   const values = windowed(selectedTiers, 2).flatMap(([x, y], i) => {
-    if (x.rate != y.rate) {
-      if (selectedTiers[i - 1]?.rate != x.rate) {
-        return [x, { ...x, hour: y.hour }, y]
+    if (x?.rate != y?.rate) {
+      if (selectedTiers[i - 1]?.rate != x?.rate) {
+        return [x, { ...x, hour: y?.hour }, y]
       }
       if (selectedTiers[i + 1]) {
         return [
           x,
-          { ...x, hour: y.hour },
-          { ...x, hour: y.hour + 1, rate: null },
+          { ...x, hour: y?.hour },
+          // This shouldn't happen...
+          { ...x, hour: y?.hour ?? 0 + 1, rate: null },
           y,
         ]
       }
@@ -150,14 +151,14 @@ export function DemandRateChart({ date, selectedPlan }: DayAndPlan) {
   })
 
   const isBoring =
-    uniqBy(values, (x) => [x.rate, x.period].join('/')).length === 1
+    uniqBy(values, (x) => [x?.rate, x?.period].join('/')).length === 1
 
   if (isBoring && values.length) {
     return (
       <Card>
         <Statistic
           title="Demand Rate"
-          value={price.format(values[0].rate ?? 0)}
+          value={price.format(values[0]?.rate ?? 0)}
           suffix={`/ ${selectedPlan?.demandRateUnits ?? 'kW'} all day`}
         />
       </Card>
@@ -220,7 +221,7 @@ export function DemandTierRateChart({ date, selectedPlan }: DayAndPlan) {
     const { demandRate_tiers } = selectedPlan
 
     return (
-      demandRate_tiers?.[p].flatMap((x, tier) => {
+      demandRate_tiers?.[p]?.flatMap((x, tier) => {
         if (x.rate === 0) return []
         let next = { ...x, tier, period: p }
 
@@ -234,7 +235,7 @@ export function DemandTierRateChart({ date, selectedPlan }: DayAndPlan) {
     )
   })
 
-  if (selectedTiers == null) return null
+  if (selectedTiers?.[0] == null) return null
 
   if (selectedTiers[0].max != 0) {
     selectedTiers = [{ ...selectedTiers[0], max: 0 }, ...selectedTiers]
@@ -248,7 +249,7 @@ export function DemandTierRateChart({ date, selectedPlan }: DayAndPlan) {
       <Card>
         <Statistic
           title="Demand Rate Tiers"
-          value={price.format(selectedTiers[0].rate ?? 0)}
+          value={price.format(selectedTiers[0]?.rate ?? 0)}
           suffix={`/ ${selectedPlan?.demandRateUnits ?? 'kW'}`}
         />
       </Card>
@@ -305,7 +306,7 @@ export function FlatDemandChart({ date, selectedPlan }: DayAndPlan) {
   if (selectedTiers == null) return null
 
   let values = []
-  if (selectedTiers.length == 1 && selectedTiers[0].max == null) {
+  if (selectedTiers.length == 1 && selectedTiers[0]?.max == null) {
     const only = selectedTiers[0]
     values = [
       { ...only, max: 0, tier: 0 },
@@ -330,7 +331,7 @@ export function FlatDemandChart({ date, selectedPlan }: DayAndPlan) {
       <Card>
         <Statistic
           title="Flat Demand Rate"
-          value={price.format(values[0].rate ?? 0)}
+          value={price.format(values[0]?.rate ?? 0)}
           suffix={`/ ${selectedPlan?.flatDemandUnits ?? 'kW'}`}
         />
       </Card>

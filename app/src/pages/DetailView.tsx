@@ -28,6 +28,7 @@ import {
 import { RatePlanTimeline } from '../components/RatePlanTimeline'
 import { useMemo } from 'react'
 import { ScheduleHeatmap } from '../components/Schedule'
+import { DetailSection } from '../components/DetailSection'
 
 const DATE_PARAM = 'date'
 
@@ -184,34 +185,56 @@ export default function DetailView() {
       <div
         className={clsx(s.charts, { [s.chartLoading]: selectedPlanLoading })}
       >
-        <ScheduleHeatmap
-          selectedPlan={selectedPlan}
-          date={date}
-          type="energy"
-          onDateChange={(newDate) => {
-            setParams((params) => {
-              params.set(DATE_PARAM, newDate.format('YYYY-MM-DD'))
-              return params
-            })
-          }}
-        />
-        <EnergyRateChart selectedPlan={selectedPlan} date={date} />
-        <TiersChart selectedPlan={selectedPlan} date={date} />
+        <DetailSection
+          description={'Energy (in kWh) is how much power is used over time. '}
+          hide={selectedPlan?.energyWeekdaySched == null}
+          title="Energy"
+        >
+          <ScheduleHeatmap
+            selectedPlan={selectedPlan}
+            date={date}
+            type="energy"
+            onDateChange={(newDate) => {
+              setParams((params) => {
+                params.set(DATE_PARAM, newDate.format('YYYY-MM-DD'))
+                return params
+              })
+            }}
+          />
+          <EnergyRateChart selectedPlan={selectedPlan} date={date} />
+          <TiersChart selectedPlan={selectedPlan} date={date} />
+        </DetailSection>
         <CoincidentRateChart selectedPlan={selectedPlan} date={date} />
-        <ScheduleHeatmap
-          selectedPlan={selectedPlan}
-          date={date}
-          type={'demand'}
-          onDateChange={(newDate) => {
-            setParams((params) => {
-              params.set(DATE_PARAM, newDate.format('YYYY-MM-DD'))
-              return params
-            })
-          }}
-        />
-        <DemandRateChart selectedPlan={selectedPlan} date={date} />
-        <DemandTierRateChart selectedPlan={selectedPlan} date={date} />
-        <FlatDemandChart selectedPlan={selectedPlan} date={date} />
+        <DetailSection
+          description={
+            'Demand (in kW) is how fast energy is consumed in an instant. Horsepower is the imperial equivalent.'
+          }
+          title="Demand"
+          hide={selectedPlan?.demandWeekdaySched == null}
+        >
+          <ScheduleHeatmap
+            selectedPlan={selectedPlan}
+            date={date}
+            type={'demand'}
+            onDateChange={(newDate) => {
+              setParams((params) => {
+                params.set(DATE_PARAM, newDate.format('YYYY-MM-DD'))
+                return params
+              })
+            }}
+          />
+          <DemandRateChart selectedPlan={selectedPlan} date={date} />
+          <DemandTierRateChart selectedPlan={selectedPlan} date={date} />
+          <DetailSection
+            description={
+              'Flat demand (in kW) is a rate for the maximum speed energy could be consumed in an instant. '
+            }
+            title="Flat Demand"
+            hide={selectedPlan?.flatDemandMonths == null}
+          >
+            <FlatDemandChart selectedPlan={selectedPlan} date={date} />
+          </DetailSection>
+        </DetailSection>
         <Card>
           <div
             style={{

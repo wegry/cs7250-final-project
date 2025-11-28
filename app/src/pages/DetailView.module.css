@@ -32,13 +32,15 @@
 }
 
 .charts {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(400px, 550px));
+  display: flex;
+  flex-wrap: wrap;
   margin-bottom: 16px;
   gap: 16px;
+  align-items: center;
 
   & :global(.ant-card-body) > div {
     width: -webkit-fill-available;
+    height: fit-content;
   }
 }
 
