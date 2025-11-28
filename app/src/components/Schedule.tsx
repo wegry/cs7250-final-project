@@ -117,7 +117,7 @@ function createScheduleSpec(
         field: 'hour',
         type: 'ordinal',
         title: 'Hour of Day',
-        axis: { labelAngle: 0 },
+        axis: { labelAngle: 0, bandPosition: 0 },
         sort: Array.from({ length: 24 }, (_, i) => i),
       },
       y: {
