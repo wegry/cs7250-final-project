@@ -174,6 +174,12 @@ export default function DetailView() {
           selectedPlan={selectedPlan}
           date={date}
           type="energy"
+          onDateChange={(newDate) => {
+            setParams((params) => {
+              params.set(DATE_PARAM, newDate.format('YYYY-MM-DD'))
+              return params
+            })
+          }}
         />
         <EnergyRateChart selectedPlan={selectedPlan} date={date} />
         <TiersChart selectedPlan={selectedPlan} date={date} />
@@ -182,6 +188,12 @@ export default function DetailView() {
           selectedPlan={selectedPlan}
           date={date}
           type={'demand'}
+          onDateChange={(newDate) => {
+            setParams((params) => {
+              params.set(DATE_PARAM, newDate.format('YYYY-MM-DD'))
+              return params
+            })
+          }}
         />
         <DemandRateChart selectedPlan={selectedPlan} date={date} />
         <DemandTierRateChart selectedPlan={selectedPlan} date={date} />
