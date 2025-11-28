@@ -45,13 +45,17 @@ function getFirstDayOfType(
 }
 
 // Transform schedule array to Vega-Lite data format
-function transformScheduleForVega(schedule: number[][] | null): Array<{
-  month: string
-  monthIndex: number
-  hour: number
-  period: string
-}> {
-  if (!schedule) return []
+function transformScheduleForVega(schedule: number[][] | null): {
+  data: Array<{
+    month: string
+    monthIndex: number
+    hour?: number
+    period: string
+  }>
+  hasHourlyVariation: boolean
+} {
+  if (!schedule) return { data: [], hasHourlyVariation: false }
+
   const months = [
     'Jan',
     'Feb',
@@ -66,37 +70,110 @@ function transformScheduleForVega(schedule: number[][] | null): Array<{
     'Nov',
     'Dec',
   ]
+
+  // Check if any month has variation across hours
+  const hasHourlyVariation = schedule.some((monthData) => {
+    if (!monthData || monthData.length === 0) return false
+    const firstValue = monthData[0]
+    return monthData.some((v) => v !== firstValue)
+  })
+
   const data: Array<{
     month: string
     monthIndex: number
-    hour: number
+    hour?: number
     period: string
   }> = []
 
-  for (let m = 0; m < schedule.length; m++) {
-    for (let h = 0; h < (schedule[m]?.length || 0); h++) {
-      data.push({
-        month: months[m],
-        monthIndex: m,
-        hour: h,
-        period: String(schedule[m][h]),
-      })
+  if (hasHourlyVariation) {
+    for (let m = 0; m < schedule.length; m++) {
+      for (let h = 0; h < (schedule[m]?.length || 0); h++) {
+        data.push({
+          month: months[m],
+          monthIndex: m,
+          hour: h,
+          period: String(schedule[m][h]),
+        })
+      }
+    }
+  } else {
+    // Collapse to one entry per month
+    for (let m = 0; m < schedule.length; m++) {
+      if (schedule[m] && schedule[m].length > 0) {
+        data.push({
+          month: months[m],
+          monthIndex: m,
+          period: String(schedule[m][0]),
+        })
+      }
     }
   }
-  return data
+
+  return { data, hasHourlyVariation }
 }
 
 // Create Vega-Lite spec for schedule heatmap
 function createScheduleSpec(
   title: string,
-  data: ReturnType<typeof transformScheduleForVega>,
+  data: ReturnType<typeof transformScheduleForVega>['data'],
   colorScale: { domain: string[]; range: string[] },
-  interactive: boolean
+  interactive: boolean,
+  hasHourlyVariation: boolean
 ): TopLevelSpec {
+  const monthSort = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ]
+
+  const encoding = {
+    y: {
+      field: 'month',
+      type: 'ordinal',
+      title: null,
+      sort: monthSort,
+    },
+    color: {
+      field: 'period',
+      type: 'ordinal',
+      title: 'Period',
+      scale: colorScale,
+    },
+    tooltip: hasHourlyVariation
+      ? [
+          { field: 'month', title: 'Month' },
+          { field: 'hour', title: 'Hour' },
+          { field: 'period', title: 'Period' },
+        ]
+      : [
+          { field: 'month', title: 'Month' },
+          { field: 'period', title: 'Period' },
+        ],
+  }
+
+  if (hasHourlyVariation) {
+    encoding.x = {
+      field: 'hour',
+      type: 'ordinal',
+      title: 'Hour of Day',
+      axis: { labelAngle: 0, bandPosition: 0 },
+      sort: Array.from({ length: 24 }, (_, i) => i),
+    }
+  }
+
   const spec: TopLevelSpec = {
     $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
     title,
-    width: 400,
+    width: hasHourlyVariation ? 400 : 40,
     height: 200,
     data: { values: data },
     params: interactive
@@ -112,50 +189,13 @@ function createScheduleSpec(
       stroke: 'white',
       cursor: interactive ? 'pointer' : 'default',
     },
-    encoding: {
-      x: {
-        field: 'hour',
-        type: 'ordinal',
-        title: 'Hour of Day',
-        axis: { labelAngle: 0, bandPosition: 0 },
-        sort: Array.from({ length: 24 }, (_, i) => i),
-      },
-      y: {
-        field: 'month',
-        type: 'ordinal',
-        title: null,
-        sort: [
-          'Jan',
-          'Feb',
-          'Mar',
-          'Apr',
-          'May',
-          'Jun',
-          'Jul',
-          'Aug',
-          'Sep',
-          'Oct',
-          'Nov',
-          'Dec',
-        ],
-      },
-      color: {
-        field: 'period',
-        type: 'ordinal',
-        title: 'Period',
-        scale: colorScale,
-      },
-      tooltip: [
-        { field: 'month', title: 'Month' },
-        { field: 'hour', title: 'Hour' },
-        { field: 'period', title: 'Period' },
-      ],
-    },
+    encoding,
     config: {
       axis: { grid: false },
       view: { stroke: null },
     },
   }
+
   return spec
 }
 
@@ -172,8 +212,22 @@ function Heatmap({
   colorScale,
   onCellClick,
 }: HeatmapProps) {
-  const data = transformScheduleForVega(schedule)
-  const spec = createScheduleSpec(title, data, colorScale, !!onCellClick)
+  const { data, hasHourlyVariation } = transformScheduleForVega(schedule)
+  const periodsInData = new Set(data.map((d) => d.period))
+  const filteredColorScale = {
+    domain: colorScale.domain.filter((p) => periodsInData.has(p)),
+    range: colorScale.domain
+      .map((p, i) => ({ period: p, color: colorScale.range[i] }))
+      .filter(({ period }) => periodsInData.has(period))
+      .map(({ color }) => color),
+  }
+  const spec = createScheduleSpec(
+    title,
+    data,
+    filteredColorScale,
+    !!onCellClick,
+    hasHourlyVariation
+  )
   const resultRef = useRef<Result | null>(null)
   const callbackRef = useRef(onCellClick)
 
