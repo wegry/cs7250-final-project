@@ -138,17 +138,21 @@ export default function DetailView() {
             </Button>
           </Col>
         </Row>
-        <Collapse
-          className={s.meta}
-          defaultActiveKey={1}
-          items={[
-            {
-              key: 1,
-              label: 'Rate Plan Metadata',
-              children: <Descriptions items={descriptions} size="small" />,
-            },
-          ]}
-        />
+        <Row>
+          <Col>
+            <Collapse
+              className={s.meta}
+              defaultActiveKey={1}
+              items={[
+                {
+                  key: 1,
+                  label: 'Rate Plan Metadata',
+                  children: <Descriptions items={descriptions} size="small" />,
+                },
+              ]}
+            />
+          </Col>
+        </Row>
         <Row gutter={24}>
           <Col>
             <Form.Item label="For Date">
