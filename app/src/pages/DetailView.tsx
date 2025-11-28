@@ -49,25 +49,33 @@ export default function DetailView() {
   const descriptions = useMemo(() => {
     return [
       { label: 'Utility Name', children: selectedPlan?.utilityName },
-      { label: 'Rate Name', children: selectedPlan?.rateName },
+      {
+        label: 'Rate Name',
+        children: selectedPlan?.rateName,
+        span: { md: 3, lg: 2 },
+      },
 
-      selectedPlan?.supercedes && {
+      {
         label: 'Supercedes',
-        children: (
+        children: selectedPlan?.supercedes ? (
           <Link
             className={s.supercedes}
             to={`/detail/${selectedPlan?.supercedes}`}
           >
             {selectedPlan?.supercedes}
           </Link>
+        ) : (
+          <>&mdash;</>
         ),
       },
-      supercededBy?.[0]?._id && {
+      {
         label: 'Superceded By',
-        children: (
+        children: supercededBy?.[0]?._id ? (
           <Link className={s.supercedes} to={`/detail/${supercededBy[0]._id}`}>
             {supercededBy[0]._id}
           </Link>
+        ) : (
+          <>&mdash;</>
         ),
       },
       {
@@ -97,9 +105,9 @@ export default function DetailView() {
           <>&mdash;</>
         ),
       },
-      selectedPlan?.description && {
+      {
         label: 'Description',
-        children: (
+        children: selectedPlan?.description ? (
           <Popover
             content={
               <div className={s.copy}>
@@ -110,9 +118,11 @@ export default function DetailView() {
           >
             <Button>Click me</Button>
           </Popover>
+        ) : (
+          <>&mdash;</>
         ),
       },
-    ].flatMap((x) => x || []) satisfies DescriptionsProps['items']
+    ] satisfies DescriptionsProps['items']
   }, [selectedPlan, supercededBy])
 
   return (
