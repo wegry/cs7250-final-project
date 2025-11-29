@@ -2,7 +2,9 @@ import netlify from "@netlify/vite-plugin";
 
 /** @type {import('vite').UserConfig} */
 export default {
-  plugins: [netlify()],
+  plugins: [
+    // netlify()
+  ],
   optimizeDeps: {
     exclude: ["@duckdb/duckdb-wasm"],
     esbuildOptions: {

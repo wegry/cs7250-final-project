@@ -66,7 +66,7 @@ export function CoincidentRateChart({ date, selectedPlan }: DayAndPlan) {
       interpolate: "step-after",
       point: { filled: true, size: 60 },
     },
-    title: "Coincident Demand Rate",
+    title: `Coincident Demand Rate (${date.format("dddd LL")})`,
     encoding: {
       x: {
         field: "hour",
@@ -176,7 +176,7 @@ export function DemandRateChart({ date, selectedPlan }: DayAndPlan) {
       interpolate: "step-after",
       point: { filled: true, size: 60 },
     },
-    title: "Demand Rate",
+    title: `Demand Rate (${date.format("dddd LL")})`,
     encoding: {
       y: {
         field: "rate",
@@ -267,7 +267,7 @@ export function DemandTierRateChart({ date, selectedPlan }: DayAndPlan) {
       interpolate: "step-after",
       point: { filled: true, size: 60 },
     },
-    title: "Demand Rate Tiers",
+    title: `Demand Rate Tiers (${date.format("dddd LL")})`,
     encoding: {
       y: {
         field: "rate",
@@ -349,7 +349,7 @@ export function FlatDemandChart({ date, selectedPlan }: DayAndPlan) {
       interpolate: "step-after",
       point: { filled: true, size: 60 },
     },
-    title: "Flat Demand Rate",
+    title: `Flat Demand Rate (${date.format("dddd LL")})`,
     encoding: {
       y: {
         field: "rate",

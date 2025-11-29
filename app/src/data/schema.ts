@@ -58,6 +58,12 @@ export const RatePlan = z.object({
   supercedes: z.string().nullish(),
   fixedChargeFirstMeter: z.number().nullish(),
   fixedChargeUnits: fixedChargeUnits,
+  fixedChargeEaAddl: z.number().nullish(),
+  fixedKeyVals: z.preprocess(
+    (arg) => (arg == null ? arg : Array.from(arg as unknown[])),
+    z.array(z.object({ key: z.string(), val: z.string() })).nullish(),
+  ),
+
   minCharge: z.number().nullable(),
   minChargeUnits: fixedChargeUnits,
   coincidentSched: optionalSchedule,

@@ -23,6 +23,7 @@ import { useRatePlan } from "../hooks/useRatePlan";
 import * as s from "./DetailView.module.css";
 
 import dayjs from "dayjs";
+import { useMemo } from "react";
 import { EnergyRateChart, TiersChart } from "../charts/energyRateStructure";
 import {
   CoincidentRateChart,
@@ -30,12 +31,25 @@ import {
   DemandTierRateChart,
   FlatDemandChart,
 } from "../charts/otherRateStructures";
-import { RatePlanTimeline } from "../components/RatePlanTimeline";
-import { useMemo } from "react";
-import { ScheduleHeatmap } from "../components/Schedule";
 import { DetailSection } from "../components/DetailSection";
+import { FixedChargesCard } from "../components/FixedCharges";
+import { RatePlanTimeline } from "../components/RatePlanTimeline";
+import { ScheduleHeatmap } from "../components/Schedule";
 
 const DATE_PARAM = "date";
+
+const DESCRIPTIONS = {
+  energy:
+    "Total electricity used over time—like buying gallons of gas. The more you use, the more you pay. Rates often vary by time of day.",
+  demand:
+    "Your peak usage rate at any instant, not the total. Utilities charge for this because they must build infrastructure to handle everyone's maximum draw at once. Common for businesses, rare for homes.",
+  coincidentDemand:
+    "Charges based on your usage during the grid's system-wide peak—typically hot summer afternoons. Customers contributing most to collective stress pay more.",
+  flatDemand:
+    "A simpler demand charge that applies the same rate regardless of when your peak occurs.",
+  fixedCharges:
+    "Fixed monthly costs that appear on your bill regardless of how much electricity you use. These cover metering, billing, and basic infrastructure costs. Minimum charges ensure a baseline payment even with very low usage.",
+};
 
 export default function DetailView() {
   const { id: ratePlanParam } = useParams();
@@ -52,6 +66,16 @@ export default function DetailView() {
     nav(`/detail/${value}`);
   };
 
+  const hasFixedCharges = useMemo(() => {
+    if (!selectedPlan) return false;
+    return (
+      selectedPlan.fixedChargeFirstMeter != null ||
+      selectedPlan.fixedChargeEaAddl != null ||
+      selectedPlan.minCharge != null ||
+      (selectedPlan.fixedKeyVals?.length ?? 0) > 0
+    );
+  }, [selectedPlan]);
+
   const descriptions = useMemo(() => {
     return [
       { label: "Utility Name", children: selectedPlan?.utilityName },
@@ -60,7 +84,6 @@ export default function DetailView() {
         children: selectedPlan?.rateName,
         span: { md: 3, lg: 2 },
       },
-
       {
         label: "Supercedes",
         children: selectedPlan?.supercedes ? (
@@ -191,7 +214,15 @@ export default function DetailView() {
         className={clsx(s.charts, { [s.chartLoading]: selectedPlanLoading })}
       >
         <DetailSection
-          description={"Energy (in kWh) is how much power is used over time. "}
+          description={DESCRIPTIONS.fixedCharges}
+          hide={!hasFixedCharges}
+          title="Fixed & Minimum Charges"
+        >
+          <FixedChargesCard selectedPlan={selectedPlan} />
+        </DetailSection>
+
+        <DetailSection
+          description={DESCRIPTIONS.energy}
           hide={selectedPlan?.energyWeekdaySched == null}
           title="Energy"
         >
@@ -209,11 +240,15 @@ export default function DetailView() {
           <EnergyRateChart selectedPlan={selectedPlan} date={date} />
           <TiersChart selectedPlan={selectedPlan} date={date} />
         </DetailSection>
-        <CoincidentRateChart selectedPlan={selectedPlan} date={date} />
         <DetailSection
-          description={
-            "Demand (in kW) is how fast energy is consumed in an instant. Horsepower is the imperial equivalent."
-          }
+          description={DESCRIPTIONS.coincidentDemand}
+          hide={selectedPlan?.coincidentSched == null}
+          title="Coincident Demand"
+        >
+          <CoincidentRateChart selectedPlan={selectedPlan} date={date} />
+        </DetailSection>
+        <DetailSection
+          description={DESCRIPTIONS.demand}
           title="Demand"
           hide={selectedPlan?.demandWeekdaySched == null}
         >
@@ -231,9 +266,7 @@ export default function DetailView() {
           <DemandRateChart selectedPlan={selectedPlan} date={date} />
           <DemandTierRateChart selectedPlan={selectedPlan} date={date} />
           <DetailSection
-            description={
-              "Flat demand (in kW) is a rate for the maximum speed energy could be consumed in an instant. "
-            }
+            description={DESCRIPTIONS.flatDemand}
             title="Flat Demand"
             hide={selectedPlan?.flatDemandMonths == null}
           >

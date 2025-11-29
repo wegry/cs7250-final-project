@@ -81,7 +81,7 @@ export function EnergyRateChart({
     $schema: "https://vega.github.io/schema/vega-lite/v6.json",
     width: 400,
     height: 200,
-    title: "Energy Rate Structure",
+    title: `Energy Rate Structure (${date.format("dddd LL")})`,
     resolve: {
       legend: { color: "independent" },
       scale: { color: "independent" },
@@ -225,7 +225,7 @@ export function TiersChart({
     $schema: "https://vega.github.io/schema/vega-lite/v6.json",
     width: 400,
     height: 200,
-    title: "Energy Usage Tiers",
+    title: `Energy Usage Tiers (${date.format("dddd LL")})`,
     data: { values: windows },
     params: [
       {
