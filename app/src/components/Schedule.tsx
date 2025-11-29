@@ -36,7 +36,7 @@ function getUniquePeriods(schedule: number[][] | null): Set<number> {
 function getFirstDayOfType(
   year: number,
   month: number,
-  type: "weekday" | "weekend"
+  type: "weekday" | "weekend",
 ): Dayjs {
   const firstOfMonth = dayjs().year(year).month(month).date(1);
   const dayOfWeek = firstOfMonth.day();
@@ -69,7 +69,7 @@ type DataPoint = {
 
 function transformToHourly(
   schedule: number[][] | null,
-  dayType?: string
+  dayType?: string,
 ): DataPoint[] {
   if (!schedule) return [];
   const data: DataPoint[] = [];
@@ -89,7 +89,7 @@ function transformToHourly(
 
 function transformCollapsed(
   schedule: number[][] | null,
-  dayType?: string
+  dayType?: string,
 ): DataPoint[] {
   if (!schedule) return [];
   const data: DataPoint[] = [];
@@ -108,13 +108,13 @@ function transformCollapsed(
 
 function filterColorScale(
   colorScale: { domain: string[]; range: string[] },
-  data: DataPoint[]
+  data: DataPoint[],
 ): { domain: string[]; range: string[] } {
   const periodsInData = new Set(data.map((d) => d.period));
   return {
     domain: colorScale.domain.filter((p) => periodsInData.has(p)),
     range: colorScale.domain.flatMap((p, i) =>
-      periodsInData.has(p) && colorScale.range[i] ? [colorScale.range[i]] : []
+      periodsInData.has(p) && colorScale.range[i] ? [colorScale.range[i]] : [],
     ),
   };
 }
@@ -123,7 +123,7 @@ function createSingleScheduleSpec(
   title: string,
   schedule: number[][] | null,
   colorScale: { domain: string[]; range: string[] },
-  interactive: boolean
+  interactive: boolean,
 ): TopLevelSpec {
   const hourly = hasHourlyVariation(schedule);
   const data = hourly
@@ -193,7 +193,7 @@ function createCombinedScheduleSpec(
   weekdaySchedule: number[][] | null,
   weekendSchedule: number[][] | null,
   colorScale: { domain: string[]; range: string[] },
-  interactive: boolean
+  interactive: boolean,
 ): TopLevelSpec {
   const weekdayHourly = hasHourlyVariation(weekdaySchedule);
   const weekendHourly = hasHourlyVariation(weekendSchedule);
@@ -234,7 +234,7 @@ function createCombinedScheduleSpec(
     data: DataPoint[],
     hourly: boolean,
     showYAxis: boolean,
-    subTitle: string
+    subTitle: string,
   ) => ({
     title: subTitle,
     width: hourly ? 400 : 15,
@@ -363,7 +363,7 @@ export function ScheduleHeatmap({
 
   const handleCellClick = (
     monthIndex: number,
-    dayType: "weekday" | "weekend"
+    dayType: "weekday" | "weekend",
   ) => {
     if (!onDateChange) return;
     const newDate = getFirstDayOfType(date.year(), monthIndex, dayType);
@@ -380,14 +380,14 @@ export function ScheduleHeatmap({
         "All Week " + title,
         weekdaySchedule,
         colorScale,
-        interactive
+        interactive,
       )
     : createCombinedScheduleSpec(
         title,
         weekdaySchedule,
         weekendSchedule,
         colorScale,
-        interactive
+        interactive,
       );
 
   return (
