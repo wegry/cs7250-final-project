@@ -9,60 +9,65 @@ import {
   Form,
   Popover,
   Row,
-} from "antd";
-import clsx from "clsx";
-import {
-  Link,
-  useNavigate,
-  useParams,
-  useSearchParams,
-} from "react-router-dom";
-import { RatePlanSelector } from "../components/RatePlanSelector";
-import { useRateSupercededBy } from "../hooks/useRateInPlanData";
-import { useRatePlan } from "../hooks/useRatePlan";
-import * as s from "./DetailView.module.css";
+} from 'antd'
+import clsx from 'clsx'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { RatePlanSelector } from '../components/RatePlanSelector'
+import { useRateSupercededBy } from '../hooks/useRateInPlanData'
+import { useRatePlan } from '../hooks/useRatePlan'
+import * as s from './DetailView.module.css'
 
-import dayjs from "dayjs";
-import { EnergyRateChart, TiersChart } from "../charts/energyRateStructure";
+import dayjs from 'dayjs'
+import { EnergyRateChart, TiersChart } from '../charts/energyRateStructure'
 import {
   CoincidentRateChart,
   DemandRateChart,
   DemandTierRateChart,
   FlatDemandChart,
-} from "../charts/otherRateStructures";
-import { RatePlanTimeline } from "../components/RatePlanTimeline";
-import { useMemo } from "react";
-import { ScheduleHeatmap } from "../components/Schedule";
-import { DetailSection } from "../components/DetailSection";
+} from '../charts/otherRateStructures'
+import { RatePlanTimeline } from '../components/RatePlanTimeline'
+import { useMemo } from 'react'
+import { ScheduleHeatmap } from '../components/Schedule'
+import { DetailSection } from '../components/DetailSection'
 
-const DATE_PARAM = "date";
+const DATE_PARAM = 'date'
+
+const DESCRIPTIONS = {
+  energy:
+    'Total electricity used over time—like buying gallons of gas. The more you use, the more you pay. Rates often vary by time of day.',
+  demand:
+    "Your peak usage rate at any instant, not the total. Utilities charge for this because they must build infrastructure to handle everyone's maximum draw at once. Common for businesses, rare for homes.",
+  coincidentDemand:
+    "Charges based on your usage during the grid's system-wide peak—typically hot summer afternoons. Customers contributing most to collective stress pay more.",
+  flatDemand:
+    'A simpler demand charge that applies the same rate regardless of when your peak occurs.',
+}
 
 export default function DetailView() {
-  const { id: ratePlanParam } = useParams();
-  const [params, setParams] = useSearchParams();
-  const date = dayjs(params.get(DATE_PARAM) || "2025-10-01");
+  const { id: ratePlanParam } = useParams()
+  const [params, setParams] = useSearchParams()
+  const date = dayjs(params.get(DATE_PARAM) || '2025-10-01')
   const { data: selectedPlan, isLoading: selectedPlanLoading } =
-    useRatePlan(ratePlanParam);
+    useRatePlan(ratePlanParam)
 
-  const { data: supercededBy } = useRateSupercededBy(ratePlanParam);
+  const { data: supercededBy } = useRateSupercededBy(ratePlanParam)
 
-  const nav = useNavigate();
+  const nav = useNavigate()
 
   const handleRatePlanChange = async (value: string) => {
-    nav(`/detail/${value}`);
-  };
+    nav(`/detail/${value}`)
+  }
 
   const descriptions = useMemo(() => {
     return [
-      { label: "Utility Name", children: selectedPlan?.utilityName },
+      { label: 'Utility Name', children: selectedPlan?.utilityName },
       {
-        label: "Rate Name",
+        label: 'Rate Name',
         children: selectedPlan?.rateName,
         span: { md: 3, lg: 2 },
       },
-
       {
-        label: "Supercedes",
+        label: 'Supercedes',
         children: selectedPlan?.supercedes ? (
           <Link
             className={s.supercedes}
@@ -75,7 +80,7 @@ export default function DetailView() {
         ),
       },
       {
-        label: "Superceded By",
+        label: 'Superceded By',
         children: supercededBy?.[0]?._id ? (
           <Link className={s.supercedes} to={`/detail/${supercededBy[0]._id}`}>
             {supercededBy[0]._id}
@@ -85,15 +90,15 @@ export default function DetailView() {
         ),
       },
       {
-        label: "Is Default?",
-        children: selectedPlan?.is_default === true ? "Yes" : "No",
+        label: 'Is Default?',
+        children: selectedPlan?.is_default === true ? 'Yes' : 'No',
       },
       {
-        label: "Source",
+        label: 'Source',
         children: selectedPlan?.sourceReference ? (
           <a
             href={selectedPlan?.sourceReference!}
-            style={{ whiteSpace: "nowrap" }}
+            style={{ whiteSpace: 'nowrap' }}
           >
             Link
           </a>
@@ -102,9 +107,9 @@ export default function DetailView() {
         ),
       },
       {
-        label: "Source Parent",
+        label: 'Source Parent',
         children: selectedPlan?.sourceParent ? (
-          <a href={selectedPlan.sourceParent} style={{ whiteSpace: "nowrap" }}>
+          <a href={selectedPlan.sourceParent} style={{ whiteSpace: 'nowrap' }}>
             Link
           </a>
         ) : (
@@ -112,7 +117,7 @@ export default function DetailView() {
         ),
       },
       {
-        label: "Description",
+        label: 'Description',
         children: selectedPlan?.description ? (
           <Popover
             content={
@@ -128,8 +133,8 @@ export default function DetailView() {
           <>&mdash;</>
         ),
       },
-    ] satisfies DescriptionsProps["items"];
-  }, [selectedPlan, supercededBy]);
+    ] satisfies DescriptionsProps['items']
+  }, [selectedPlan, supercededBy])
 
   return (
     <main className={s.main}>
@@ -162,7 +167,7 @@ export default function DetailView() {
               items={[
                 {
                   key: 1,
-                  label: "Rate Plan Metadata",
+                  label: 'Rate Plan Metadata',
                   children: <Descriptions items={descriptions} size="small" />,
                 },
               ]}
@@ -177,8 +182,8 @@ export default function DetailView() {
                 value={date}
                 onChange={(e) =>
                   setParams((params) => {
-                    params.set(DATE_PARAM, e.format("YYYY-MM-DD"));
-                    return params;
+                    params.set(DATE_PARAM, e.format('YYYY-MM-DD'))
+                    return params
                   })
                 }
               />
@@ -191,7 +196,7 @@ export default function DetailView() {
         className={clsx(s.charts, { [s.chartLoading]: selectedPlanLoading })}
       >
         <DetailSection
-          description={"Energy (in kWh) is how much power is used over time. "}
+          description={DESCRIPTIONS.energy}
           hide={selectedPlan?.energyWeekdaySched == null}
           title="Energy"
         >
@@ -201,39 +206,41 @@ export default function DetailView() {
             type="energy"
             onDateChange={(newDate) => {
               setParams((params) => {
-                params.set(DATE_PARAM, newDate.format("YYYY-MM-DD"));
-                return params;
-              });
+                params.set(DATE_PARAM, newDate.format('YYYY-MM-DD'))
+                return params
+              })
             }}
           />
           <EnergyRateChart selectedPlan={selectedPlan} date={date} />
           <TiersChart selectedPlan={selectedPlan} date={date} />
         </DetailSection>
-        <CoincidentRateChart selectedPlan={selectedPlan} date={date} />
         <DetailSection
-          description={
-            "Demand (in kW) is how fast energy is consumed in an instant. Horsepower is the imperial equivalent."
-          }
+          description={DESCRIPTIONS.coincidentDemand}
+          hide={selectedPlan?.coincidentRateStructure == null}
+          title="Coincident Demand"
+        >
+          <CoincidentRateChart selectedPlan={selectedPlan} date={date} />
+        </DetailSection>
+        <DetailSection
+          description={DESCRIPTIONS.demand}
           title="Demand"
           hide={selectedPlan?.demandWeekdaySched == null}
         >
           <ScheduleHeatmap
             selectedPlan={selectedPlan}
             date={date}
-            type={"demand"}
+            type={'demand'}
             onDateChange={(newDate) => {
               setParams((params) => {
-                params.set(DATE_PARAM, newDate.format("YYYY-MM-DD"));
-                return params;
-              });
+                params.set(DATE_PARAM, newDate.format('YYYY-MM-DD'))
+                return params
+              })
             }}
           />
           <DemandRateChart selectedPlan={selectedPlan} date={date} />
           <DemandTierRateChart selectedPlan={selectedPlan} date={date} />
           <DetailSection
-            description={
-              "Flat demand (in kW) is a rate for the maximum speed energy could be consumed in an instant. "
-            }
+            description={DESCRIPTIONS.flatDemand}
             title="Flat Demand"
             hide={selectedPlan?.flatDemandMonths == null}
           >
@@ -243,23 +250,23 @@ export default function DetailView() {
         <Card>
           <div
             style={{
-              width: "384px",
-              height: "250px",
-              backgroundColor: "#f0f0f0",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
+              width: '384px',
+              height: '250px',
+              backgroundColor: '#f0f0f0',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
             }}
             role="img"
             aria-label="Map of United States showing counties served by this utility highlighted in color against a base map"
           >
             <span
               style={{
-                color: "#999",
-                textAlign: "center",
-                display: "block",
-                padding: "8px",
-                maxWidth: "92%",
+                color: '#999',
+                textAlign: 'center',
+                display: 'block',
+                padding: '8px',
+                maxWidth: '92%',
                 lineHeight: 1.4,
               }}
             >
@@ -269,10 +276,10 @@ export default function DetailView() {
           </div>
           <p
             style={{
-              textAlign: "center",
-              marginTop: "8px",
-              marginBottom: "0",
-              color: "#666",
+              textAlign: 'center',
+              marginTop: '8px',
+              marginBottom: '0',
+              color: '#666',
             }}
           >
             Counties covered by Utility
@@ -283,5 +290,5 @@ export default function DetailView() {
         <RatePlanTimeline ratePlan={selectedPlan} />
       </Col>
     </main>
-  );
+  )
 }
