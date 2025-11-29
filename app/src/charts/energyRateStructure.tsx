@@ -61,14 +61,16 @@ export function EnergyRateChart({
     [selectedPlan]
   )
 
-  if (!retailData.length) return null
+  if (!retailData.length) {
+    return null
+  }
 
   if (isBoring && retailData.length) {
     return (
       <Card>
         <Statistic
           title="Energy Price"
-          value={price.format(retailData[0].value)}
+          value={price.format(retailData[0]?.value ?? 0)}
           suffix={`/ kWh all day ${sameAllYearLong ? 'all year' : ''}`}
         />
       </Card>
@@ -155,7 +157,7 @@ function pullData(
     : data?.energyWeekdaySched
 
   return (
-    schedule?.[date.month()].flatMap((period, i) => {
+    schedule?.[date.month()]?.flatMap((period, i) => {
       const periodInfo = tiers?.[period]
       if (!periodInfo) return []
 
@@ -187,7 +189,7 @@ export function TiersChart({
 
   const windows = windowed(structuredClone(selectedTiers), 2)
     .flatMap(([x, y], tier) => {
-      if (!(x.max || y.max)) {
+      if (!(x?.max || y?.max)) {
         return []
       }
       const nextTier = tier + 1
@@ -195,14 +197,14 @@ export function TiersChart({
       if (tier == 0) {
         padFirst = { ...x, max: 0, tier }
       }
-      if (!y.max && x.max) {
+      if (!y?.max && x?.max) {
         return [
           padFirst,
           { ...x, tier },
           { ...y, tier: nextTier, max: x.max },
           { ...y, tier: nextTier, max: x.max * 1.5 },
         ]
-      } else if (y.max && x.max) {
+      } else if (y?.max && x?.max) {
         return [
           padFirst,
           { ...x, tier },

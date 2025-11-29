@@ -89,21 +89,21 @@ function transformScheduleForVega(schedule: number[][] | null): {
     for (let m = 0; m < schedule.length; m++) {
       for (let h = 0; h < (schedule[m]?.length || 0); h++) {
         data.push({
-          month: months[m],
+          month: months[m]!,
           monthIndex: m,
           hour: h,
-          period: String(schedule[m][h]),
+          period: String(schedule[m]?.[h]),
         })
       }
     }
   } else {
     // Collapse to one entry per month
     for (let m = 0; m < schedule.length; m++) {
-      if (schedule[m] && schedule[m].length > 0) {
+      if (schedule[m] && schedule[m]?.length) {
         data.push({
-          month: months[m],
+          month: months[m]!,
           monthIndex: m,
-          period: String(schedule[m][0]),
+          period: String(schedule[m]?.[0]),
         })
       }
     }
@@ -135,41 +135,6 @@ function createScheduleSpec(
     'Dec',
   ]
 
-  const encoding = {
-    y: {
-      field: 'month',
-      type: 'ordinal',
-      title: null,
-      sort: monthSort,
-    },
-    color: {
-      field: 'period',
-      type: 'ordinal',
-      title: 'Period',
-      scale: colorScale,
-    },
-    tooltip: hasHourlyVariation
-      ? [
-          { field: 'month', title: 'Month' },
-          { field: 'hour', title: 'Hour' },
-          { field: 'period', title: 'Period' },
-        ]
-      : [
-          { field: 'month', title: 'Month' },
-          { field: 'period', title: 'Period' },
-        ],
-  }
-
-  if (hasHourlyVariation) {
-    encoding.x = {
-      field: 'hour',
-      type: 'ordinal',
-      title: 'Hour of Day',
-      axis: { labelAngle: 0, bandPosition: 0 },
-      sort: Array.from({ length: 24 }, (_, i) => i),
-    }
-  }
-
   const spec: TopLevelSpec = {
     $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
     title,
@@ -189,7 +154,41 @@ function createScheduleSpec(
       stroke: 'white',
       cursor: interactive ? 'pointer' : 'default',
     },
-    encoding,
+    encoding: {
+      y: {
+        field: 'month',
+        type: 'ordinal',
+        title: null,
+        sort: monthSort,
+      },
+      color: {
+        field: 'period',
+        type: 'ordinal',
+        title: 'Period',
+        scale: colorScale,
+      },
+      tooltip: hasHourlyVariation
+        ? [
+            { field: 'month', title: 'Month' },
+            { field: 'hour', title: 'Hour' },
+            { field: 'period', title: 'Period' },
+          ]
+        : [
+            { field: 'month', title: 'Month' },
+            { field: 'period', title: 'Period' },
+          ],
+      ...(hasHourlyVariation
+        ? {
+            x: {
+              field: 'hour',
+              type: 'ordinal',
+              title: 'Hour of Day',
+              axis: { labelAngle: 0, bandPosition: 0 },
+              sort: Array.from({ length: 24 }, (_, i) => i),
+            },
+          }
+        : {}),
+    },
     config: {
       axis: { grid: false },
       view: { stroke: null },
@@ -216,10 +215,14 @@ function Heatmap({
   const periodsInData = new Set(data.map((d) => d.period))
   const filteredColorScale = {
     domain: colorScale.domain.filter((p) => periodsInData.has(p)),
-    range: colorScale.domain
-      .map((p, i) => ({ period: p, color: colorScale.range[i] }))
-      .filter(({ period }) => periodsInData.has(period))
-      .map(({ color }) => color),
+    range: colorScale.domain.flatMap((p, i) => {
+      const color = colorScale.range[i]
+      if (periodsInData.has(p) && color) {
+        return [color]
+      }
+
+      return []
+    }),
   }
   const spec = createScheduleSpec(
     title,

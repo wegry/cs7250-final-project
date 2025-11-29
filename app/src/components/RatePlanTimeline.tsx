@@ -14,7 +14,7 @@ export function RatePlanTimeline({ ratePlan }: { ratePlan?: RatePlan | null }) {
         { color: 'gray', ...x },
       ]) ?? []
     )
-    return orderBy(values, [([k, v]) => v.date], ['desc']).flatMap(([k, v]) => {
+    return orderBy(values, [([, v]) => v.date], ['desc']).flatMap(([k, v]) => {
       if (v.date == null) {
         return []
       }

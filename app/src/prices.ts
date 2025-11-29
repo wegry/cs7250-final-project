@@ -17,10 +17,12 @@ export function generationPriceInAMonth({
   const hourlyUsage = []
 
   for (const hour of range(0, 24)) {
-    const kWh = mean([
-      synthData[hour]['usage_kw'],
-      synthData[(hour + 1) % 24]['usage_kw'],
-    ])
+    const kWh = mean(
+      [
+        synthData[hour]?.['usage_kw'],
+        synthData[(hour + 1) % 24]?.['usage_kw'],
+      ].flatMap((x) => x ?? [])
+    )
 
     hourlyUsage.push(kWh)
   }
@@ -61,24 +63,28 @@ export function generationPriceInAMonth({
 
     if (energySchedule) {
       const periods = energySchedule[curr.month()]
-      for (let hour = 0; hour < 24; hour++) {
-        if (fixedchargeunits == '$/day') {
-          totalCost += fixedchargefirstmeter ?? 0
-        }
-
-        const period = periods[hour]
-        const tiers = ratestructure?.[period]
-        const matchingTier = Object.entries(tiers ?? {}).find(([, v]) => {
-          if (v?.unit == 'kWh' && (v?.max ?? Infinity) >= totalUsage_kWh) {
-            return true
+      if (periods) {
+        for (let hour = 0; hour < 24; hour++) {
+          if (fixedchargeunits == '$/day') {
+            totalCost += fixedchargefirstmeter ?? 0
           }
-        })
-        const energyrate = matchingTier?.[1]?.rate ?? 0
 
-        const usageThisHour = hourlyUsage[hour]
+          const period = periods[hour]!
+          const tiers = ratestructure?.[period]
+          const matchingTier = Object.entries(tiers ?? {}).find(([, v]) => {
+            if (v?.unit == 'kWh' && (v?.max ?? Infinity) >= totalUsage_kWh) {
+              return true
+            }
+          })
+          const energyrate = matchingTier?.[1]?.rate ?? 0
 
-        totalUsage_kWh += usageThisHour
-        totalCost += usageThisHour * energyrate
+          const usageThisHour = hourlyUsage[hour]
+
+          if (usageThisHour) {
+            totalUsage_kWh += usageThisHour
+            totalCost += usageThisHour * energyrate
+          }
+        }
       }
     }
 
