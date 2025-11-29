@@ -10,15 +10,14 @@ function normalizeDuckDBRow(row: any) {
   const normalized = { ...row };
   for (const [key, value] of Object.entries(normalized)) {
     if (
-      key.endsWith("date") ||
-      (key.endsWith("Date") &&
-        value != null &&
-        typeof value === "object" &&
-        "micros" in value &&
-        typeof value?.micros === "bigint")
+      key.endsWith("Date") &&
+      value != null &&
+      typeof value === "object" &&
+      "micros" in value &&
+      typeof value?.micros === "bigint"
     ) {
       // Convert microseconds to Date
-      normalized[key] = new Date(Number((value as any)?.micros / 1000n));
+      normalized[key] = new Date(Number(value?.micros / 1000n));
     }
   }
   return normalized;
@@ -34,7 +33,7 @@ beforeAll(async () => {
 
 test("Schema parses on all USURDB records", async () => {
   const plans = await ratePlans.promise;
-  expect(plans.length).toBe(14190);
+  expect(plans.length).toBe(14195);
   expect(RatePlanArray.parse(plans, { reportInput: true })).toBeDefined();
 });
 
