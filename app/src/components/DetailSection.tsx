@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react'
-import s from './DetailSection.module.css'
+import type { ReactNode } from "react";
+import s from "./DetailSection.module.css";
 
 export function DetailSection({
   title,
@@ -7,13 +7,13 @@ export function DetailSection({
   description,
   hide,
 }: {
-  children: ReactNode[] | ReactNode
-  title: string
-  description: ReactNode
-  hide: boolean
+  children: ReactNode[] | ReactNode;
+  title: string;
+  description: ReactNode;
+  hide: boolean;
 }) {
   if (hide) {
-    return null
+    return null;
   }
 
   return (
@@ -24,5 +24,5 @@ export function DetailSection({
       </div>
       {children}
     </>
-  )
+  );
 }

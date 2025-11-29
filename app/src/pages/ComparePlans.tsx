@@ -1,57 +1,65 @@
-import { useMemo, useRef } from 'react'
-import { useVegaEmbed, type VegaEmbedProps } from 'react-vega'
-import { useImmer } from 'use-immer'
-import { SynthData } from '../data/schema'
-import { Form, Radio, DatePicker, Row, Col, Segmented, InputNumber } from 'antd'
-import dayjs, { Dayjs } from 'dayjs'
-import { useRatePlan } from '../hooks/useRatePlan'
-import { RatePlanSelector } from '../components/RatePlanSelector'
-import { generationPriceInAMonth } from '../prices'
-import { Link, useSearchParams } from 'react-router-dom'
-import { useSynthData } from '../hooks/useSynthData'
-import { capitalize } from 'es-toolkit'
-import { RatePlanSummary } from '../components/RatePlanSummary'
-import s from './ComparePlans.module.css'
+import { useMemo, useRef } from "react";
+import { useVegaEmbed, type VegaEmbedProps } from "react-vega";
+import { useImmer } from "use-immer";
+import { SynthData } from "../data/schema";
+import {
+  Form,
+  Radio,
+  DatePicker,
+  Row,
+  Col,
+  Segmented,
+  InputNumber,
+} from "antd";
+import dayjs, { Dayjs } from "dayjs";
+import { useRatePlan } from "../hooks/useRatePlan";
+import { RatePlanSelector } from "../components/RatePlanSelector";
+import { generationPriceInAMonth } from "../prices";
+import { Link, useSearchParams } from "react-router-dom";
+import { useSynthData } from "../hooks/useSynthData";
+import { capitalize } from "es-toolkit";
+import { RatePlanSummary } from "../components/RatePlanSummary";
+import s from "./ComparePlans.module.css";
 
-const DATE_MIN = dayjs('2024-01-01')
-const DATE_DEFAULT = dayjs().clone().set('year', 2024)
-const DATE_MAX = dayjs('2024-12-31')
+const DATE_MIN = dayjs("2024-01-01");
+const DATE_DEFAULT = dayjs().clone().set("year", 2024);
+const DATE_MAX = dayjs("2024-12-31");
 
 type State = {
-  region: SynthData['region']
-  date: Dayjs
-  targetUsage?: number
-}
+  region: SynthData["region"];
+  date: Dayjs;
+  targetUsage?: number;
+};
 
-const RATE_PLAN_QUERY_PARAM = 'rate-plan'
-const RATE_PLAN_2_QUERY_PARAM = 'other-rate-plan'
-const ENERGY_USAGE_QUERY_PARAM = 'energy-usage'
+const RATE_PLAN_QUERY_PARAM = "rate-plan";
+const RATE_PLAN_2_QUERY_PARAM = "other-rate-plan";
+const ENERGY_USAGE_QUERY_PARAM = "energy-usage";
 
 function RegionalElectricityPatterns() {
-  const [searchParams, setSearchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  const ratePlanSelected = searchParams.get(RATE_PLAN_QUERY_PARAM)
-  const ratePlan2Selected = searchParams.get(RATE_PLAN_2_QUERY_PARAM)
-  const energyUsage = searchParams.get(ENERGY_USAGE_QUERY_PARAM)
+  const ratePlanSelected = searchParams.get(RATE_PLAN_QUERY_PARAM);
+  const ratePlan2Selected = searchParams.get(RATE_PLAN_2_QUERY_PARAM);
+  const energyUsage = searchParams.get(ENERGY_USAGE_QUERY_PARAM);
   // Vega mutates data in place.
   const [state, updateState] = useImmer<State>({
-    region: 'New England',
+    region: "New England",
     date: DATE_DEFAULT,
     targetUsage: isFinite(energyUsage as unknown as number)
       ? parseFloat(energyUsage!)
       : undefined,
-  })
+  });
 
   const season = useMemo(() => {
-    if (state.date.isAfter('2024-10-01') || state.date.isBefore('2024-03-01')) {
-      return 'winter'
+    if (state.date.isAfter("2024-10-01") || state.date.isBefore("2024-03-01")) {
+      return "winter";
     }
 
-    return 'summer'
-  }, [state.date])
+    return "summer";
+  }, [state.date]);
 
   const usuageSparklines = useMemo(() => {
-    return (['New England', 'Texas', 'Southern California'] as const).map(
+    return (["New England", "Texas", "Southern California"] as const).map(
       (name) => ({
         label: (
           <Sparkline
@@ -62,28 +70,28 @@ function RegionalElectricityPatterns() {
           />
         ),
         value: name,
-      })
-    )
-  }, [season, state.region, state.targetUsage])
+      }),
+    );
+  }, [season, state.region, state.targetUsage]);
 
-  const { data: ratePlan } = useRatePlan(ratePlanSelected)
-  const { data: ratePlan2 } = useRatePlan(ratePlan2Selected)
+  const { data: ratePlan } = useRatePlan(ratePlanSelected);
+  const { data: ratePlan2 } = useRatePlan(ratePlan2Selected);
   const { data: synthData } = useSynthData({
     season: season,
     region: state.region,
     targetUsage: state.targetUsage,
-  })
+  });
 
   const usagePlan1 = generationPriceInAMonth({
     ratePlan,
     synthData: synthData,
     monthStarting: state.date,
-  })
+  });
   const usagePlan2 = generationPriceInAMonth({
     ratePlan: ratePlan2,
     synthData: synthData,
     monthStarting: state.date,
-  })
+  });
 
   return (
     <div className={s.main}>
@@ -98,16 +106,16 @@ function RegionalElectricityPatterns() {
                 <InputNumber
                   onChange={(value) => {
                     updateState((v) => {
-                      v.targetUsage = value ?? undefined
-                    })
+                      v.targetUsage = value ?? undefined;
+                    });
                     setSearchParams((prev) => {
                       prev.set(
                         ENERGY_USAGE_QUERY_PARAM,
-                        value! as unknown as string
-                      )
+                        value! as unknown as string,
+                      );
 
-                      return prev
-                    })
+                      return prev;
+                    });
                   }}
                   value={state.targetUsage}
                   type="number"
@@ -125,8 +133,8 @@ function RegionalElectricityPatterns() {
                   value={state.date}
                   onChange={(value) => {
                     updateState((state) => {
-                      state.date = value
-                    })
+                      state.date = value;
+                    });
                   }}
                 />
               </Form.Item>
@@ -137,20 +145,20 @@ function RegionalElectricityPatterns() {
                   value={season}
                   onChange={(e) => {
                     if (
-                      e.target.value === 'winter' &&
+                      e.target.value === "winter" &&
                       state.date.month() > 2 &&
                       state.date.month() < 10
                     ) {
                       updateState((state) => {
-                        state.date = state.date.set('month', 0)
-                      })
+                        state.date = state.date.set("month", 0);
+                      });
                     } else if (
-                      e.target.value === 'summer' &&
+                      e.target.value === "summer" &&
                       !(state.date.month() <= 2 && state.date.month() > 9)
                     ) {
                       updateState((state) => {
-                        state.date = state.date.set('month', 7)
-                      })
+                        state.date = state.date.set("month", 7);
+                      });
                     }
                   }}
                 >
@@ -170,8 +178,8 @@ function RegionalElectricityPatterns() {
                   value={ratePlanSelected}
                   onChange={(e) =>
                     setSearchParams((prev) => {
-                      prev.set(RATE_PLAN_QUERY_PARAM, e)
-                      return prev
+                      prev.set(RATE_PLAN_QUERY_PARAM, e);
+                      return prev;
                     })
                   }
                 />
@@ -189,8 +197,8 @@ function RegionalElectricityPatterns() {
                   value={ratePlan2Selected}
                   onChange={(e) =>
                     setSearchParams((prev) => {
-                      prev.set(RATE_PLAN_2_QUERY_PARAM, e)
-                      return prev
+                      prev.set(RATE_PLAN_2_QUERY_PARAM, e);
+                      return prev;
                     })
                   }
                 />
@@ -206,7 +214,7 @@ function RegionalElectricityPatterns() {
               value={state.region}
               onChange={(value) =>
                 updateState((state) => {
-                  state.region = value
+                  state.region = value;
                 })
               }
               options={usuageSparklines}
@@ -215,7 +223,7 @@ function RegionalElectricityPatterns() {
         </Form>
       </div>
       <SeasonBlurb region={state.region} season={season} />
-      {season === 'winter' ? (
+      {season === "winter" ? (
         <>
           <div>
             <h3>Winter Insights</h3>
@@ -285,22 +293,22 @@ function RegionalElectricityPatterns() {
         )}
       </Row>
     </div>
-  )
+  );
 }
 
 function SeasonBlurb({
   season,
   region,
 }: {
-  season: SynthData['season']
-  region: SynthData['region']
+  season: SynthData["season"];
+  region: SynthData["region"];
 }) {
-  const key = `${season}/${region}` as const
+  const key = `${season}/${region}` as const;
 
-  const capitalSeason = capitalize(season)
+  const capitalSeason = capitalize(season);
 
   switch (key) {
-    case 'winter/New England':
+    case "winter/New England":
       return (
         <div>
           <h3>{capitalSeason} in New England (Gas Heat)</h3>
@@ -309,8 +317,8 @@ function SeasonBlurb({
             electric grid since homes use natural gas or oil furnaces.
           </p>
         </div>
-      )
-    case 'winter/Texas':
+      );
+    case "winter/Texas":
       return (
         <div>
           <h3>Texas (Electric Heat)</h3>
@@ -319,8 +327,8 @@ function SeasonBlurb({
             homes use electric heat pumps or resistance heating.
           </p>
         </div>
-      )
-    case 'winter/Southern California':
+      );
+    case "winter/Southern California":
       return (
         <div>
           <h3>Southern California + EV</h3>
@@ -329,8 +337,8 @@ function SeasonBlurb({
             spike from EV charging (7.2 kW Level 2 charger).
           </p>
         </div>
-      )
-    case 'summer/New England':
+      );
+    case "summer/New England":
       return (
         <div>
           <h3>New England (Moderate AC)</h3>
@@ -339,8 +347,8 @@ function SeasonBlurb({
             heating season since gas furnaces don't help in summer.
           </p>
         </div>
-      )
-    case 'summer/Texas':
+      );
+    case "summer/Texas":
       return (
         <div>
           <h3>Texas (Extreme Cooling)</h3>
@@ -349,8 +357,8 @@ function SeasonBlurb({
             as AC runs continuously during brutal heat.
           </p>
         </div>
-      )
-    case 'summer/Southern California':
+      );
+    case "summer/Southern California":
       return (
         <div>
           <h3>Southern California + EV</h3>
@@ -359,7 +367,7 @@ function SeasonBlurb({
             keeps cooling needs reasonable.
           </p>
         </div>
-      )
+      );
   }
 }
 
@@ -369,40 +377,40 @@ function Sparkline({
   selected,
   targetUsage,
 }: {
-  season: SynthData['season']
-  region: SynthData['region']
-  selected: boolean
-  targetUsage?: number
+  season: SynthData["season"];
+  region: SynthData["region"];
+  selected: boolean;
+  targetUsage?: number;
 }) {
-  const { data: synthData } = useSynthData({ season, region, targetUsage })
+  const { data: synthData } = useSynthData({ season, region, targetUsage });
 
   // Vega-Lite specification
-  const spec: VegaEmbedProps['spec'] = {
-    $schema: 'https://vega.github.io/schema/vega-lite/v6.json',
+  const spec: VegaEmbedProps["spec"] = {
+    $schema: "https://vega.github.io/schema/vega-lite/v6.json",
     width: 160,
     height: 150,
     data: { values: synthData ?? [] },
     transform: [
       {
-        calculate: 'datetime(0, 0, 1,datum.hour, 0, 0, 0)',
-        as: 'datetime',
+        calculate: "datetime(0, 0, 1,datum.hour, 0, 0, 0)",
+        as: "datetime",
       },
     ],
     mark: {
-      type: 'bar',
+      type: "bar",
       point: false,
       strokeWidth: 3,
-      interpolate: 'natural',
-      color: selected ? undefined : 'lightgray',
+      interpolate: "natural",
+      color: selected ? undefined : "lightgray",
     },
     encoding: {
       x: {
-        field: 'datetime',
-        type: 'temporal',
-        timeUnit: 'hours',
-        title: 'Hour of Day',
+        field: "datetime",
+        type: "temporal",
+        timeUnit: "hours",
+        title: "Hour of Day",
         axis: {
-          format: '%H',
+          format: "%H",
           tickCount: 8,
         },
         scale: {
@@ -410,19 +418,19 @@ function Sparkline({
         },
       },
       y: {
-        field: 'usage_kw',
-        type: 'quantitative',
-        title: 'Electricity Usage (kW)',
+        field: "usage_kw",
+        type: "quantitative",
+        title: "Electricity Usage (kW)",
         scale: { zero: true },
       },
       tooltip: [
-        { field: 'hour', type: 'quantitative', title: 'Hour' },
-        { field: 'region', type: 'nominal', title: 'Region' },
+        { field: "hour", type: "quantitative", title: "Hour" },
+        { field: "region", type: "nominal", title: "Region" },
         {
-          field: 'usage_kw',
-          type: 'quantitative',
-          title: 'Usage (kW)',
-          format: '.2f',
+          field: "usage_kw",
+          type: "quantitative",
+          title: "Usage (kW)",
+          format: ".2f",
         },
       ],
     },
@@ -430,21 +438,21 @@ function Sparkline({
       view: { stroke: null },
       axis: { grid: true },
     },
-  }
+  };
 
-  const chartRef = useRef<HTMLDivElement>(null)
+  const chartRef = useRef<HTMLDivElement>(null);
   useVegaEmbed({
     ref: chartRef,
     spec,
-    options: { mode: 'vega-lite', actions: false },
-  })
+    options: { mode: "vega-lite", actions: false },
+  });
 
   return (
     <div style={{ width: 200 }}>
       <div ref={chartRef} />
       <div>{region} </div>
     </div>
-  )
+  );
 }
 
-export default RegionalElectricityPatterns
+export default RegionalElectricityPatterns;

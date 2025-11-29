@@ -1,17 +1,17 @@
-import type { TopLevelSpec } from 'vega-lite'
+import type { TopLevelSpec } from "vega-lite";
 
 export function createBAMapSpec(): TopLevelSpec {
   return {
-    $schema: 'https://vega.github.io/schema/vega-lite/v6.json',
-    width: 'container',
+    $schema: "https://vega.github.io/schema/vega-lite/v6.json",
+    width: "container",
     height: 550,
-    background: '#ffffff',
+    background: "#ffffff",
     title: {
-      text: 'U.S. Balancing Authorities',
+      text: "U.S. Balancing Authorities",
       fontSize: 18,
     },
     projection: {
-      type: 'albers',
+      type: "albers",
       rotate: [96, 0],
       center: [0, 38],
       scale: 1100,
@@ -21,8 +21,8 @@ export function createBAMapSpec(): TopLevelSpec {
       // US states outline
       {
         data: {
-          url: '/geodata/us-states.geojson',
-          format: { type: 'json', property: 'features' },
+          url: "/geodata/us-states.geojson",
+          format: { type: "json", property: "features" },
         },
         transform: [
           {
@@ -31,9 +31,9 @@ export function createBAMapSpec(): TopLevelSpec {
           },
         ],
         mark: {
-          type: 'geoshape',
-          fill: '#f8f9fa',
-          stroke: '#6b7280',
+          type: "geoshape",
+          fill: "#f8f9fa",
+          stroke: "#6b7280",
           strokeWidth: 1,
           opacity: 0.1,
         },
@@ -42,18 +42,18 @@ export function createBAMapSpec(): TopLevelSpec {
       // BA boundaries
       {
         data: {
-          url: '/geodata/ba-data.geojson',
-          format: { type: 'json', property: 'features' },
+          url: "/geodata/ba-data.geojson",
+          format: { type: "json", property: "features" },
         },
         transform: [
           {
-            filter: '!test(/US-AK|US-HI/, datum.properties.zoneName)',
+            filter: "!test(/US-AK|US-HI/, datum.properties.zoneName)",
           },
         ],
         mark: {
-          type: 'geoshape',
-          fill: 'transparent',
-          stroke: '#374151',
+          type: "geoshape",
+          fill: "transparent",
+          stroke: "#374151",
           strokeWidth: 1.5,
         },
       },
@@ -84,5 +84,5 @@ export function createBAMapSpec(): TopLevelSpec {
       //   }
       // },
     ],
-  }
+  };
 }
