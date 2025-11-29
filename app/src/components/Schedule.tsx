@@ -7,145 +7,145 @@ import { interpolateViridis } from "d3-scale-chromatic";
 import { RatePlan } from "../data/schema";
 import dayjs, { type Dayjs } from "dayjs";
 
-// Generate n evenly-spaced colors from viridis
+const MONTHS = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
+const HOURS = Array.from({ length: 24 }, (_, i) => i);
+
 function getViridisColors(n: number): string[] {
   if (n === 1) return [interpolateViridis(0.5)];
   return Array.from({ length: n }, (_, i) => interpolateViridis(i / (n - 1)));
 }
 
-// Get all unique periods from a schedule
 function getUniquePeriods(schedule: number[][] | null): Set<number> {
   if (!schedule) return new Set();
   return new Set(schedule.flat());
 }
 
-// Find the first weekday (Mon-Fri) or weekend day (Sat-Sun) of a given month
 function getFirstDayOfType(
   year: number,
-  month: number, // 0-indexed
-  type: "weekday" | "weekend",
+  month: number,
+  type: "weekday" | "weekend"
 ): Dayjs {
   const firstOfMonth = dayjs().year(year).month(month).date(1);
-  const dayOfWeek = firstOfMonth.day(); // 0 = Sunday, 6 = Saturday
-
+  const dayOfWeek = firstOfMonth.day();
   if (type === "weekend") {
-    // Find first Saturday (6) or Sunday (0)
     if (dayOfWeek === 0 || dayOfWeek === 6) return firstOfMonth;
-    // Days until Saturday
-    const daysUntilSat = 6 - dayOfWeek;
-    return firstOfMonth.add(daysUntilSat, "day");
+    return firstOfMonth.add(6 - dayOfWeek, "day");
   } else {
-    // Find first weekday (Mon-Fri, i.e., 1-5)
     if (dayOfWeek >= 1 && dayOfWeek <= 5) return firstOfMonth;
-    // Sunday -> add 1 day to get Monday
     if (dayOfWeek === 0) return firstOfMonth.add(1, "day");
-    // Saturday -> add 2 days to get Monday
     return firstOfMonth.add(2, "day");
   }
 }
 
-// Transform schedule array to Vega-Lite data format
-function transformScheduleForVega(schedule: number[][] | null): {
-  data: Array<{
-    month: string;
-    monthIndex: number;
-    hour?: number;
-    period: string;
-  }>;
-  hasHourlyVariation: boolean;
-} {
-  if (!schedule) return { data: [], hasHourlyVariation: false };
-
-  const months = [
-    "Jan",
-    "Feb",
-    "Mar",
-    "Apr",
-    "May",
-    "Jun",
-    "Jul",
-    "Aug",
-    "Sep",
-    "Oct",
-    "Nov",
-    "Dec",
-  ];
-
-  // Check if any month has variation across hours
-  const hasHourlyVariation = schedule.some((monthData) => {
+function hasHourlyVariation(schedule: number[][] | null): boolean {
+  if (!schedule) return false;
+  return schedule.some((monthData) => {
     if (!monthData || monthData.length === 0) return false;
     const firstValue = monthData[0];
     return monthData.some((v) => v !== firstValue);
   });
-
-  const data: Array<{
-    month: string;
-    monthIndex: number;
-    hour?: number;
-    period: string;
-  }> = [];
-
-  if (hasHourlyVariation) {
-    for (let m = 0; m < schedule.length; m++) {
-      for (let h = 0; h < (schedule[m]?.length || 0); h++) {
-        data.push({
-          month: months[m]!,
-          monthIndex: m,
-          hour: h,
-          period: String(schedule[m]?.[h]),
-        });
-      }
-    }
-  } else {
-    // Collapse to one entry per month
-    for (let m = 0; m < schedule.length; m++) {
-      if (schedule[m] && schedule[m]?.length) {
-        data.push({
-          month: months[m]!,
-          monthIndex: m,
-          period: String(schedule[m]?.[0]),
-        });
-      }
-    }
-  }
-
-  return { data, hasHourlyVariation };
 }
 
-// Create Vega-Lite spec for schedule heatmap
-function createScheduleSpec(
-  title: string,
-  data: ReturnType<typeof transformScheduleForVega>["data"],
-  colorScale: { domain: string[]; range: string[] },
-  interactive: boolean,
-  hasHourlyVariation: boolean,
-): TopLevelSpec {
-  const monthSort = [
-    "Jan",
-    "Feb",
-    "Mar",
-    "Apr",
-    "May",
-    "Jun",
-    "Jul",
-    "Aug",
-    "Sep",
-    "Oct",
-    "Nov",
-    "Dec",
-  ];
+type DataPoint = {
+  month: string;
+  monthIndex: number;
+  hour?: number;
+  period: string;
+  dayType?: string;
+};
 
-  const spec: TopLevelSpec = {
-    $schema: "https://vega.github.io/schema/vega-lite/v5.json",
+function transformToHourly(
+  schedule: number[][] | null,
+  dayType?: string
+): DataPoint[] {
+  if (!schedule) return [];
+  const data: DataPoint[] = [];
+  for (let m = 0; m < schedule.length; m++) {
+    for (let h = 0; h < (schedule[m]?.length || 0); h++) {
+      data.push({
+        month: MONTHS[m]!,
+        monthIndex: m,
+        hour: h,
+        period: String(schedule[m]?.[h]),
+        ...(dayType && { dayType }),
+      });
+    }
+  }
+  return data;
+}
+
+function transformCollapsed(
+  schedule: number[][] | null,
+  dayType?: string
+): DataPoint[] {
+  if (!schedule) return [];
+  const data: DataPoint[] = [];
+  for (let m = 0; m < schedule.length; m++) {
+    if (schedule[m]?.length) {
+      data.push({
+        month: MONTHS[m]!,
+        monthIndex: m,
+        period: String(schedule[m]?.[0]),
+        ...(dayType && { dayType }),
+      });
+    }
+  }
+  return data;
+}
+
+function filterColorScale(
+  colorScale: { domain: string[]; range: string[] },
+  data: DataPoint[]
+): { domain: string[]; range: string[] } {
+  const periodsInData = new Set(data.map((d) => d.period));
+  return {
+    domain: colorScale.domain.filter((p) => periodsInData.has(p)),
+    range: colorScale.domain.flatMap((p, i) =>
+      periodsInData.has(p) && colorScale.range[i] ? [colorScale.range[i]] : []
+    ),
+  };
+}
+
+function createSingleScheduleSpec(
+  title: string,
+  schedule: number[][] | null,
+  colorScale: { domain: string[]; range: string[] },
+  interactive: boolean
+): TopLevelSpec {
+  const hourly = hasHourlyVariation(schedule);
+  const data = hourly
+    ? transformToHourly(schedule)
+    : transformCollapsed(schedule);
+  const filtered = filterColorScale(colorScale, data);
+
+  return {
+    $schema: "https://vega.github.io/schema/vega-lite/v6.json",
     title,
-    width: hasHourlyVariation ? 400 : 15,
+    width: hourly ? 400 : 15,
     height: 200,
     data: { values: data },
     params: interactive
       ? [
           {
             name: "cellClick",
-            select: { type: "point", on: "click", fields: ["monthIndex"] },
+            select: {
+              type: "point",
+              on: "click",
+              fields: ["monthIndex", "dayType"],
+            },
           },
         ]
       : [],
@@ -157,19 +157,14 @@ function createScheduleSpec(
       cursor: interactive ? "pointer" : "default",
     },
     encoding: {
-      y: {
-        field: "month",
-        type: "ordinal",
-        title: null,
-        sort: monthSort,
-      },
+      y: { field: "month", type: "ordinal", title: null, sort: MONTHS },
       color: {
         field: "period",
         type: "ordinal",
         title: "Period",
-        scale: colorScale,
+        scale: filtered,
       },
-      tooltip: hasHourlyVariation
+      tooltip: hourly
         ? [
             { field: "month", title: "Month" },
             { field: "hour", title: "Hour" },
@@ -179,64 +174,134 @@ function createScheduleSpec(
             { field: "month", title: "Month" },
             { field: "period", title: "Period" },
           ],
-      ...(hasHourlyVariation
-        ? {
-            x: {
-              field: "hour",
-              type: "ordinal",
-              title: "Hour of Day",
-              axis: { labelAngle: 0, labelAlign: "right", bandPosition: 0 },
-              sort: Array.from({ length: 24 }, (_, i) => i),
-            },
-          }
-        : {}),
+      ...(hourly && {
+        x: {
+          field: "hour",
+          type: "ordinal",
+          title: "Hour of Day",
+          axis: { labelAngle: 0, labelAlign: "right", bandPosition: 0 },
+          sort: HOURS,
+        },
+      }),
     },
-    config: {
-      axis: { grid: false },
-      view: { stroke: null },
-    },
+    config: { axis: { grid: false }, view: { stroke: null } },
+  };
+}
+
+function createCombinedScheduleSpec(
+  title: string,
+  weekdaySchedule: number[][] | null,
+  weekendSchedule: number[][] | null,
+  colorScale: { domain: string[]; range: string[] },
+  interactive: boolean
+): TopLevelSpec {
+  const weekdayHourly = hasHourlyVariation(weekdaySchedule);
+  const weekendHourly = hasHourlyVariation(weekendSchedule);
+
+  // Transform each schedule based on its own hourly variation
+  const weekdayData = weekdayHourly
+    ? transformToHourly(weekdaySchedule, "Weekday")
+    : transformCollapsed(weekdaySchedule, "Weekday");
+  const weekendData = weekendHourly
+    ? transformToHourly(weekendSchedule, "Weekend")
+    : transformCollapsed(weekendSchedule, "Weekend");
+
+  const allData = [...weekdayData, ...weekendData];
+  const filtered = filterColorScale(colorScale, allData);
+
+  const params = interactive
+    ? [
+        {
+          name: "cellClick",
+          select: {
+            type: "point",
+            on: "click",
+            fields: ["monthIndex", "dayType"],
+          },
+        },
+      ]
+    : [];
+
+  const baseMarkConfig = {
+    type: "rect" as const,
+    width: 15,
+    height: 15,
+    stroke: "white",
+    cursor: interactive ? ("pointer" as const) : ("default" as const),
   };
 
-  return spec;
+  const createUnitSpec = (
+    data: DataPoint[],
+    hourly: boolean,
+    showYAxis: boolean,
+    subTitle: string
+  ) => ({
+    title: subTitle,
+    width: hourly ? 400 : 15,
+    height: 200,
+    data: { values: data },
+    mark: baseMarkConfig,
+    encoding: {
+      y: {
+        field: "month",
+        type: "ordinal" as const,
+        title: null,
+        sort: MONTHS,
+        axis: showYAxis ? {} : null,
+      },
+      color: {
+        field: "period",
+        type: "ordinal" as const,
+        title: "Period",
+        scale: filtered,
+      },
+      tooltip: hourly
+        ? [
+            { field: "month", title: "Month" },
+            { field: "hour", title: "Hour" },
+            { field: "period", title: "Period" },
+          ]
+        : [
+            { field: "month", title: "Month" },
+            { field: "period", title: "Period" },
+          ],
+      ...(hourly && {
+        x: {
+          field: "hour",
+          type: "ordinal" as const,
+          title: "Hour of Day",
+          axis: {
+            labelAngle: 0,
+            labelAlign: "right" as const,
+            bandPosition: 0,
+          },
+          sort: HOURS,
+        },
+      }),
+    },
+  });
+
+  return {
+    $schema: "https://vega.github.io/schema/vega-lite/v6.json",
+    title,
+    params,
+    hconcat: [
+      createUnitSpec(weekdayData, weekdayHourly, true, "Weekday"),
+      createUnitSpec(weekendData, weekendHourly, false, "Weekend"),
+    ],
+    config: { axis: { grid: false }, view: { stroke: null } },
+  } as TopLevelSpec;
 }
 
 interface HeatmapProps {
-  schedule: number[][] | null;
-  title?: string;
-  colorScale: { domain: string[]; range: string[] };
-  onCellClick?: (monthIndex: number) => void;
+  spec: TopLevelSpec;
+  onCellClick?: (monthIndex: number, dayType: "weekday" | "weekend") => void;
 }
 
-function Heatmap({
-  schedule,
-  title = "Schedule",
-  colorScale,
-  onCellClick,
-}: HeatmapProps) {
-  const { data, hasHourlyVariation } = transformScheduleForVega(schedule);
-  const periodsInData = new Set(data.map((d) => d.period));
-  const filteredColorScale = {
-    domain: colorScale.domain.filter((p) => periodsInData.has(p)),
-    range: colorScale.domain.flatMap((p, i) => {
-      const color = colorScale.range[i];
-      if (periodsInData.has(p) && color) {
-        return [color];
-      }
-
-      return [];
-    }),
-  };
-  const spec = createScheduleSpec(
-    title,
-    data,
-    filteredColorScale,
-    !!onCellClick,
-    hasHourlyVariation,
-  );
+function Heatmap({ spec, onCellClick }: HeatmapProps) {
   const resultRef = useRef<Result | null>(null);
   const callbackRef = useRef(onCellClick);
 
-  // Keep callback ref up to date
   useEffect(() => {
     callbackRef.current = onCellClick;
   }, [onCellClick]);
@@ -247,8 +312,10 @@ function Heatmap({
 
     result.view.addSignalListener("cellClick", (_name, value) => {
       const monthIndex = value?.monthIndex?.[0];
+      const dayType = value?.dayType?.[0];
       if (monthIndex !== undefined && callbackRef.current) {
-        callbackRef.current(monthIndex);
+        const resolvedDayType = dayType === "Weekend" ? "weekend" : "weekday";
+        callbackRef.current(monthIndex, resolvedDayType);
       }
     });
   }, []);
@@ -275,78 +342,58 @@ export function ScheduleHeatmap({
   type: "energy" | "demand";
   onDateChange?: (newDate: Dayjs) => void;
 }) {
-  if (!selectedPlan) {
-    return null;
-  }
+  if (!selectedPlan) return null;
 
-  const schedules = (["Weekday", "Weekend"] as const).map(
-    (weekPart) => selectedPlan[`${type}${weekPart}Sched`],
-  );
+  const weekdaySchedule = selectedPlan[`${type}WeekdaySched`];
+  const weekendSchedule = selectedPlan[`${type}WeekendSched`];
   const title = type === "energy" ? "Energy Schedule" : "Demand Schedule";
 
-  if (schedules.every((s) => s == null)) {
-    return null;
-  }
+  if (!weekdaySchedule && !weekendSchedule) return null;
 
-  // Compute combined unique periods across all schedules
   const allPeriods = new Set<number>();
-  schedules.forEach((s) => {
+  [weekdaySchedule, weekendSchedule].forEach((s) => {
     getUniquePeriods(s).forEach((p) => allPeriods.add(p));
   });
   const sortedPeriods = [...allPeriods].sort((a, b) => a - b);
 
-  // Generate shared color scale
+  if (sortedPeriods.length <= 1) return null;
+
   const colors = getViridisColors(sortedPeriods.length);
-  const colorScale = {
-    domain: sortedPeriods.map(String),
-    range: colors,
-  };
+  const colorScale = { domain: sortedPeriods.map(String), range: colors };
 
   const handleCellClick = (
     monthIndex: number,
-    dayType: "weekday" | "weekend",
+    dayType: "weekday" | "weekend"
   ) => {
     if (!onDateChange) return;
     const newDate = getFirstDayOfType(date.year(), monthIndex, dayType);
     onDateChange(newDate);
   };
 
-  // Single schedule case (weekday === weekend)
-  if (
-    schedules[0] &&
-    JSON.stringify(schedules[0]) === JSON.stringify(schedules[1])
-  ) {
-    if (sortedPeriods.length === 1) {
-      return null;
-    }
-    return (
-      <Heatmap
-        schedule={schedules[0]}
-        title={"All Week " + title}
-        colorScale={colorScale}
-        onCellClick={
-          onDateChange ? (m) => handleCellClick(m, "weekday") : undefined
-        }
-      />
-    );
-  }
+  const interactive = !!onDateChange;
+  const schedulesMatch =
+    weekdaySchedule &&
+    JSON.stringify(weekdaySchedule) === JSON.stringify(weekendSchedule);
 
-  // Separate weekday/weekend schedules
+  const spec = schedulesMatch
+    ? createSingleScheduleSpec(
+        "All Week " + title,
+        weekdaySchedule,
+        colorScale,
+        interactive
+      )
+    : createCombinedScheduleSpec(
+        title,
+        weekdaySchedule,
+        weekendSchedule,
+        colorScale,
+        interactive
+      );
+
   return (
-    <>
-      {schedules.map((schedule, i) => (
-        <Heatmap
-          key={i}
-          schedule={schedule}
-          title={(i === 0 ? "Weekday" : "Weekend") + " " + title}
-          colorScale={colorScale}
-          onCellClick={
-            onDateChange
-              ? (m) => handleCellClick(m, i === 0 ? "weekday" : "weekend")
-              : undefined
-          }
-        />
-      ))}
-    </>
+    <Heatmap
+      spec={spec}
+      onCellClick={onDateChange ? handleCellClick : undefined}
+    />
   );
 }
