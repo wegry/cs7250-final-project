@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery } from "@tanstack/react-query";
 // import type { UtilityMapData } from '../charts/baMap'
 
 // export function useUtilityMapData() {
@@ -14,17 +14,17 @@ import { useQuery } from '@tanstack/react-query'
 
 export function useBASummary() {
   return useQuery({
-    queryKey: ['ba-summary'],
+    queryKey: ["ba-summary"],
     queryFn: async () => {
-      const response = await fetch('/ba-summary.json')
-      if (!response.ok) throw new Error('Failed to load BA summary data')
+      const response = await fetch("/ba-summary.json");
+      if (!response.ok) throw new Error("Failed to load BA summary data");
       return (await response.json()) as Array<{
-        name: string
-        utilities: string[]
-        totalPlans: number
-        avgEnergyRate: number | null
-        numUtilities: number
-      }>
+        name: string;
+        utilities: string[];
+        totalPlans: number;
+        avgEnergyRate: number | null;
+        numUtilities: number;
+      }>;
     },
-  })
+  });
 }

@@ -1,6 +1,6 @@
-import type { Dayjs } from 'dayjs'
-import { conn } from './duckdb'
-import { WholesalePrice, type SynthData } from './schema'
+import type { Dayjs } from "dayjs";
+import { conn } from "./duckdb";
+import { WholesalePrice, type SynthData } from "./schema";
 
 /** For select list */
 export const selectList = `
@@ -13,7 +13,7 @@ export const selectList = `
     , rateName ASC
     , effectiveDate DESC NULLS LAST
     , enddate DESC NULLS FIRST
-`
+`;
 export async function selectListForDate(date: Dayjs) {
   const stmt = await (
     await conn
@@ -34,16 +34,16 @@ export async function selectListForDate(date: Dayjs) {
     , rateName ASC
     , effectiveDate DESC NULLS LAST
     , enddate DESC NULLS FIRST
-  `)
+  `);
 
-  const formattedDate = date.format()
+  const formattedDate = date.format();
 
   /**
    * `@duckdb/wasm` doesn't support named prepared statements.
    * https://github.com/duckdb/duckdb/discussions/11782
    */
-  const result = await stmt.query(formattedDate, formattedDate)
-  return result
+  const result = await stmt.query(formattedDate, formattedDate);
+  return result;
 }
 
 export async function supercededBy(label: string) {
@@ -52,9 +52,9 @@ export async function supercededBy(label: string) {
   ).prepare(`SELECT _id FROM flattened.usurdb
  WHERE supercedes = ?
  ORDER BY effectiveDate DESC
- LIMIT 1`)
-  const result = await stmt.query(label)
-  return result
+ LIMIT 1`);
+  const result = await stmt.query(label);
+  return result;
 }
 
 export async function ratePlanInData(label: string) {
@@ -62,25 +62,25 @@ export async function ratePlanInData(label: string) {
     await conn
   ).prepare(`SELECT true FROM flattened.usurdb
  WHERE _id = ?
- LIMIT 1`)
-  const result = await stmt.query(label)
-  return result
+ LIMIT 1`);
+  const result = await stmt.query(label);
+  return result;
 }
 
 export async function ratePlanDetail(label: string) {
   const stmt = await (
     await conn
   ).prepare(`select * from flattened.usurdb
-  WHERE _id = ?`)
+  WHERE _id = ?`);
 
-  const result = await stmt.query(label)
-  return result
+  const result = await stmt.query(label);
+  return result;
 }
 
 export async function synthUsage(
-  season: SynthData['season'],
-  region: SynthData['region'],
-  targetUsage?: number
+  season: SynthData["season"],
+  region: SynthData["region"],
+  targetUsage?: number,
 ) {
   const stmt = await (
     await conn
@@ -103,21 +103,21 @@ export async function synthUsage(
     JOIN monthly_totals mt ON s.season = mt.season AND s.region = mt.region
     WHERE s.season = $1 AND s.region = $2
     ORDER BY s.season, s.hour, s.region
-`)
+`);
 
-  return await stmt.query(season, region, targetUsage)
+  return await stmt.query(season, region, targetUsage);
 }
 
 // Hub mapping constant
 export const HUB_DICT = {
-  Midwest: 'Indiana Hub RT Peak',
-  Northwest: 'Mid C Peak',
-  'New England': 'Nepool MH DA LMP Peak',
-  'Northern California': 'NP15 EZ Gen DA LMP Peak',
-  'Southwest (Excluding Cali)': 'Palo Verde Peak',
-  'PJM/Mid-Atlantic': 'PJM WH Real Time Peak',
-  'Southern California': 'SP15 EZ Gen DA LMP Peak',
-} as const
+  Midwest: "Indiana Hub RT Peak",
+  Northwest: "Mid C Peak",
+  "New England": "Nepool MH DA LMP Peak",
+  "Northern California": "NP15 EZ Gen DA LMP Peak",
+  "Southwest (Excluding Cali)": "Palo Verde Peak",
+  "PJM/Mid-Atlantic": "PJM WH Real Time Peak",
+  "Southern California": "SP15 EZ Gen DA LMP Peak",
+} as const;
 
 // Sample DuckDB query for wholesale data
 const WHOLESALE_QUERY = `
@@ -132,20 +132,20 @@ const WHOLESALE_QUERY = `
     AND "Trade date" = ?
   ORDER BY "Trade date" DESC
   LIMIT 1
-`
+`;
 
 // Example usage with DuckDB-WASM
 export async function getWholesalePrices(
   hub: keyof typeof HUB_DICT,
-  targetDate: string
+  targetDate: string,
 ): Promise<WholesalePrice | null> {
-  const hubName = HUB_DICT[hub]
+  const hubName = HUB_DICT[hub];
 
   try {
-    const c = await conn
-    const stmt = await c.prepare(WHOLESALE_QUERY)
-    const result = await stmt.query(hubName, targetDate)
-    const rows = result.toArray()
+    const c = await conn;
+    const stmt = await c.prepare(WHOLESALE_QUERY);
+    const result = await stmt.query(hubName, targetDate);
+    const rows = result.toArray();
 
     if (rows.length === 0) {
       // Try to get next available date
@@ -161,19 +161,19 @@ export async function getWholesalePrices(
           AND "Trade date" > ?
         ORDER BY "Trade date" ASC
         LIMIT 1
-      `
+      `;
       const futureResult = await (
         await c.prepare(futureQuery)
-      ).query(hubName, targetDate)
-      const futureRows = futureResult.toArray()
+      ).query(hubName, targetDate);
+      const futureRows = futureResult.toArray();
 
-      if (futureRows.length === 0) return null
-      return WholesalePrice.parse(futureRows[0])
+      if (futureRows.length === 0) return null;
+      return WholesalePrice.parse(futureRows[0]);
     }
 
-    return WholesalePrice.parse(rows[0])
+    return WholesalePrice.parse(rows[0]);
   } catch (error) {
-    console.error('Error querying wholesale prices:', error)
-    return null
+    console.error("Error querying wholesale prices:", error);
+    return null;
   }
 }

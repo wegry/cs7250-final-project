@@ -1,13 +1,13 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { StrictMode, Suspense } from 'react'
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { StrictMode, Suspense } from "react";
 import {
   createBrowserRouter,
   Link,
   Outlet,
   RouterProvider,
-} from 'react-router-dom'
-import * as s from './App.module.css'
-import './global.css'
+} from "react-router-dom";
+import * as s from "./App.module.css";
+import "./global.css";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -16,7 +16,7 @@ const queryClient = new QueryClient({
       staleTime: Infinity,
     },
   },
-})
+});
 
 // Layout component for the nav
 function Layout() {
@@ -37,53 +37,53 @@ function Layout() {
         <Outlet />
       </Suspense>
     </>
-  )
+  );
 }
 
 const router = createBrowserRouter([
   {
-    path: '/',
+    path: "/",
     element: <Layout />,
     children: [
       {
         index: true,
         lazy: () =>
-          import('./pages/Storytelling').then((module) => ({
+          import("./pages/Storytelling").then((module) => ({
             Component: module.default,
           })),
       },
       {
-        path: 'detail',
+        path: "detail",
         lazy: () =>
-          import('./pages/DetailView').then((module) => ({
+          import("./pages/DetailView").then((module) => ({
             Component: module.default,
           })),
       },
       {
-        path: 'detail/:id',
+        path: "detail/:id",
         lazy: () =>
-          import('./pages/DetailView').then((module) => ({
+          import("./pages/DetailView").then((module) => ({
             Component: module.default,
           })),
       },
       {
-        path: 'compare',
+        path: "compare",
         lazy: () =>
-          import('./pages/ComparePlans').then((module) => ({
+          import("./pages/ComparePlans").then((module) => ({
             Component: module.default,
           })),
       },
       // ADD THIS:
       {
-        path: 'map',
+        path: "map",
         lazy: () =>
-          import('./pages/BAMap').then((module) => ({
+          import("./pages/BAMap").then((module) => ({
             Component: module.default,
           })),
       },
     ],
   },
-])
+]);
 
 // Trigger loading db on app load
 export function App() {
@@ -93,5 +93,5 @@ export function App() {
         <RouterProvider router={router} />
       </QueryClientProvider>
     </StrictMode>
-  )
+  );
 }

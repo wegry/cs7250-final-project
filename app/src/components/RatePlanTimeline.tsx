@@ -1,30 +1,30 @@
-import { orderBy } from 'es-toolkit'
-import { useMemo } from 'react'
-import type { RatePlan } from '../data/schema'
-import { Timeline } from 'antd'
+import { orderBy } from "es-toolkit";
+import { useMemo } from "react";
+import type { RatePlan } from "../data/schema";
+import { Timeline } from "antd";
 
 export function RatePlanTimeline({ ratePlan }: { ratePlan?: RatePlan | null }) {
   const timelineEntries = useMemo(() => {
     const values = Object.entries({
-      'Plan End': { date: ratePlan?.endDate, color: 'red' },
-      'Effective Date': { date: ratePlan?.effectiveDate, color: 'green' },
+      "Plan End": { date: ratePlan?.endDate, color: "red" },
+      "Effective Date": { date: ratePlan?.effectiveDate, color: "green" },
     }).concat(
       ratePlan?.revisions?.map((x, i) => [
         `Revision ${i + 1}`,
-        { color: 'gray', ...x },
-      ]) ?? []
-    )
-    return orderBy(values, [([, v]) => v.date], ['desc']).flatMap(([k, v]) => {
+        { color: "gray", ...x },
+      ]) ?? [],
+    );
+    return orderBy(values, [([, v]) => v.date], ["desc"]).flatMap(([k, v]) => {
       if (v.date == null) {
-        return []
+        return [];
       }
       return {
         label: k,
-        children: v.date.format('ll'),
+        children: v.date.format("ll"),
         color: v.color,
-      }
-    })
-  }, [ratePlan])
+      };
+    });
+  }, [ratePlan]);
 
   return (
     timelineEntries.length > 0 && (
@@ -33,5 +33,5 @@ export function RatePlanTimeline({ ratePlan }: { ratePlan?: RatePlan | null }) {
         <Timeline mode="left" items={timelineEntries} />
       </>
     )
-  )
+  );
 }

@@ -1,15 +1,15 @@
-import { Select } from 'antd'
-import { useRatePlans } from '../hooks/useRatePlans'
-import type { Dayjs } from 'dayjs'
+import { Select } from "antd";
+import { useRatePlans } from "../hooks/useRatePlans";
+import type { Dayjs } from "dayjs";
 
 interface RatePlanSelectorProps {
   /**
    * Use only plans active on this date
    */
-  byDate?: Dayjs
-  value?: string | null
-  onChange: (value: string) => void
-  label?: string
+  byDate?: Dayjs;
+  value?: string | null;
+  onChange: (value: string) => void;
+  label?: string;
 }
 
 export function RatePlanSelector({
@@ -17,10 +17,10 @@ export function RatePlanSelector({
   byDate,
   onChange,
 }: RatePlanSelectorProps) {
-  const { data: options, isLoading, error } = useRatePlans(byDate)
+  const { data: options, isLoading, error } = useRatePlans(byDate);
 
   if (error) {
-    return <div>Error loading rate plans: {error.message}</div>
+    return <div>Error loading rate plans: {error.message}</div>;
   }
 
   return (
@@ -34,5 +34,5 @@ export function RatePlanSelector({
       showSearch
       value={value}
     ></Select>
-  )
+  );
 }

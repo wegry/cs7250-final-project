@@ -8,6 +8,7 @@
   "main": "src/index.ts",
   "scripts": {
     "build": "vite build",
+    "prettier": "prettier",
     "start": "vite",
     "test": "vitest",
     "tsc": "tsc"
