@@ -138,7 +138,7 @@ function createScheduleSpec(
   const spec: TopLevelSpec = {
     $schema: "https://vega.github.io/schema/vega-lite/v5.json",
     title,
-    width: hasHourlyVariation ? 400 : 40,
+    width: hasHourlyVariation ? 400 : 15,
     height: 200,
     data: { values: data },
     params: interactive
@@ -151,6 +151,8 @@ function createScheduleSpec(
       : [],
     mark: {
       type: "rect",
+      width: 15,
+      height: 15,
       stroke: "white",
       cursor: interactive ? "pointer" : "default",
     },
@@ -183,7 +185,7 @@ function createScheduleSpec(
               field: "hour",
               type: "ordinal",
               title: "Hour of Day",
-              axis: { labelAngle: 0, bandPosition: 0 },
+              axis: { labelAngle: 0, labelAlign: "right", bandPosition: 0 },
               sort: Array.from({ length: 24 }, (_, i) => i),
             },
           }

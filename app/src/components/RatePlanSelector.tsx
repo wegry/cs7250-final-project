@@ -28,6 +28,7 @@ export function RatePlanSelector({
       disabled={isLoading}
       loading={isLoading}
       onChange={onChange}
+      size="large"
       optionFilterProp="label"
       options={options}
       placeholder="Choose a rate plan"

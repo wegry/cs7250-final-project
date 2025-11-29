@@ -1,5 +1,6 @@
 export const price = new Intl.NumberFormat([], {
   currency: "USD",
   style: "currency",
-  maximumSignificantDigits: 3,
+  minimumSignificantDigits: 3,
+  minimumFractionDigits: 2,
 });
