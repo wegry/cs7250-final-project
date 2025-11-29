@@ -1,3 +1,47 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:a5f81459c1b4ca952f8a1a1a68a27c709e26f6b737a844ef2b2ba56bc3f67802
-size 1189
+{
+  "name": "visualize-dynamic-pricing",
+  "version": "0.0.1",
+  "description": "",
+  "license": "ISC",
+  "author": "",
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "vite build",
+    "start": "vite",
+    "test": "vitest",
+    "tsc": "tsc"
+  },
+  "dependencies": {
+    "@ant-design/v5-patch-for-react-19": "^1.0.3",
+    "@duckdb/duckdb-wasm": "^1.30.0",
+    "@duckdb/node-api": "^1.4.1-r.4",
+    "@netlify/vite-plugin": "^2.7.8",
+    "@tanstack/react-query": "^5.90.6",
+    "@vitejs/plugin-react": "^5.1.0",
+    "antd": "^5.28.0",
+    "clsx": "^2.1.1",
+    "d3-scale-chromatic": "^3.1.0",
+    "dayjs": "^1.11.19",
+    "es-toolkit": "^1.41.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-router-dom": "^7.9.5",
+    "react-vega": "^8.0.0",
+    "use-immer": "^0.11.0",
+    "vega": "^6.2.0",
+    "vega-embed": "^7.1.0",
+    "vega-lite": "^6.4.1",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@types/d3-scale-chromatic": "^3.1.0",
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.2",
+    "@types/react-vega": "^6.0.0",
+    "prettier": "^3.6.2",
+    "typescript": "^5.9.3",
+    "vite": "^7.1.12",
+    "vitest": "^4.0.6"
+  }
+}
