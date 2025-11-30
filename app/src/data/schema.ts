@@ -163,6 +163,7 @@ export const RetailPriceDataSchema = z.object({
   value: z.number(),
   tier: z.number(),
   period: z.number(),
+  adj: z.number().optional(),
 });
 
 export const WholesalePriceDataSchema = z.object({

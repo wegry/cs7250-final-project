@@ -22,8 +22,8 @@ import { useRateSupercededBy } from "../hooks/useRateInPlanData";
 import { useRatePlan } from "../hooks/useRatePlan";
 import * as s from "./DetailView.module.css";
 
-import dayjs from "dayjs";
-import { useMemo } from "react";
+import dayjs, { Dayjs } from "dayjs";
+import { useCallback, useMemo } from "react";
 import { EnergyRateChart, TiersChart } from "../charts/energyRateStructure";
 import {
   CoincidentRateChart,
@@ -49,7 +49,7 @@ const DESCRIPTIONS = {
     "A simpler demand charge that applies the same rate regardless of when your peak occurs.",
   fixedCharges:
     "Fixed monthly costs that appear on your bill regardless of how much electricity you use. These cover metering, billing, and basic infrastructure costs. Minimum charges ensure a baseline payment even with very low usage.",
-};
+} as const;
 
 export default function DetailView() {
   const { id: ratePlanParam } = useParams();
@@ -154,6 +154,19 @@ export default function DetailView() {
     ] satisfies DescriptionsProps["items"];
   }, [selectedPlan, supercededBy]);
 
+  const onDateChange = useCallback(
+    (newDate: Dayjs) => {
+      setParams((params) => {
+        const next = newDate.format("YYYY-MM-DD");
+        if (params.get(DATE_PARAM) != next) {
+          params.set(DATE_PARAM, next);
+        }
+        return params;
+      });
+    },
+    [setParams],
+  );
+
   return (
     <main className={s.main}>
       <Form layout="horizontal" className={s.form}>
@@ -198,12 +211,7 @@ export default function DetailView() {
               <DatePicker
                 allowClear={false}
                 value={date}
-                onChange={(e) =>
-                  setParams((params) => {
-                    params.set(DATE_PARAM, e.format("YYYY-MM-DD"));
-                    return params;
-                  })
-                }
+                onChange={onDateChange}
               />
             </Form.Item>
           </Col>
@@ -230,12 +238,7 @@ export default function DetailView() {
             selectedPlan={selectedPlan}
             date={date}
             type="energy"
-            onDateChange={(newDate) => {
-              setParams((params) => {
-                params.set(DATE_PARAM, newDate.format("YYYY-MM-DD"));
-                return params;
-              });
-            }}
+            onDateChange={onDateChange}
           />
           <EnergyRateChart selectedPlan={selectedPlan} date={date} />
           <TiersChart selectedPlan={selectedPlan} date={date} />
@@ -256,22 +259,21 @@ export default function DetailView() {
             selectedPlan={selectedPlan}
             date={date}
             type={"demand"}
-            onDateChange={(newDate) => {
-              setParams((params) => {
-                params.set(DATE_PARAM, newDate.format("YYYY-MM-DD"));
-                return params;
-              });
-            }}
+            onDateChange={onDateChange}
           />
           <DemandRateChart selectedPlan={selectedPlan} date={date} />
           <DemandTierRateChart selectedPlan={selectedPlan} date={date} />
-          <DetailSection
-            description={DESCRIPTIONS.flatDemand}
-            title="Flat Demand"
-            hide={selectedPlan?.flatDemandMonths == null}
-          >
-            <FlatDemandChart selectedPlan={selectedPlan} date={date} />
-          </DetailSection>
+        </DetailSection>
+        <DetailSection
+          description={DESCRIPTIONS.flatDemand}
+          title="Flat Demand"
+          hide={selectedPlan?.flatDemandMonths == null}
+        >
+          <FlatDemandChart
+            selectedPlan={selectedPlan}
+            date={date}
+            onDateChange={onDateChange}
+          />
         </DetailSection>
         <Card>
           <div

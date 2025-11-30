@@ -1,4 +1,6 @@
 .infoBlock {
+  height: -webkit-fill-available;
+
   & h2 {
     margin-top: 8px;
   }
