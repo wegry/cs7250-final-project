@@ -1,14 +1,15 @@
-import type { TopLevelSpec } from "vega-lite";
-import type { RatePlan } from "../data/schema";
-import type { Dayjs } from "dayjs";
-import { VegaEmbed } from "react-vega";
-import { uniqBy, windowed } from "es-toolkit";
 import { Card, Statistic } from "antd";
-import { price } from "../formatters";
-import { getViridisColors } from "./color";
-import { MONTHS } from "./constants";
+import type { Dayjs } from "dayjs";
+import { uniqBy } from "es-toolkit";
+import { useMemo } from "react";
+import { VegaEmbed } from "react-vega";
+import type { TopLevelSpec } from "vega-lite";
 import { Heatmap } from "../components/Schedule";
+import type { RatePlan } from "../data/schema";
 import { getFirstDayOfType } from "../dates";
+import { price } from "../formatters";
+import { buildPeriodColorScale, getViridisColors } from "./color";
+import { MONTHS } from "./constants";
 
 interface DayAndPlan {
   selectedPlan?: RatePlan | null;
@@ -108,86 +109,54 @@ export function DemandRateChart({ date, selectedPlan }: DayAndPlan) {
     ? selectedPlan.demandWeekendSched
     : selectedPlan.demandWeekdaySched;
 
-  const periods = schedule?.[date.month()];
-  const selectedTiers = periods?.flatMap((p, hour) => {
+  const monthSchedule = schedule?.[date.month()];
+  const selectedTiers = monthSchedule?.flatMap((period, hour) => {
     const { demandRate_tiers } = selectedPlan;
+    const nextPeriod = monthSchedule[hour + 1];
 
     return (
-      demandRate_tiers?.[p]?.flatMap((x, tier) => {
-        if (x.rate == 0) return [];
-        const next = { ...x, hour, period: p, tier };
+      demandRate_tiers?.[period]?.flatMap((x, tier) => {
+        const base = { ...x, hour, period, tier };
 
-        if (hour == 23) {
-          return [next, { ...next, hour: 24 }];
-        } else if (
-          !demandRate_tiers[periods[hour + 1]!]?.[tier]?.rate &&
-          !demandRate_tiers[periods[hour + 2]!]?.[tier]?.rate
-        ) {
+        // End of day: close with point at hour 24
+        if (hour === 23) {
+          return [base, { ...base, hour: 24 }];
+        }
+        // Period boundary: close the step, then insert null to break the line
+        if (nextPeriod !== period) {
           return [
-            next,
-            { ...next, hour: hour + 1 },
-            { ...next, rate: NaN, hour: hour + 2 },
+            base,
+            { ...base, hour: hour + 1 },
+            { ...base, hour: hour + 1, rate: null },
           ];
         }
-        return next;
+        return base;
       }) ?? []
     );
   });
 
-  if (selectedTiers == null) return null;
+  // Use consistent color scale from ALL periods in the full demand schedule
+  const colorScale = useMemo(
+    () => buildPeriodColorScale(selectedPlan, "demand"),
+    [selectedPlan],
+  );
 
-  const values = windowed(selectedTiers, 2).flatMap(([x, y], i) => {
-    if (x?.rate != y?.rate) {
-      if (selectedTiers[i - 1]?.rate != x?.rate) {
-        return [x, { ...x, hour: y?.hour }, y];
-      }
-      if (selectedTiers[i + 1]) {
-        return [
-          x,
-          { ...x, hour: y?.hour },
-          // This shouldn't happen...
-          { ...x, hour: y?.hour ?? 0 + 1, rate: null },
-          y,
-        ];
-      }
-    }
-    return [x, y];
-  });
-
-  const isBoring =
-    uniqBy(values, (x) => [x?.rate, x?.period].join("/")).length === 1;
-
-  if (isBoring && values.length) {
-    return (
-      <Card>
-        <Statistic
-          title="Demand Rate"
-          value={price.format(values[0]?.rate ?? 0)}
-          suffix={`/ ${selectedPlan?.demandRateUnits ?? "kW"} all day`}
-        />
-      </Card>
-    );
-  }
+  // Don't render if no data
+  if (!selectedTiers?.length) return null;
 
   const spec: TopLevelSpec = {
     $schema: "https://vega.github.io/schema/vega-lite/v6.json",
-    width: 320,
-    height: 200,
-    data: { values },
-    params: hoverParams,
+    width: 400,
+    height: 240,
+    title: `Demand Rate Structure (${date.format("dddd LL")})`,
+    data: { values: selectedTiers },
     mark: {
       type: "line",
+      strokeWidth: 2,
       interpolate: "step-after",
-      point: { filled: true, size: 60 },
+      point: { filled: true, size: 50 },
     },
-    title: `Demand Rate (${date.format("dddd LL")})`,
     encoding: {
-      y: {
-        field: "rate",
-        type: "quantitative",
-        title: `$ per ${selectedPlan?.demandRateUnits ?? "kW"}`,
-        stack: null,
-      },
       x: {
         field: "hour",
         type: "quantitative",
@@ -195,12 +164,29 @@ export function DemandRateChart({ date, selectedPlan }: DayAndPlan) {
         scale: { domain: [0, 24] },
         axis: { tickCount: 24, labelAngle: 0 },
       },
-      color: { field: "period", title: "Period", scale: { scheme: "viridis" } },
+      y: {
+        field: "rate",
+        type: "quantitative",
+        title: "$ per kW",
+        axis: { format: ".2f" },
+      },
+      color: {
+        field: "period",
+        type: "nominal",
+        title: "Period",
+        scale: colorScale,
+      },
+      strokeDash: {
+        field: "tier",
+        type: "ordinal",
+        title: "Tier",
+        legend: null,
+      },
       tooltip: [
         { field: "hour", title: "Hour" },
-        { field: "rate", title: "$ per kW", format: ".3f" },
         { field: "period", title: "Period" },
         { field: "tier", title: "Tier" },
+        { field: "rate", title: "$ per kW", format: ".4f" },
       ],
     },
   };
@@ -220,13 +206,17 @@ export function DemandTierRateChart({ date, selectedPlan }: DayAndPlan) {
     ? selectedPlan.demandWeekendSched
     : selectedPlan.demandWeekdaySched;
 
+  const colorScale = useMemo(
+    () => buildPeriodColorScale(selectedPlan, "demand"),
+    [selectedPlan],
+  );
+
   const periods = schedule?.[date.month()];
   let selectedTiers = periods?.flatMap((p) => {
     const { demandRate_tiers } = selectedPlan;
 
     return (
       demandRate_tiers?.[p]?.flatMap((x, tier) => {
-        if (x.rate === 0) return [];
         let next = { ...x, tier, period: p };
 
         if (next.max == null) {
@@ -285,7 +275,7 @@ export function DemandTierRateChart({ date, selectedPlan }: DayAndPlan) {
         title: `Max (${selectedPlan?.demandRateUnits ?? "kW"})`,
         scale: { domainMax: Math.max(...selectedTiers.map((x) => x.max ?? 0)) },
       },
-      color: { field: "period", title: "Period", scale: { scheme: "viridis" } },
+      color: { field: "period", title: "Period", scale: colorScale },
       tooltip: [
         { field: "max", title: "Max Demand", format: ".1f" },
         { field: "rate", title: "$ per kW", format: ".3f" },

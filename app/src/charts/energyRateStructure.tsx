@@ -6,7 +6,7 @@ import { VegaEmbed } from "react-vega";
 import type { TopLevelSpec } from "vega-lite";
 import type { RatePlan, RetailPriceData } from "../data/schema";
 import { price } from "../formatters";
-import { getViridisColors } from "../charts/color";
+import { buildPeriodColorScale } from "./color";
 
 export function EnergyRateChart({
   date,
@@ -21,9 +21,9 @@ export function EnergyRateChart({
     () =>
       uniqBy(
         retailData.filter((x) => x.value !== null),
-        (x) => [x.period, x.tier, x.value, x.adj].join("/")
+        (x) => [x.period, x.tier, x.value, x.adj].join("/"),
       ).length === 1,
-    [retailData]
+    [retailData],
   );
 
   const sameAllYearLong = useMemo(
@@ -31,21 +31,17 @@ export function EnergyRateChart({
       new Set(
         selectedPlan?.energyWeekdaySched
           ?.concat(selectedPlan.energyWeekendSched ?? [])
-          ?.flat()
+          ?.flat(),
       ).size === 1,
-    [selectedPlan]
+    [selectedPlan],
   );
 
-  // Build color scale for periods
-  const colorScale = useMemo(() => {
-    const periods = [
-      ...new Set(
-        retailData.filter((d) => d.value !== null).map((d) => d.period)
-      ),
-    ].sort((a, b) => a - b);
-    const colors = getViridisColors(periods.length);
-    return { domain: periods, range: colors };
-  }, [retailData]);
+  // Build color scale from ALL periods in the schedule (not just today's)
+  // This ensures colors match the ScheduleHeatmap
+  const colorScale = useMemo(
+    () => buildPeriodColorScale(selectedPlan, "energy"),
+    [selectedPlan],
+  );
 
   if (!retailData.length) {
     return null;
@@ -106,15 +102,13 @@ export function EnergyRateChart({
         field: "value",
         type: "quantitative",
         title: "$ per kWh",
-        axis: {
-          format: ".2f",
-        },
+        axis: { format: ".2f" },
       },
       color: {
         field: "period",
         type: "nominal",
         title: "Period",
-        scale: colorScale,
+        scale: colorScale, // Uses full schedule's color mapping
       },
       strokeDash: {
         field: "tier",
@@ -142,7 +136,7 @@ type ChartDataPoint = RetailPriceData;
 
 function pullData(
   data: RatePlan | null | undefined,
-  date: Dayjs
+  date: Dayjs,
 ): ChartDataPoint[] {
   const tiers = data?.energyRate_tiers;
   const schedule = [0, 6].includes(date.day())

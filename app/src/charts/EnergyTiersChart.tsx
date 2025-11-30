@@ -4,7 +4,7 @@ import { VegaEmbed } from "react-vega";
 import type { Dayjs } from "dayjs";
 import { Card } from "antd";
 import { useMemo } from "react";
-import { getViridisColors } from "../charts/color";
+import { buildPeriodColorScale } from "./color";
 
 // ============ Utility Types & Functions ============
 
@@ -30,7 +30,7 @@ function effectiveRate(tier: TierInfo): number {
 function processTiersForPeriod(
   tiers: TierInfo[],
   period: number,
-  extendLastTierBy = 1.3
+  extendLastTierBy = 1.3,
 ): ChartTierPoint[] {
   if (!tiers.length) return [];
 
@@ -44,10 +44,8 @@ function processTiersForPeriod(
     const rate = effectiveRate(tier);
     const isLastTier = tierIdx === tiers.length - 1;
 
-    // Start point of this tier (at previous tier's max)
     points.push({ rate, max: prevMax, tier: tierIdx, period, unit: tier.unit });
 
-    // End point of this tier
     if (tier.max != null) {
       points.push({
         rate,
@@ -72,7 +70,7 @@ function processTiersForPeriod(
 }
 
 function getPeriodsFromSchedule(
-  schedule: number[] | null | undefined
+  schedule: number[] | null | undefined,
 ): number[] {
   if (!schedule) return [];
   return [...new Set(schedule)].sort((a, b) => a - b);
@@ -93,8 +91,14 @@ export function EnergyTiersChart({
     : selectedPlan?.energyWeekdaySched?.[date.month()];
   const periods = useMemo(() => getPeriodsFromSchedule(schedule), [schedule]);
 
-  // Process all periods into combined chart data
-  const { chartData, colorScale } = useMemo(() => {
+  // Use consistent color scale from ALL periods in the full schedule
+  const colorScale = useMemo(
+    () => buildPeriodColorScale(selectedPlan, "energy"),
+    [selectedPlan],
+  );
+
+  // Process today's periods into chart data
+  const chartData = useMemo(() => {
     const allPoints: ChartTierPoint[] = [];
 
     for (const period of periods) {
@@ -103,11 +107,7 @@ export function EnergyTiersChart({
       allPoints.push(...points);
     }
 
-    // Build color scale matching ScheduleHeatmap
-    const colors = getViridisColors(periods.length);
-    const scale = { domain: periods, range: colors };
-
-    return { chartData: allPoints, colorScale: scale };
+    return allPoints;
   }, [selectedPlan?.energyRate_tiers, periods]);
 
   // Calculate domain max for x-axis
@@ -121,7 +121,7 @@ export function EnergyTiersChart({
     selectedPlan?.energyRate_tiers?.[periods[0] ?? 0]?.[0]?.unit ?? "kWh";
 
   // Don't render if no meaningful data
-  if (chartData.length <= 1) {
+  if (chartData.length <= 1 || chartData.every((x) => x.max === 0)) {
     return null;
   }
 
@@ -148,9 +148,7 @@ export function EnergyTiersChart({
         field: "rate",
         type: "quantitative",
         title: "$ per kWh",
-        axis: {
-          format: ".2f",
-        },
+        axis: { format: ".2f" },
       },
       color: {
         field: "period",
