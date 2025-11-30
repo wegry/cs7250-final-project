@@ -7,7 +7,7 @@ import type { SomeType } from "zod/v4/core";
  */
 function unionOfLiterals<T extends string | number>(constants: readonly T[]) {
   const literals = constants.map((x) =>
-    z.literal(x),
+    z.literal(x)
   ) as unknown as readonly z.ZodLiteral<T>[];
   return z.union(literals);
 }
@@ -24,7 +24,7 @@ const optionalSchedule = z.preprocess(
     }
     return Array.from(arg as unknown as unknown[][]).map((x) => Array.from(x));
   },
-  z.array(z.array(z.number())).nullable(),
+  z.array(z.array(z.number())).nullable()
 );
 const dates = z
   .union([z.date(), z.number(), z.string()])
@@ -39,7 +39,7 @@ const dates = z
 
 export const statesArray = z.preprocess(
   (arg) => (arg == null ? arg : Array.from(arg as unknown[])),
-  z.array(z.string()).optional(),
+  z.array(z.string()).optional()
 );
 
 function tierShape<T extends SomeType>(shape: T) {
@@ -48,7 +48,7 @@ function tierShape<T extends SomeType>(shape: T) {
       arg == null
         ? arg
         : Array.from(arg as unknown[]).map((x) => Array.from(x as unknown[])),
-    z.array(z.array(shape)).nullish(),
+    z.array(z.array(shape)).nullish()
   );
 }
 
@@ -67,7 +67,7 @@ export const RatePlan = z.object({
   fixedChargeEaAddl: z.number().nullish(),
   fixedKeyVals: z.preprocess(
     (arg) => (arg == null ? arg : Array.from(arg as unknown[])),
-    z.array(z.object({ key: z.string(), val: z.string() })).nullish(),
+    z.array(z.object({ key: z.string(), val: z.string() })).nullish()
   ),
 
   minCharge: z.number().nullable(),
@@ -75,19 +75,19 @@ export const RatePlan = z.object({
   coincidentSched: optionalSchedule,
   coincidentRateUnits: unionOfLiterals(["kW"]).nullish(),
   coincidentRate_tiers: tierShape(
-    z.object({ rate: z.number().nullish(), adj: z.number().nullish() }),
+    z.object({ rate: z.number().nullish(), adj: z.number().nullish() })
   ).nullish(),
   demandComments: z.string().nullish(),
   demandHist: z.number().nullish(),
   demandKeyVals: z.preprocess(
     (arg) => (arg == null ? arg : Array.from(arg as unknown[])),
-    z.array(z.object({ key: z.string(), val: z.string() })).nullish(),
+    z.array(z.object({ key: z.string(), val: z.string() })).nullish()
   ),
   demandMax: z.number().nullish(),
   demandMin: z.number().nullish(),
   demandRatchetPercentage: z.preprocess(
     (arg) => (arg == null ? arg : Array.from(arg as unknown[])),
-    z.array(z.number()).nullish(),
+    z.array(z.number()).nullish()
   ),
   demandRateUnits: unionOfLiterals(["kW", "kVA", "hp", "kVA daily"]).nullish(),
   demandReactPwrCharge: z.number().nullish(),
@@ -100,7 +100,7 @@ export const RatePlan = z.object({
       rate: z.number().nullish(),
       adj: z.number().nullish(),
       max: z.number().nullish(),
-    }),
+    })
   ).nullish(),
   description: z.string().nullish(),
   energycomments: z.string().nullish(),
@@ -114,19 +114,19 @@ export const RatePlan = z.object({
       rate: z.optional(z.number()),
       max: z.number().nullish(),
       unit: unionOfLiterals(["kWh", "kWh daily", "kWh/kW"] as const).nullish(),
-    }),
+    })
   ).optional(),
   flatDemand_tiers: tierShape(
     z.object({
       rate: z.number().nullish(),
       adj: z.number().nullish(),
       max: z.number().nullish(),
-    }),
+    })
   ).nullish(),
   flatDemandUnits: unionOfLiterals(["kVA", "kW", "kVA daily", "hp"]).nullish(),
   flatDemandMonths: z.preprocess(
     (arg) => (arg == null ? arg : Array.from(arg as unknown[])),
-    z.array(z.number()).nullish(),
+    z.array(z.number()).nullish()
   ),
   revisions: z.preprocess(
     (arg) => (arg == null ? arg : Array.from(arg as unknown[])),
@@ -134,8 +134,8 @@ export const RatePlan = z.object({
       z.object({
         date: z.string().transform((arg) => dayjs(arg)),
         userid: z.string().optional(),
-      }),
-    ),
+      })
+    )
   ),
   sourceParent: z.string().nullish(),
   sourceReference: z.string().nullish(),
@@ -147,7 +147,7 @@ export const RatePlanSelect = z.array(
   z.object({
     value: z.string(),
     label: z.string(),
-  }),
+  })
 );
 
 export type RatePlanSelect = z.infer<typeof RatePlanSelect>;
@@ -167,7 +167,7 @@ export const SynthDataArray = z.array(SynthData);
 export const RetailPriceDataSchema = z.object({
   hour: z.number(),
   baseRate: z.number().optional(),
-  value: z.number(),
+  value: z.number().nullish(),
   tier: z.number(),
   period: z.number(),
   adj: z.number().optional(),

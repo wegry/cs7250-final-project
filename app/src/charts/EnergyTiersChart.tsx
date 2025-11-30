@@ -2,8 +2,9 @@ import type { TopLevelSpec } from "vega-lite";
 import type { RatePlan } from "../data/schema";
 import { VegaEmbed } from "react-vega";
 import type { Dayjs } from "dayjs";
-import { Card, Segmented } from "antd";
-import { useMemo, useState } from "react";
+import { Card } from "antd";
+import { useMemo } from "react";
+import { getViridisColors } from "../charts/color";
 
 // ============ Utility Types & Functions ============
 
@@ -29,7 +30,7 @@ function effectiveRate(tier: TierInfo): number {
 function processTiersForPeriod(
   tiers: TierInfo[],
   period: number,
-  extendLastTierBy = 1.3,
+  extendLastTierBy = 1.3
 ): ChartTierPoint[] {
   if (!tiers.length) return [];
 
@@ -38,20 +39,13 @@ function processTiersForPeriod(
 
   for (let tierIdx = 0; tierIdx < tiers.length; tierIdx++) {
     const tier = tiers[tierIdx];
-    if (!tier) {
-      continue;
-    }
+    if (!tier) continue;
+
     const rate = effectiveRate(tier);
     const isLastTier = tierIdx === tiers.length - 1;
 
     // Start point of this tier (at previous tier's max)
-    points.push({
-      rate,
-      max: prevMax,
-      tier: tierIdx,
-      period,
-      unit: tier.unit,
-    });
+    points.push({ rate, max: prevMax, tier: tierIdx, period, unit: tier.unit });
 
     // End point of this tier
     if (tier.max != null) {
@@ -64,7 +58,6 @@ function processTiersForPeriod(
       });
       prevMax = tier.max;
     } else if (isLastTier && prevMax > 0) {
-      // Last tier without max: extend the chart
       points.push({
         rate,
         max: prevMax * extendLastTierBy,
@@ -79,7 +72,7 @@ function processTiersForPeriod(
 }
 
 function getPeriodsFromSchedule(
-  schedule: number[] | null | undefined,
+  schedule: number[] | null | undefined
 ): number[] {
   if (!schedule) return [];
   return [...new Set(schedule)].sort((a, b) => a - b);
@@ -94,59 +87,54 @@ export function EnergyTiersChart({
   selectedPlan?: RatePlan | null;
   date: Dayjs;
 }) {
-  const schedule = selectedPlan?.energyWeekdaySched?.[date.month()];
+  const isWeekend = [0, 6].includes(date.day());
+  const schedule = isWeekend
+    ? selectedPlan?.energyWeekendSched?.[date.month()]
+    : selectedPlan?.energyWeekdaySched?.[date.month()];
   const periods = useMemo(() => getPeriodsFromSchedule(schedule), [schedule]);
 
-  // If multiple periods, allow user to select which one to view
-  const [selectedPeriod, setSelectedPeriod] = useState<number | null>(null);
-  const activePeriod = selectedPeriod ?? periods[0] ?? 0;
+  // Process all periods into combined chart data
+  const { chartData, colorScale } = useMemo(() => {
+    const allPoints: ChartTierPoint[] = [];
 
-  // Get tiers for the active period
-  const tiers = useMemo(() => {
-    return selectedPlan?.energyRate_tiers?.[activePeriod] ?? [];
-  }, [selectedPlan?.energyRate_tiers, activePeriod]);
+    for (const period of periods) {
+      const tiers = selectedPlan?.energyRate_tiers?.[period] ?? [];
+      const points = processTiersForPeriod(tiers, period);
+      allPoints.push(...points);
+    }
 
-  // Process tiers into chart data
-  const chartData = useMemo(() => {
-    return processTiersForPeriod(tiers, activePeriod);
-  }, [tiers, activePeriod]);
+    // Build color scale matching ScheduleHeatmap
+    const colors = getViridisColors(periods.length);
+    const scale = { domain: periods, range: colors };
 
-  // Calculate domain max for x-axis (handles trailing off)
+    return { chartData: allPoints, colorScale: scale };
+  }, [selectedPlan?.energyRate_tiers, periods]);
+
+  // Calculate domain max for x-axis
   const domainMax = useMemo(() => {
     if (!chartData.length) return undefined;
-    const maxValue = Math.max(...chartData.map((p) => p.max));
-    return maxValue;
+    return Math.max(...chartData.map((p) => p.max));
   }, [chartData]);
 
   // Get unit for axis label
-  const unit = tiers[0]?.unit ?? "kWh";
+  const unit =
+    selectedPlan?.energyRate_tiers?.[periods[0] ?? 0]?.[0]?.unit ?? "kWh";
 
-  // Don't render if no meaningful tier data
+  // Don't render if no meaningful data
   if (chartData.length <= 1) {
     return null;
   }
 
   const spec: TopLevelSpec = {
     $schema: "https://vega.github.io/schema/vega-lite/v6.json",
-    width: 320,
-    height: 200,
+    width: 400,
+    height: 240,
     title: `Energy Usage Tiers (${date.format("dddd LL")})`,
     data: { values: chartData },
-    params: [
-      {
-        name: "hover",
-        select: {
-          type: "point",
-          on: "pointerover",
-          nearest: true,
-          clear: "pointerout",
-        },
-      },
-    ],
     mark: {
       type: "line",
       interpolate: "step-after",
-      point: { filled: true, size: 60 },
+      point: { filled: true, size: 50 },
       strokeWidth: 2,
     },
     encoding: {
@@ -160,35 +148,33 @@ export function EnergyTiersChart({
         field: "rate",
         type: "quantitative",
         title: "$ per kWh",
+        axis: {
+          format: ".2f",
+        },
       },
       color: {
+        field: "period",
+        type: "nominal",
+        title: "Period",
+        scale: colorScale,
+      },
+      strokeDash: {
         field: "tier",
         type: "ordinal",
         title: "Tier",
-        scale: { scheme: "viridis" },
+        legend: null,
       },
       tooltip: [
+        { field: "period", title: "Period" },
+        { field: "tier", title: "Tier" },
         { field: "max", title: "Usage Limit", format: ".1f" },
         { field: "rate", title: "$ per kWh", format: ".4f" },
-        { field: "tier", title: "Tier" },
       ],
     },
   };
 
   return (
     <Card>
-      {periods.length > 1 && (
-        <div style={{ marginBottom: 16 }}>
-          <Segmented
-            options={periods.map((p) => ({
-              label: `Period ${p}`,
-              value: p,
-            }))}
-            value={activePeriod}
-            onChange={(value) => setSelectedPeriod(value as number)}
-          />
-        </div>
-      )}
       <VegaEmbed spec={spec} options={{ mode: "vega-lite", actions: false }} />
     </Card>
   );
