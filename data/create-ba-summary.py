@@ -1,58 +1,152 @@
-"""Get data for each balancing authority."""
+"""Get data for each balancing authority.
+
+This version reads the utility -> balancing-authority mapping from the
+existing DuckDB `usurdb` table (auto-detecting a likely BA column) and
+no longer relies on the Excel file. The script still writes
+`app/public/ba-summary.json` and does not modify the DB.
+"""
+
 import json
-import openpyxl
 import duckdb
+from collections import defaultdict
 
-# Map short BA codes to full zone names from GeoJSON
-BA_ZONE_MAPPING = {
-    "CISO": "US-CAL-CISO",
-    "ISONE": "US-NE-ISNE", 
-    "BPAT": "US-NW-BPAT",
-    "MISO": "US-MIDW-MISO",
+# Note: this script no longer relies on a hard-coded BA -> zone mapping.
+# It reads the BA(s) for each utility from the `utility_data.ba` column in
+# the DuckDB `flattened.duckdb` and aggregates counts by that BA value.
+import os
+
+# Resolve duckdb path relative to this script so the script can be run from any CWD
+DB_PATH = os.path.join(os.path.dirname(__file__), "flattened.duckdb")
+
+# Connect to DuckDB
+con = duckdb.connect(DB_PATH, read_only=True)
+
+# Build mapping info (zone list, aliases and normalization helper) so we can
+# normalize BA values from `utility_data` before aggregating.
+ZONE_LIST = [
+    "US-CAL-CISO",
+    "US-CAL-IID",
+    "US-CAL-LDWP",
+    "US-CAL-TIDC",
+    "US-CAL-BANC",
+    "US-CAR-CPLE",
+    "US-CAR-CPLW",
+    "US-CAR-DUK",
+    "US-CAR-SC",
+    "US-CAR-SCEG",
+    "US-CENT-SPA",
+    "US-CENT-SWPP",
+    "US-FLA-FMPP",
+    "US-FLA-FPC",
+    "US-NW-NWMT",
+    "US-FLA-GVL",
+    "US-FLA-HST",
+    "US-FLA-JEA",
+    "US-SW-WALC",
+    "US-FLA-SEC",
+    "US-FLA-TAL",
+    "US-FLA-TEC",
+    "US-MIDA-PJM",
+    "US-MIDW-AECI",
+    "US-MIDW-MISO",
+    "US-MIDW-LGEE",
+    "US-NE-ISNE",
+    "US-NW-AVA",
+    "US-NW-BPAT",
+    "US-NW-CHPD",
+    "US-NW-DOPD",
+    "US-NW-GCPD",
+    "US-SW-AZPS",
+    "US-NW-IPCO",
+    "US-NW-NEVP",
+    "US-FLA-FPL",
+    "US-NW-PACE",
+    "US-NW-PACW",
+    "US-NW-PGE",
+    "US-NW-PSCO",
+    "US-NW-PSEI",
+    "US-NW-TPWR",
+    "US-NW-WACM",
+    "US-NW-WAUW",
+    "US-NY-NYIS",
+    "US-SE-SOCO",
+    "US-SW-EPE",
+    "US-SW-SRP",
+    "US-SW-PNM",
+    "US-SW-TEPC",
+    "US-TEN-TVA",
+    "US-TEX-ERCO",
+    "US-NW-SCL",
+]
+
+# Build mapping where key is the short code (last segment) and value is full id
+ba_mapping = {z.split("-")[-1]: z for z in ZONE_LIST}
+# Add explicit alias for BANC which may appear as a raw short code
+ba_mapping["BANC"] = "US-CAL-BANC"
+# Add concrete aliases for common short codes / variants we expect in the DB
+ba_mapping.update({
+    "ISONE": "US-NE-ISNE",
     "NYISO": "US-NY-NYIS",
-    "PJM": "US-MIDA-PJM",
-    "SOCO": "US-SE-SOCO",
-    "TVA": "US-TEN-TVA",
     "ERCOT": "US-TEX-ERCO",
-    "SPP": "US-CENT-SWPP",
-    "DUK": "US-CAR-DUK",
-    "SCEG": "US-CAR-SCEG",
-    "FPL": "US-FLA-FPL",
-    "PACW": "US-NW-PACW",
-    "AZPS": "US-SW-AZPS",
-    "SRP": "US-SW-SRP",
-}
+})
 
-# Read Excel file to get utility to BA mapping
-wb = openpyxl.load_workbook('raw/eia-861-2024/Utility_Data_2024.xlsx')
-ws = wb.active
+# Build reverse mapping (full zone id -> short key) for normalization
+full_to_short = {v: k for k, v in ba_mapping.items()}
+
+def normalize_ba_raw(val: str) -> str | None:
+    if val is None:
+        return None
+    s = str(val).strip()
+    if not s:
+        return None
+    up = s.upper()
+    if up in ba_mapping:
+        return up
+    if s in full_to_short:
+        return full_to_short[s]
+    if up in full_to_short:
+        return full_to_short[up]
+    if '-' in s:
+        seg = s.split('-')[-1].upper()
+        if seg in ba_mapping:
+            return seg
+    if 'ERCOT' in up or 'TEX' in up:
+        return 'ERCOT'
+    if 'NY' in up and 'ISO' in up:
+        return 'NYISO'
+    if 'ISO' in up and 'NE' in up:
+        return 'ISONE'
+    return None
+
+rows = con.execute(
+    "SELECT eiaId, ba FROM utility_data WHERE eiaId IS NOT NULL"
+).fetchall()
 
 utility_ba_map = {}
-for row in ws.iter_rows(min_row=3, values_only=True):  # Skip header rows
-    if row[1]:  # Utility Number
-        utility_num = row[1]
-        # Columns: 14=CAISO, 15=ERCOT, 16=PJM, 17=NYISO, 19=MISO, 20=ISONE
-        ba = None
-        if row[14] == 'Y':
-            ba = 'CISO'
-        elif row[15] == 'Y':
-            ba = 'ERCOT'
-        elif row[16] == 'Y':
-            ba = 'PJM'
-        elif row[17] == 'Y':
-            ba = 'NYISO'
-        elif row[19] == 'Y':
-            ba = 'MISO'
-        elif row[20] == 'Y':
-            ba = 'ISONE'
-        
-        if ba:
-            utility_ba_map[int(utility_num)] = ba
+for eia_id, ba_vals in rows:
+    try:
+        key = int(eia_id)
+    except Exception:
+        key = eia_id
+    if not ba_vals:
+        continue
+    # ba_vals may be a list/tuple (ARRAY); take first element if so
+    if isinstance(ba_vals, (list, tuple)):
+        ba_raw = ba_vals[0] if len(ba_vals) > 0 else None
+    else:
+        ba_raw = ba_vals
+    if ba_raw is None:
+        continue
+    norm = normalize_ba_raw(ba_raw)
+    if norm is None:
+        # store raw as fallback (keeps original string), but normalization preferred
+        utility_ba_map[key] = str(ba_raw)
+    else:
+        utility_ba_map[key] = norm
 
-print(f"Found {len(utility_ba_map)} utilities with BA mapping")
+print(f"Found {len(utility_ba_map)} utilities with BA mapping from utility_data")
 
 # Query utility data from DuckDB
-con = duckdb.connect('flattened.duckdb')
 query = """
 SELECT 
     eiaId,
@@ -69,13 +163,19 @@ results = con.execute(query).fetchall()
 ba_data = {}
 for row in results:
     eia_id, utility_name, num_plans = row
-    
-    if eia_id in utility_ba_map:
-        ba = utility_ba_map[eia_id]
+
+    # coerce key the same way we built utility_ba_map
+    try:
+        key = int(eia_id)
+    except Exception:
+        key = eia_id
+
+    if key in utility_ba_map:
+        ba = utility_ba_map[key]
         if ba not in ba_data:
             ba_data[ba] = {
                 "name": ba,
-                "zoneName": BA_ZONE_MAPPING.get(ba),
+                "zoneName": ba_mapping.get(ba),
                 "utilities": [],
                 "totalPlans": 0,
             }
@@ -85,21 +185,17 @@ for row in results:
 for ba in ba_data.values():
     ba["numUtilities"] = len(ba["utilities"])
 
-# Create summary with all BAs
+# Create summary list from discovered BA values
 ba_summary = []
-for ba_code, zone_name in BA_ZONE_MAPPING.items():
-    if ba_code in ba_data:
-        ba_summary.append(ba_data[ba_code])
-    else:
-        ba_summary.append({
-            "name": ba_code,
-            "zoneName": zone_name,
-            "utilities": [],
-            "totalPlans": 0,
-            "numUtilities": 0
-        })
+for ba_code, v in ba_data.items():
+    v["numUtilities"] = len(v["utilities"])
+    ba_summary.append(v)
 
-with open('../app/public/ba-summary.json', 'w') as f:
+OUT_PATH = os.path.normpath(
+    os.path.join(os.path.dirname(__file__), ".", "app", "public", "ba-summary.json")
+)
+os.makedirs(os.path.dirname(OUT_PATH), exist_ok=True)
+with open(OUT_PATH, "w") as f:
     json.dump(ba_summary, f, indent=2)
 
 print(f"✅ Created ba-summary.json with {len(ba_summary)} balancing authorities")
@@ -107,6 +203,8 @@ print(f"   Found data for {len(ba_data)} BAs")
 print("\nBalancing authorities with data:")
 for ba in ba_summary:
     if ba["numUtilities"] > 0:
-        print(f"  {ba['name']:10} -> {ba['zoneName']:20} ({ba['numUtilities']} utilities, {ba['totalPlans']} plans)")
+        print(
+            f"  {ba['name']:30} ({ba['numUtilities']} utilities, {ba['totalPlans']} plans)"
+        )
 
 con.close()
