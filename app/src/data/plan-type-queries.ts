@@ -1,6 +1,7 @@
 import * as z from "zod";
 import { conn } from "./duckdb";
 import type { Dayjs } from "dayjs";
+import dayjs from "dayjs";
 
 // ============================================
 // Zod Schema for Plan Type Results
@@ -10,7 +11,10 @@ export const PlanTypeSummary = z.object({
   _id: z.string(),
   utilityName: z.string(),
   rateName: z.string(),
-  effectiveDate: z.string().nullable(),
+  effectiveDate: z
+    .number()
+    .nullable()
+    .transform((arg) => (arg ? dayjs(arg).format("L") : "")),
   endDate: z.string().nullable(),
 });
 
@@ -48,8 +52,8 @@ const baseSelect = `
   _id,
   utilityName,
   rateName,
-  effectiveDate::VARCHAR as effectiveDate,
-  enddate::VARCHAR as endDate
+  effectiveDate as effectiveDate,
+  enddate as endDate
 `;
 
 // ============================================
@@ -80,7 +84,6 @@ WHERE
   AND demandRate_tiers IS NULL
   AND flatDemand_tiers IS NULL
 ORDER BY utilityName, rateName
-LIMIT 50
 `;
 
 // ============================================
@@ -113,7 +116,6 @@ WHERE
   AND demandRate_tiers IS NULL
   AND flatDemand_tiers IS NULL
 ORDER BY utilityName, rateName
-LIMIT 50
 `;
 
 // ============================================
@@ -137,7 +139,6 @@ WHERE
   AND demandRate_tiers IS NULL
   AND flatDemand_tiers IS NULL
 ORDER BY utilityName, rateName
-LIMIT 50
 `;
 
 // ============================================
@@ -157,7 +158,6 @@ WHERE
   AND demandRate_tiers IS NULL
   AND flatDemand_tiers IS NULL
 ORDER BY utilityName, rateName
-LIMIT 50
 `;
 
 // ============================================
@@ -249,7 +249,7 @@ const QUERY_MAP: Record<PlanType, string> = {
 
 export async function getPlansByType(
   planType: PlanType,
-  date: Dayjs
+  date: Dayjs,
 ): Promise<PlanTypeSummary[]> {
   const query = QUERY_MAP[planType];
   const formattedDate = date.format("YYYY-MM-DD");
@@ -269,7 +269,7 @@ export async function getPlansByType(
 
 // Get counts for all plan types (for summary display)
 export async function getPlanTypeCounts(
-  date: Dayjs
+  date: Dayjs,
 ): Promise<Record<PlanType, number>> {
   const formattedDate = date.format("YYYY-MM-DD");
 

@@ -5,6 +5,10 @@ import { VegaEmbed } from "react-vega";
 import { uniqBy, windowed } from "es-toolkit";
 import { Card, Statistic } from "antd";
 import { price } from "../formatters";
+import { getViridisColors } from "./color";
+import { MONTHS } from "./constants";
+import { Heatmap } from "../components/Schedule";
+import { getFirstDayOfType } from "../dates";
 
 interface DayAndPlan {
   selectedPlan?: RatePlan | null;
@@ -56,7 +60,7 @@ export function CoincidentRateChart({ date, selectedPlan }: DayAndPlan) {
 
   const spec: TopLevelSpec = {
     $schema: "https://vega.github.io/schema/vega-lite/v6.json",
-    width: 400,
+    width: 320,
     height: 200,
     data: { values },
     params: hoverParams,
@@ -167,7 +171,7 @@ export function DemandRateChart({ date, selectedPlan }: DayAndPlan) {
 
   const spec: TopLevelSpec = {
     $schema: "https://vega.github.io/schema/vega-lite/v6.json",
-    width: 400,
+    width: 320,
     height: 200,
     data: { values },
     params: hoverParams,
@@ -258,7 +262,7 @@ export function DemandTierRateChart({ date, selectedPlan }: DayAndPlan) {
 
   const spec: TopLevelSpec = {
     $schema: "https://vega.github.io/schema/vega-lite/v6.json",
-    width: 400,
+    width: 320,
     height: 200,
     data: { values: selectedTiers },
     params: hoverParams,
@@ -298,7 +302,102 @@ export function DemandTierRateChart({ date, selectedPlan }: DayAndPlan) {
   );
 }
 
-export function FlatDemandChart({ date, selectedPlan }: DayAndPlan) {
+export function FlatDemandMonthsChart({
+  selectedPlan,
+  date,
+  onDateChange,
+}: {
+  selectedPlan?: RatePlan | null;
+  date: Dayjs;
+  onDateChange?: (newDate: Dayjs) => void;
+}) {
+  if (!selectedPlan?.flatDemandMonths) return null;
+
+  const flatDemandMonths = selectedPlan.flatDemandMonths;
+
+  // Get unique tier indices
+  const uniqueTiers = [...new Set(flatDemandMonths)].sort((a, b) => a - b);
+
+  // If all months have the same tier, no need for a heatmap
+  if (uniqueTiers.length <= 1) return null;
+
+  const colors = getViridisColors(uniqueTiers.length);
+  const colorScale = {
+    domain: uniqueTiers.map(String),
+    range: colors,
+  };
+
+  const data = flatDemandMonths.map((tierIndex, monthIndex) => ({
+    month: MONTHS[monthIndex],
+    monthIndex,
+    period: String(tierIndex),
+  }));
+
+  const interactive = !!onDateChange;
+
+  const spec: TopLevelSpec = {
+    $schema: "https://vega.github.io/schema/vega-lite/v6.json",
+    title: "Flat Demand Schedule",
+    width: 15,
+    height: 200,
+    data: { values: data },
+    params: interactive
+      ? [
+          {
+            name: "cellClick",
+            select: {
+              type: "point",
+              on: "click",
+              fields: ["monthIndex"],
+            },
+          },
+        ]
+      : [],
+    mark: {
+      type: "rect",
+      width: 15,
+      height: 15,
+      stroke: "white",
+      cursor: interactive ? "pointer" : "default",
+    },
+    encoding: {
+      y: { field: "month", type: "ordinal", title: null, sort: MONTHS },
+      color: {
+        field: "period",
+        type: "ordinal",
+        title: "Period",
+        scale: colorScale,
+      },
+      tooltip: [
+        { field: "month", title: "Month" },
+        { field: "period", title: "Period" },
+      ],
+    },
+    config: { axis: { grid: false }, view: { stroke: null } },
+  };
+
+  const handleCellClick = (monthIndex: number) => {
+    if (!onDateChange) return;
+    // Default to first weekday of the month since flat demand doesn't vary by day type
+    const newDate = getFirstDayOfType(date.year(), monthIndex, "weekday");
+    onDateChange(newDate);
+  };
+
+  return (
+    <Heatmap
+      spec={spec}
+      onCellClick={onDateChange ? (m) => handleCellClick(m) : undefined}
+    />
+  );
+}
+
+export function FlatDemandChart({
+  date,
+  selectedPlan,
+  onDateChange,
+}: DayAndPlan & {
+  onDateChange?: (newDate: Dayjs) => void;
+}) {
   const currentMonth = date.month();
   const tierIndex = selectedPlan?.flatDemandMonths?.[currentMonth];
   const selectedTiers = selectedPlan?.flatDemand_tiers?.[tierIndex!];
@@ -325,22 +424,32 @@ export function FlatDemandChart({ date, selectedPlan }: DayAndPlan) {
   }
 
   const isBoring = uniqBy(values, (x) => x.rate).length === 1;
+  const calendar = (
+    <FlatDemandMonthsChart
+      onDateChange={onDateChange}
+      date={date}
+      selectedPlan={selectedPlan}
+    />
+  );
 
   if (isBoring && values.length) {
     return (
-      <Card>
-        <Statistic
-          title="Flat Demand Rate"
-          value={price.format(values[0]?.rate ?? 0)}
-          suffix={`/ ${selectedPlan?.flatDemandUnits ?? "kW"}`}
-        />
-      </Card>
+      <>
+        {calendar}
+        <Card>
+          <Statistic
+            title="Flat Demand Rate"
+            value={price.format(values[0]?.rate ?? 0)}
+            suffix={`/ ${selectedPlan?.flatDemandUnits ?? "kW"}`}
+          />
+        </Card>
+      </>
     );
   }
 
   const spec: TopLevelSpec = {
     $schema: "https://vega.github.io/schema/vega-lite/v6.json",
-    width: 400,
+    width: 320,
     height: 200,
     data: { values },
     params: hoverParams,
@@ -372,8 +481,14 @@ export function FlatDemandChart({ date, selectedPlan }: DayAndPlan) {
   };
 
   return (
-    <Card>
-      <VegaEmbed spec={spec} options={{ mode: "vega-lite", actions: false }} />
-    </Card>
+    <>
+      {calendar}
+      <Card>
+        <VegaEmbed
+          spec={spec}
+          options={{ mode: "vega-lite", actions: false }}
+        />
+      </Card>
+    </>
   );
 }

@@ -46,7 +46,7 @@ export function EnergyRateChart({
 
   const isBoring = useMemo(
     () =>
-      uniqBy(retailData, (x) => [x.period, x.tier, x.value].join("/"))
+      uniqBy(retailData, (x) => [x.period, x.tier, x.value, x.adj].join("/"))
         .length === 1,
     [retailData],
   );
@@ -67,19 +67,28 @@ export function EnergyRateChart({
 
   if (isBoring && retailData.length) {
     return (
-      <Card>
-        <Statistic
-          title="Energy Price"
-          value={price.format(retailData[0]?.value ?? 0)}
-          suffix={`/ kWh all day ${sameAllYearLong ? "all year" : ""}`}
-        />
-      </Card>
+      <>
+        <Card>
+          <Statistic
+            title="Energy Price"
+            value={price.format(retailData[0]?.value ?? 0)}
+            suffix={`/ kWh all day ${sameAllYearLong ? "all year" : ""}`}
+          />
+        </Card>
+
+        <Card>
+          <Statistic
+            title="Price"
+            value={price.format(retailData[0]?.adj ?? 0)}
+          />
+        </Card>
+      </>
     );
   }
 
   const spec: TopLevelSpec = {
     $schema: "https://vega.github.io/schema/vega-lite/v6.json",
-    width: 400,
+    width: 320,
     height: 200,
     title: `Energy Rate Structure (${date.format("dddd LL")})`,
     resolve: {
@@ -168,6 +177,7 @@ function pullData(
           value: sum([tierInfo.rate].map((x) => x ?? 0)),
           tier: j,
           period,
+          adj: tierInfo.adj ?? undefined,
         };
         return result.hour === 23 ? [result, { ...result, hour: 24 }] : result;
       });
@@ -223,7 +233,7 @@ export function TiersChart({
 
   const spec: TopLevelSpec = {
     $schema: "https://vega.github.io/schema/vega-lite/v6.json",
-    width: 400,
+    width: 320,
     height: 200,
     title: `Energy Usage Tiers (${date.format("dddd LL")})`,
     data: { values: windows },

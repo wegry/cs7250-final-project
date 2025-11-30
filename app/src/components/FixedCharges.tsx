@@ -59,8 +59,6 @@ export function FixedChargesCard({
       });
     }
 
-    console.log("hmm", selectedPlan.fixedKeyVals);
-
     return data;
   }, [selectedPlan]);
 
@@ -80,7 +78,7 @@ export function FixedChargesCard({
   if (!hasFixedCharges) return null;
 
   return (
-    <Card size="small">
+    <Card size="small" style={{ gridColumn: "span 2" }}>
       <Table
         dataSource={rows}
         columns={columns}

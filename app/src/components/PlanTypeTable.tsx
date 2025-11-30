@@ -21,15 +21,14 @@ interface PlanTypeTableProps {
 export function PlanTypeTable({
   planType,
   date = dayjs(),
-  limit = undefined,
 }: PlanTypeTableProps) {
   const dateStr = date.format("YYYY-MM-DD");
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ["plansByType", planType, dateStr, limit],
+    queryKey: ["plansByType", planType, dateStr],
     queryFn: async () => {
       const result = await getPlansByType(planType, date);
-      return result.slice(0, limit);
+      return result;
     },
   });
 
@@ -71,10 +70,11 @@ export function PlanTypeTable({
       dataSource={data}
       rowKey="_id"
       loading={isLoading}
-      pagination={false}
+      pagination={{ pageSize: 100 }}
       size="small"
       style={{ marginTop: "1rem" }}
       locale={{ emptyText: "No matching plans found" }}
+      scroll={{ y: 55 * 3 }}
     />
   );
 }

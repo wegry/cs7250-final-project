@@ -31,7 +31,7 @@ function Storytelling() {
           offer these straightforward plans that work well for households with
           consistent energy habits.
         </p>
-        <PlanTypeTable planType="flat" date={TODAY} limit={5} />
+        <PlanTypeTable planType="flat" date={TODAY} />
       </section>
       <section>
         <h2>Flat Rate Plans with Lots of Tiers</h2>
