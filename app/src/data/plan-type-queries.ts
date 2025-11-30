@@ -2,6 +2,7 @@ import * as z from "zod";
 import { conn } from "./duckdb";
 import type { Dayjs } from "dayjs";
 import dayjs from "dayjs";
+import { statesArray } from "./schema";
 
 // ============================================
 // Zod Schema for Plan Type Results
@@ -14,8 +15,9 @@ export const PlanTypeSummary = z.object({
   effectiveDate: z
     .number()
     .nullable()
-    .transform((arg) => (arg ? dayjs(arg).format("L") : "")),
+    .transform((arg) => (arg ? dayjs(arg) : null)),
   endDate: z.string().nullable(),
+  states: statesArray,
 });
 
 export type PlanTypeSummary = z.infer<typeof PlanTypeSummary>;
@@ -45,6 +47,12 @@ const activeFilterCTE = (paramIndex: number) => `
     WHERE
       (enddate IS NULL OR enddate >= $${paramIndex}) AND
       (effectiveDate IS NULL OR effectiveDate <= $${paramIndex})
+  ),
+  service_territory AS (
+        SELECT "Utility Number",
+        array_agg(distinct State) as states
+        FROM flattened.eia861_service_territory
+        GROUP BY "Utility Number"
   )
 `;
 
@@ -53,8 +61,13 @@ const baseSelect = `
   utilityName,
   rateName,
   effectiveDate as effectiveDate,
-  enddate as endDate
+  enddate as endDate,
+  st.states as states
 `;
+
+const sources = `
+FROM active_plans
+JOIN service_territory st ON st."Utility Number" = eiaId`;
 
 // ============================================
 // 1. Flat Rate Plans
@@ -64,7 +77,7 @@ const baseSelect = `
 export const FLAT_RATE_QUERY = `
 WITH ${activeFilterCTE(1)}
 SELECT ${baseSelect}
-FROM active_plans
+${sources}
 WHERE
   -- Has energy tiers
   energyRate_tiers IS NOT NULL
@@ -94,7 +107,7 @@ ORDER BY utilityName, rateName
 export const TIERED_RATE_QUERY = `
 WITH ${activeFilterCTE(1)}
 SELECT ${baseSelect}
-FROM active_plans
+${sources}
 WHERE
   -- Has multiple energy tiers
   energyRate_tiers IS NOT NULL
@@ -126,7 +139,7 @@ ORDER BY utilityName, rateName
 export const TOU_RATE_QUERY = `
 WITH ${activeFilterCTE(1)}
 SELECT ${baseSelect}
-FROM active_plans
+${sources}
 WHERE
   -- Has time-varying energy schedule (more than one period)
   (
@@ -149,7 +162,7 @@ ORDER BY utilityName, rateName
 export const COINCIDENT_DEMAND_QUERY = `
 WITH ${activeFilterCTE(1)}
 SELECT ${baseSelect}
-FROM active_plans
+${sources}
 WHERE
   -- Has coincident demand
   coincidentSched IS NOT NULL
@@ -168,7 +181,7 @@ ORDER BY utilityName, rateName
 export const DEMAND_RATE_QUERY = `
 WITH ${activeFilterCTE(1)}
 SELECT ${baseSelect}
-FROM active_plans
+${sources}
 WHERE
   -- Has demand charges
   demandRate_tiers IS NOT NULL
@@ -187,7 +200,7 @@ LIMIT 50
 export const FLAT_DEMAND_QUERY = `
 WITH ${activeFilterCTE(1)}
 SELECT ${baseSelect}
-FROM active_plans
+${sources}
 WHERE
   -- Has flat demand
   flatDemand_tiers IS NOT NULL
@@ -215,10 +228,11 @@ classified AS (
     CASE WHEN coincidentRate_tiers IS NOT NULL THEN 1 ELSE 0 END as has_coincident,
     CASE WHEN demandRate_tiers IS NOT NULL THEN 1 ELSE 0 END as has_demand,
     CASE WHEN flatDemand_tiers IS NOT NULL THEN 1 ELSE 0 END as has_flat_demand
-  FROM active_plans
+  ${sources}
 )
 SELECT ${baseSelect}
 FROM classified
+JOIN service_territory st ON st."Utility Number" = eiaId
 WHERE (has_tou + has_coincident + has_demand + has_flat_demand) >= 2
 ORDER BY utilityName, rateName
 LIMIT 50
@@ -264,80 +278,5 @@ export async function getPlansByType(
   } catch (error) {
     console.error(`Error querying ${planType} plans:`, error);
     return [];
-  }
-}
-
-// Get counts for all plan types (for summary display)
-export async function getPlanTypeCounts(
-  date: Dayjs,
-): Promise<Record<PlanType, number>> {
-  const formattedDate = date.format("YYYY-MM-DD");
-
-  const countQuery = `
-  WITH active_plans AS (
-    SELECT *
-    FROM flattened.usurdb
-    WHERE
-      (enddate IS NULL OR enddate >= $1) AND
-      (effectiveDate IS NULL OR effectiveDate <= $1)
-  ),
-  classified AS (
-    SELECT
-      _id,
-      -- Energy tier info
-      energyRate_tiers IS NOT NULL as has_energy,
-      CASE
-        WHEN energyRate_tiers IS NULL THEN 0
-        WHEN len(energyRate_tiers) = 1 AND len(energyRate_tiers[1]) = 1 THEN 1
-        ELSE len(energyRate_tiers)
-      END as tier_count,
-      -- TOU check
-      CASE WHEN (
-        (energyWeekdaySched IS NOT NULL AND len(list_distinct(flatten(energyWeekdaySched))) > 1)
-        OR (energyWeekendSched IS NOT NULL AND len(list_distinct(flatten(energyWeekendSched))) > 1)
-      ) THEN true ELSE false END as has_tou,
-      -- Demand types
-      coincidentRate_tiers IS NOT NULL as has_coincident,
-      demandRate_tiers IS NOT NULL as has_demand,
-      flatDemand_tiers IS NOT NULL as has_flat_demand
-    FROM active_plans
-  )
-  SELECT
-    COUNT(*) FILTER (WHERE tier_count = 1 AND NOT has_tou AND NOT has_coincident AND NOT has_demand AND NOT has_flat_demand) as flat,
-    COUNT(*) FILTER (WHERE tier_count > 1 AND NOT has_tou AND NOT has_coincident AND NOT has_demand AND NOT has_flat_demand) as tiered,
-    COUNT(*) FILTER (WHERE has_tou AND NOT has_coincident AND NOT has_demand AND NOT has_flat_demand) as tou,
-    COUNT(*) FILTER (WHERE has_coincident AND NOT has_demand AND NOT has_flat_demand) as coincident,
-    COUNT(*) FILTER (WHERE has_demand AND NOT has_coincident AND NOT has_flat_demand) as demand,
-    COUNT(*) FILTER (WHERE has_flat_demand AND NOT has_coincident AND NOT has_demand) as flat_demand,
-    COUNT(*) FILTER (WHERE (has_tou::INT + has_coincident::INT + has_demand::INT + has_flat_demand::INT) >= 2) as complex
-  FROM classified
-  `;
-
-  try {
-    const c = await conn;
-    const stmt = await c.prepare(countQuery);
-    const result = await stmt.query(formattedDate);
-    const row = result.toArray()[0];
-
-    return {
-      flat: Number(row.flat),
-      tiered: Number(row.tiered),
-      tou: Number(row.tou),
-      coincident: Number(row.coincident),
-      demand: Number(row.demand),
-      flatDemand: Number(row.flat_demand),
-      complex: Number(row.complex),
-    };
-  } catch (error) {
-    console.error("Error getting plan type counts:", error);
-    return {
-      flat: 0,
-      tiered: 0,
-      tou: 0,
-      coincident: 0,
-      demand: 0,
-      flatDemand: 0,
-      complex: 0,
-    };
   }
 }

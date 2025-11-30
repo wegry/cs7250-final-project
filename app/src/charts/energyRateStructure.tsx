@@ -8,7 +8,7 @@ import type {
 import { VegaEmbed } from "react-vega";
 import type { Dayjs } from "dayjs";
 import { sum, uniqBy, windowed } from "es-toolkit";
-import { Card, Statistic } from "antd";
+import { Button, Card, Popover, Statistic } from "antd";
 import { price } from "../formatters";
 import { useMemo } from "react";
 
@@ -66,23 +66,33 @@ export function EnergyRateChart({
   }
 
   if (isBoring && retailData.length) {
-    return (
-      <>
-        <Card>
-          <Statistic
-            title="Energy Price"
-            value={price.format(retailData[0]?.value ?? 0)}
-            suffix={`/ kWh all day ${sameAllYearLong ? "all year" : ""}`}
-          />
-        </Card>
+    const first = retailData?.[0];
+    if (!first) {
+      return null;
+    }
 
-        <Card>
-          <Statistic
-            title="Price"
-            value={price.format(retailData[0]?.adj ?? 0)}
-          />
-        </Card>
-      </>
+    return (
+      <Card>
+        <Statistic
+          title="Energy Price"
+          value={price.format((first.baseRate ?? 0) + (first.adj ?? 0))}
+          suffix={
+            <>
+              / kWh all day {sameAllYearLong ? "all year" : ""}
+              {first.adj != null && (
+                <Popover
+                  trigger="click"
+                  content={`Base rate of ${price.format(first.baseRate ?? 0)} includes adjustment of ${price.format(first.adj ?? 0)}`}
+                >
+                  <Button size="large" style={{ marginLeft: 8 }}>
+                    Adj.
+                  </Button>
+                </Popover>
+              )}
+            </>
+          }
+        />
+      </Card>
     );
   }
 
@@ -174,7 +184,8 @@ function pullData(
         if (!tierInfo) return [];
         const result: RetailPriceData = {
           hour: i,
-          value: sum([tierInfo.rate].map((x) => x ?? 0)),
+          baseRate: tierInfo.rate,
+          value: sum([tierInfo.rate, tierInfo.adj].map((x) => x ?? 0)),
           tier: j,
           period,
           adj: tierInfo.adj ?? undefined,

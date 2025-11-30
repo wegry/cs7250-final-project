@@ -37,6 +37,11 @@ const dates = z
     }
   });
 
+export const statesArray = z.preprocess(
+  (arg) => (arg == null ? arg : Array.from(arg as unknown[])),
+  z.array(z.string()).optional(),
+);
+
 function tierShape<T extends SomeType>(shape: T) {
   return z.preprocess(
     (arg) =>
@@ -49,6 +54,7 @@ function tierShape<T extends SomeType>(shape: T) {
 
 export const RatePlan = z.object({
   _id: z.string(),
+  states: statesArray,
   is_default: z.boolean().nullish(),
   eiaId: z.optional(z.bigint()),
   rateName: z.string(),
@@ -160,6 +166,7 @@ export const SynthDataArray = z.array(SynthData);
 // Zod schemas for data structures
 export const RetailPriceDataSchema = z.object({
   hour: z.number(),
+  baseRate: z.number().optional(),
   value: z.number(),
   tier: z.number(),
   period: z.number(),

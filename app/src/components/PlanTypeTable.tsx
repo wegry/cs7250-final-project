@@ -5,10 +5,11 @@ import { useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import {
   getPlansByType,
-  getPlanTypeCounts,
   type PlanType,
   type PlanTypeSummary,
 } from "../data/plan-type-queries";
+import { list } from "../formatters";
+import s from "./PlanTypeTable.module.css";
 
 interface PlanTypeTableProps {
   planType: PlanType;
@@ -34,6 +35,15 @@ export function PlanTypeTable({
 
   const columns: ColumnsType<PlanTypeSummary> = [
     {
+      title: "State(s)",
+      dataIndex: "states",
+      key: "states",
+      width: 78,
+      render: (_, record) => {
+        return list.format(record.states ?? []);
+      },
+    },
+    {
       title: "Utility",
       dataIndex: "utilityName",
       key: "utilityName",
@@ -51,8 +61,8 @@ export function PlanTypeTable({
       title: "Effective",
       dataIndex: "effectiveDate",
       key: "effectiveDate",
-      width: 120,
-      render: (text) => text ?? "—",
+      width: 100,
+      render: (_, record) => record.effectiveDate?.format("L") ?? "—",
     },
   ];
 
@@ -65,26 +75,22 @@ export function PlanTypeTable({
   }
 
   return (
-    <Table<PlanTypeSummary>
-      columns={columns}
-      dataSource={data}
-      rowKey="_id"
-      loading={isLoading}
-      pagination={{ pageSize: 100 }}
-      size="small"
-      style={{ marginTop: "1rem" }}
-      locale={{ emptyText: "No matching plans found" }}
-      scroll={{ y: 55 * 3 }}
-    />
+    <>
+      <h3>Other Examples</h3>
+      <div className={s.expandable}>
+        <Table<PlanTypeSummary>
+          columns={columns}
+          dataSource={data}
+          rowKey="_id"
+          loading={isLoading}
+          pagination={{ pageSize: 100 }}
+          size="small"
+          bordered
+          style={{ marginTop: "1rem" }}
+          locale={{ emptyText: "No matching plans found" }}
+          scroll={{ y: 55 * 3 }}
+        />
+      </div>
+    </>
   );
-}
-
-// Hook for getting plan type counts
-export function usePlanTypeCounts(date: dayjs.Dayjs = dayjs()) {
-  const dateStr = date.format("YYYY-MM-DD");
-
-  return useQuery({
-    queryKey: ["planTypeCounts", dateStr],
-    queryFn: () => getPlanTypeCounts(date),
-  });
 }

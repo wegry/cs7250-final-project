@@ -35,6 +35,7 @@ import { DetailSection } from "../components/DetailSection";
 import { FixedChargesCard } from "../components/FixedCharges";
 import { RatePlanTimeline } from "../components/RatePlanTimeline";
 import { ScheduleHeatmap } from "../components/Schedule";
+import { list } from "../formatters";
 
 const DATE_PARAM = "date";
 
@@ -84,6 +85,7 @@ export default function DetailView() {
         children: selectedPlan?.rateName,
         span: { md: 3, lg: 2 },
       },
+      { label: "States", children: list.format(selectedPlan?.states ?? []) },
       {
         label: "Supercedes",
         children: selectedPlan?.supercedes ? (
