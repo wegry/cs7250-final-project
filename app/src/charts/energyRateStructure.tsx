@@ -1,3 +1,8 @@
+import { Button, Card, Popover, Statistic } from "antd";
+import type { Dayjs } from "dayjs";
+import { sum, uniqBy } from "es-toolkit";
+import { useMemo } from "react";
+import { VegaEmbed } from "react-vega";
 import type { TopLevelSpec } from "vega-lite";
 import type {
   RatePlan,
@@ -5,12 +10,7 @@ import type {
   WholesalePrice,
   WholesalePriceData,
 } from "../data/schema";
-import { VegaEmbed } from "react-vega";
-import type { Dayjs } from "dayjs";
-import { sum, uniqBy, windowed } from "es-toolkit";
-import { Button, Card, Popover, Statistic } from "antd";
 import { price } from "../formatters";
-import { useMemo } from "react";
 
 export function convertWholesaleToKwh(wholesalePrice: WholesalePrice) {
   return {
@@ -193,109 +193,5 @@ function pullData(
         return result.hour === 23 ? [result, { ...result, hour: 24 }] : result;
       });
     }) ?? []
-  );
-}
-
-export function TiersChart({
-  date,
-  selectedPlan,
-}: {
-  selectedPlan?: RatePlan | null;
-  date: Dayjs;
-}) {
-  const periods = new Set(selectedPlan?.energyWeekdaySched?.[date.month()]);
-  const selectedTiers = Array.from(periods).flatMap(
-    (p) => selectedPlan?.energyRate_tiers?.[p] ?? [],
-  );
-
-  const windows = windowed(structuredClone(selectedTiers), 2)
-    .flatMap(([x, y], tier) => {
-      if (!(x?.max || y?.max)) {
-        return [];
-      }
-      const nextTier = tier + 1;
-      let padFirst = null;
-      if (tier == 0) {
-        padFirst = { ...x, max: 0, tier };
-      }
-      if (!y?.max && x?.max) {
-        return [
-          padFirst,
-          { ...x, tier },
-          { ...y, tier: nextTier, max: x.max },
-          { ...y, tier: nextTier, max: x.max * 1.5 },
-        ];
-      } else if (y?.max && x?.max) {
-        return [
-          padFirst,
-          { ...x, tier },
-          { ...y, tier: nextTier, max: x.max },
-          { ...y, tier: nextTier },
-        ];
-      }
-
-      return [padFirst, { ...x, tier }, { ...y, tier: tier + 1 }];
-    })
-    .filter((x) => x != null);
-
-  if (windows.length <= 1) {
-    return null;
-  }
-
-  const spec: TopLevelSpec = {
-    $schema: "https://vega.github.io/schema/vega-lite/v6.json",
-    width: 320,
-    height: 200,
-    title: `Energy Usage Tiers (${date.format("dddd LL")})`,
-    data: { values: windows },
-    params: [
-      {
-        name: "hover",
-        select: {
-          type: "point",
-          on: "pointerover",
-          nearest: true,
-          clear: "pointerout",
-        },
-      },
-    ],
-    mark: {
-      type: "line",
-      interpolate: "step-after",
-      point: { filled: true, size: 60 },
-    },
-    encoding: {
-      y: { field: "rate", type: "quantitative", title: "$ per kWh" },
-      x: {
-        field: "max",
-        type: "quantitative",
-        title: `Usage (${selectedTiers?.[0]?.unit})`,
-        scale: {
-          domainMax: Math.max(...windows.map((x) => x.max ?? 0)) || undefined,
-        },
-      },
-      color: {
-        field: "tier",
-        type: "nominal",
-        title: "Tier",
-        scale: { scheme: "viridis" },
-      },
-      tooltip: [
-        { field: "max", title: "Usage Limit", format: ".1f" },
-        { field: "rate", title: "$ per kWh", format: ".3f" },
-        { field: "tier", title: "Tier" },
-      ],
-    },
-  };
-
-  return (
-    <>
-      <Card>
-        <VegaEmbed
-          spec={spec}
-          options={{ mode: "vega-lite", actions: false }}
-        />
-      </Card>
-    </>
   );
 }

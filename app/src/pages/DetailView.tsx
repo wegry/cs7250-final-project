@@ -24,7 +24,7 @@ import * as s from "./DetailView.module.css";
 
 import dayjs, { Dayjs } from "dayjs";
 import { useCallback, useMemo } from "react";
-import { EnergyRateChart, TiersChart } from "../charts/energyRateStructure";
+import { EnergyRateChart } from "../charts/energyRateStructure";
 import {
   CoincidentRateChart,
   DemandRateChart,
@@ -36,6 +36,7 @@ import { FixedChargesCard } from "../components/FixedCharges";
 import { RatePlanTimeline } from "../components/RatePlanTimeline";
 import { ScheduleHeatmap } from "../components/Schedule";
 import { list } from "../formatters";
+import { EnergyTiersChart } from "../charts/EnergyTiersChart";
 
 const DATE_PARAM = "date";
 
@@ -243,7 +244,7 @@ export default function DetailView() {
             onDateChange={onDateChange}
           />
           <EnergyRateChart selectedPlan={selectedPlan} date={date} />
-          <TiersChart selectedPlan={selectedPlan} date={date} />
+          <EnergyTiersChart selectedPlan={selectedPlan} date={date} />
         </DetailSection>
         <DetailSection
           description={DESCRIPTIONS.coincidentDemand}
