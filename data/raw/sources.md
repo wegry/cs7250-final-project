@@ -5,3 +5,4 @@
 | Census                          | https://www2.census.gov/geo/tiger/GENZ2024/gpkg/cb_2024-us_all_500k.zip                                                        | 2025-10-27 | Includes state boundaries, counties, and places of interest |
 | Electricity Maps GitHub         | https://github.com/electricitymaps/electricitymaps-contrib/blob/9ecf1792110f7df495445055f56e3a7d7aac162e/web/geo/world.geojson | 2025-10-27 | Simplified balancing authority map                          |
 | EIA Wholesale Pricing 2020-2024 | https://www.eia.gov/electricity/wholesale/                                                                                     | 2024-11-10 |                                                             |
+| scpike                          | https://github.com/scpike/us-state-county-zip/blob/master/geo-data.csv                                                         | 2025-12-01 |                                                             |
