@@ -260,7 +260,7 @@ const QUERY_MAP: Record<PlanType, string> = {
 
 export async function getPlansByType(
   planType: PlanType,
-  date: Dayjs
+  date: Dayjs,
 ): Promise<PlanTypeSummary[]> {
   const query = QUERY_MAP[planType];
   const formattedDate = date.format("YYYY-MM-DD");

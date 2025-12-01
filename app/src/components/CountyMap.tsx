@@ -90,7 +90,7 @@ function projectToSvg(
   bbox: BBox,
   width: number,
   height: number,
-  pad = 10
+  pad = 10,
 ): Position {
   const [px, py] = albersProject(lon, lat);
   const { minX, maxX, minY, maxY } = bbox;
@@ -99,7 +99,7 @@ function projectToSvg(
 
   const scale = Math.min(
     (width - pad * 2) / xRange,
-    (height - pad * 2) / yRange
+    (height - pad * 2) / yRange,
   );
   const offsetX = (width - xRange * scale) / 2;
   const offsetY = (height - yRange * scale) / 2;
@@ -204,17 +204,17 @@ export function CountyMap({
         if (selectedPlan.eiaId != null) {
           const res = await queries.serviceTerritoryByEiaId(selectedPlan.eiaId);
           setTerritories(
-            res.toArray().map((r) => ({ county: r.county, state: r.state }))
+            res.toArray().map((r) => ({ county: r.county, state: r.state })),
           );
           return;
         }
 
         if (selectedPlan.utilityName) {
           const res = await queries.serviceTerritoryByUtilityName(
-            selectedPlan.utilityName
+            selectedPlan.utilityName,
           );
           setTerritories(
-            res.toArray().map((r) => ({ county: r.county, state: r.state }))
+            res.toArray().map((r) => ({ county: r.county, state: r.state })),
           );
           return;
         }
@@ -239,7 +239,7 @@ export function CountyMap({
     }
 
     const relevantFeatures = geojson.features.filter((f) =>
-      states.includes(f.properties?.stusps ?? "")
+      states.includes(f.properties?.stusps ?? ""),
     );
 
     const byState: Record<string, CountyFeature[]> = {};
@@ -276,7 +276,7 @@ export function CountyMap({
 
   const countiesSet = useMemo(() => {
     return new Set(
-      territories.map((t) => `${t.state}:${normalizeCountyName(t.county)}`)
+      territories.map((t) => `${t.state}:${normalizeCountyName(t.county)}`),
     );
   }, [territories]);
 
@@ -296,12 +296,12 @@ export function CountyMap({
                   bboxData,
                   width,
                   height,
-                  15
+                  15,
                 );
                 return `${i === 0 ? "M" : "L"}${x.toFixed(2)} ${y.toFixed(2)}`;
               })
-              .join(" ") + " Z"
-        )
+              .join(" ") + " Z",
+        ),
       )
       .join(" ");
   };

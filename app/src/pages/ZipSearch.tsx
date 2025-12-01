@@ -123,7 +123,7 @@ export function ZipSearch() {
 
                 return params;
               },
-              { replace: true }
+              { replace: true },
             )
           }
           style={{ maxWidth: 300 }}
