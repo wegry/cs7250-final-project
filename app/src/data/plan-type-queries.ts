@@ -189,7 +189,6 @@ WHERE
   AND coincidentRate_tiers IS NULL
   AND flatDemand_tiers IS NULL
 ORDER BY utilityName, rateName
-LIMIT 50
 `;
 
 // ============================================
@@ -208,7 +207,6 @@ WHERE
   AND coincidentRate_tiers IS NULL
   AND demandRate_tiers IS NULL
 ORDER BY utilityName, rateName
-LIMIT 50
 `;
 
 // ============================================
@@ -235,7 +233,6 @@ FROM classified
 JOIN service_territory st ON st."Utility Number" = eiaId
 WHERE (has_tou + has_coincident + has_demand + has_flat_demand) >= 2
 ORDER BY utilityName, rateName
-LIMIT 50
 `;
 
 // ============================================
@@ -263,7 +260,7 @@ const QUERY_MAP: Record<PlanType, string> = {
 
 export async function getPlansByType(
   planType: PlanType,
-  date: Dayjs,
+  date: Dayjs
 ): Promise<PlanTypeSummary[]> {
   const query = QUERY_MAP[planType];
   const formattedDate = date.format("YYYY-MM-DD");
