@@ -37,6 +37,7 @@ import { ScheduleHeatmap } from "../components/Schedule";
 import { list } from "../formatters";
 import { EnergyTiersChart } from "../charts/EnergyTiersChart";
 import CountyMap from "../components/CountyMap";
+import { RATE_PLAN_QUERY_PARAM } from "./ComparePlans";
 const DATE_PARAM = "date";
 
 const DESCRIPTIONS = {
@@ -158,13 +159,16 @@ export default function DetailView() {
 
   const onDateChange = useCallback(
     (newDate: Dayjs) => {
-      setParams((params) => {
-        const next = newDate.format("YYYY-MM-DD");
-        if (params.get(DATE_PARAM) != next) {
-          params.set(DATE_PARAM, next);
-        }
-        return params;
-      });
+      setParams(
+        (params) => {
+          const next = newDate.format("YYYY-MM-DD");
+          if (params.get(DATE_PARAM) != next) {
+            params.set(DATE_PARAM, next);
+          }
+          return params;
+        },
+        { replace: true },
+      );
     },
     [setParams],
   );
@@ -186,7 +190,17 @@ export default function DetailView() {
           </Col>
           <Col>
             <Button
+              href={`/compare?${RATE_PLAN_QUERY_PARAM}=${selectedPlan?._id ?? ""}`}
+              type="primary"
+              disabled={selectedPlan?._id == null}
+            >
+              Compare
+            </Button>
+          </Col>
+          <Col>
+            <Button
               href={`https://apps.openei.org/USURDB/rate/view/${selectedPlan?._id}`}
+              disabled={selectedPlan?._id == null}
             >
               View on USURDB
             </Button>

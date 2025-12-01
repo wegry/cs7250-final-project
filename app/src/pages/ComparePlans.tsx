@@ -28,7 +28,7 @@ const DATE_MIN = dayjs("2024-01-01");
 const DATE_DEFAULT = dayjs().clone().set("year", 2024).set("month", 0);
 const DATE_MAX = dayjs("2024-12-31");
 
-const RATE_PLAN_QUERY_PARAM = "rate-plan";
+export const RATE_PLAN_QUERY_PARAM = "rate-plan";
 const RATE_PLAN_2_QUERY_PARAM = "other-rate-plan";
 
 type State = {
