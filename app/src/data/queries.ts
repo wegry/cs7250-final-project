@@ -70,8 +70,23 @@ export async function ratePlanInData(label: string) {
 export async function ratePlanDetail(label: string) {
   const stmt = await (
     await conn
-  ).prepare(`select * from flattened.usurdb
-  WHERE _id = ?`);
+  ).prepare(`
+    WITH
+      ratePlan AS (
+        SELECT *
+        FROM flattened.usurdb u
+        WHERE _id = $1
+      ),
+      service_territory AS (
+        SELECT "Utility Number",
+        array_agg(distinct State) as states
+        FROM flattened.eia861_service_territory
+        GROUP BY "Utility Number"
+      )
+    SELECT r.*, st.states as states
+    FROM ratePlan r
+    JOIN service_territory st ON r.eiaId = st."Utility Number"
+`);
 
   const result = await stmt.query(label);
   return result;

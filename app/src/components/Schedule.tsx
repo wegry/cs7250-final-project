@@ -3,51 +3,17 @@ import { Card } from "antd";
 import { VegaEmbed } from "react-vega";
 import type { Result } from "vega-embed";
 import type { TopLevelSpec } from "vega-lite";
-import { interpolateViridis } from "d3-scale-chromatic";
 import { RatePlan } from "../data/schema";
-import dayjs, { type Dayjs } from "dayjs";
+import { type Dayjs } from "dayjs";
+import { getViridisColors } from "../charts/color";
+import { MONTHS } from "../charts/constants";
+import { getFirstDayOfType } from "../dates";
 
-const MONTHS = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
-];
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
-
-function getViridisColors(n: number): string[] {
-  if (n === 1) return [interpolateViridis(0.5)];
-  return Array.from({ length: n }, (_, i) => interpolateViridis(i / (n - 1)));
-}
 
 function getUniquePeriods(schedule: number[][] | null): Set<number> {
   if (!schedule) return new Set();
   return new Set(schedule.flat());
-}
-
-function getFirstDayOfType(
-  year: number,
-  month: number,
-  type: "weekday" | "weekend",
-): Dayjs {
-  const firstOfMonth = dayjs().year(year).month(month).date(1);
-  const dayOfWeek = firstOfMonth.day();
-  if (type === "weekend") {
-    if (dayOfWeek === 0 || dayOfWeek === 6) return firstOfMonth;
-    return firstOfMonth.add(6 - dayOfWeek, "day");
-  } else {
-    if (dayOfWeek >= 1 && dayOfWeek <= 5) return firstOfMonth;
-    if (dayOfWeek === 0) return firstOfMonth.add(1, "day");
-    return firstOfMonth.add(2, "day");
-  }
 }
 
 function hasHourlyVariation(schedule: number[][] | null): boolean {
@@ -298,7 +264,7 @@ interface HeatmapProps {
   onCellClick?: (monthIndex: number, dayType: "weekday" | "weekend") => void;
 }
 
-function Heatmap({ spec, onCellClick }: HeatmapProps) {
+export function Heatmap({ spec, onCellClick }: HeatmapProps) {
   const resultRef = useRef<Result | null>(null);
   const callbackRef = useRef(onCellClick);
 

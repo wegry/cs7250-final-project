@@ -1,39 +1,12 @@
-import type { TopLevelSpec } from "vega-lite";
-import type {
-  RatePlan,
-  RetailPriceData,
-  WholesalePrice,
-  WholesalePriceData,
-} from "../data/schema";
-import { VegaEmbed } from "react-vega";
+import { Button, Card, Popover, Statistic } from "antd";
 import type { Dayjs } from "dayjs";
-import { sum, uniqBy, windowed } from "es-toolkit";
-import { Card, Statistic } from "antd";
-import { price } from "../formatters";
+import { sum, uniqBy } from "es-toolkit";
 import { useMemo } from "react";
-
-export function convertWholesaleToKwh(wholesalePrice: WholesalePrice) {
-  return {
-    max: wholesalePrice["High price $/MWh"] / 1000,
-    min: wholesalePrice["Low price $/MWh"] / 1000,
-    avg: wholesalePrice["Wtd avg price $/MWh"] / 1000,
-  };
-}
-
-export function prepareWholesaleData(
-  wholesalePrice: WholesalePrice | undefined | null,
-): WholesalePriceData[] {
-  if (!wholesalePrice) return [];
-  const { max, avg, min } = convertWholesaleToKwh(wholesalePrice);
-  return [
-    { hour: 0, value: max, line: `Max Wholesale (${max.toFixed(3)})` },
-    { hour: 24, value: max, line: `Max Wholesale (${max.toFixed(3)})` },
-    { hour: 0, value: avg, line: `Avg Wholesale (${avg.toFixed(3)})` },
-    { hour: 24, value: avg, line: `Avg Wholesale (${avg.toFixed(3)})` },
-    { hour: 0, value: min, line: `Min Wholesale (${min.toFixed(3)})` },
-    { hour: 24, value: min, line: `Min Wholesale (${min.toFixed(3)})` },
-  ];
-}
+import { VegaEmbed } from "react-vega";
+import type { TopLevelSpec } from "vega-lite";
+import type { RatePlan, RetailPriceData } from "../data/schema";
+import { price } from "../formatters";
+import { buildPeriodColorScale } from "./color";
 
 export function EnergyRateChart({
   date,
@@ -46,8 +19,10 @@ export function EnergyRateChart({
 
   const isBoring = useMemo(
     () =>
-      uniqBy(retailData, (x) => [x.period, x.tier, x.value].join("/"))
-        .length === 1,
+      uniqBy(
+        retailData.filter((x) => x.value !== null),
+        (x) => [x.period, x.tier, x.value, x.adj].join("/"),
+      ).length === 1,
     [retailData],
   );
 
@@ -61,17 +36,43 @@ export function EnergyRateChart({
     [selectedPlan],
   );
 
+  // Build color scale from ALL periods in the schedule (not just today's)
+  // This ensures colors match the ScheduleHeatmap
+  const colorScale = useMemo(
+    () => buildPeriodColorScale(selectedPlan, "energy"),
+    [selectedPlan],
+  );
+
   if (!retailData.length) {
     return null;
   }
 
-  if (isBoring && retailData.length) {
+  if (isBoring) {
+    const first = retailData.find((d) => d.value !== null);
+    if (!first) {
+      return null;
+    }
+
     return (
       <Card>
         <Statistic
           title="Energy Price"
-          value={price.format(retailData[0]?.value ?? 0)}
-          suffix={`/ kWh all day ${sameAllYearLong ? "all year" : ""}`}
+          value={price.format((first.baseRate ?? 0) + (first.adj ?? 0))}
+          suffix={
+            <>
+              / kWh all day {sameAllYearLong ? "all year" : ""}
+              {first.adj != null && (
+                <Popover
+                  trigger="click"
+                  content={`Base rate of ${price.format(first.baseRate ?? 0)} includes adjustment of ${price.format(first.adj ?? 0)}`}
+                >
+                  <Button size="large" style={{ marginLeft: 8 }}>
+                    Adj.
+                  </Button>
+                </Popover>
+              )}
+            </>
+          }
         />
       </Card>
     );
@@ -80,64 +81,48 @@ export function EnergyRateChart({
   const spec: TopLevelSpec = {
     $schema: "https://vega.github.io/schema/vega-lite/v6.json",
     width: 400,
-    height: 200,
+    height: 240,
     title: `Energy Rate Structure (${date.format("dddd LL")})`,
-    resolve: {
-      legend: { color: "independent" },
-      scale: { color: "independent" },
+    data: { values: retailData },
+    mark: {
+      type: "line",
+      strokeWidth: 2,
+      interpolate: "step-after",
+      point: { filled: true, size: 50 },
     },
-    layer: [
-      ...(retailData.length
-        ? [
-            {
-              data: { values: retailData },
-              params: [
-                {
-                  name: "hover",
-                  select: {
-                    type: "point" as const,
-                    on: "pointerover",
-                    nearest: true,
-                    clear: "pointerout",
-                  },
-                },
-              ],
-              mark: {
-                type: "line" as const,
-                strokeWidth: 2,
-                interpolate: "step-after" as const,
-                point: { filled: true, size: 60 },
-              },
-              encoding: {
-                x: {
-                  field: "hour",
-                  type: "quantitative" as const,
-                  title: "Hour of Day",
-                  scale: { domain: [0, 24] },
-                  axis: { tickCount: 24, labelAngle: 0 },
-                },
-                y: {
-                  field: "value",
-                  type: "quantitative" as const,
-                  title: "$ per kWh",
-                },
-                color: {
-                  field: "tier",
-                  type: "nominal" as const,
-                  title: "Tier",
-                  scale: { scheme: "viridis" as const },
-                },
-                tooltip: [
-                  { field: "hour", title: "Hour" },
-                  { field: "value", title: "$ per kWh", format: ".3f" },
-                  { field: "period", title: "Period" },
-                  { field: "tier", title: "Tier" },
-                ],
-              },
-            },
-          ]
-        : []),
-    ],
+    encoding: {
+      x: {
+        field: "hour",
+        type: "quantitative",
+        title: "Hour of Day",
+        scale: { domain: [0, 24] },
+        axis: { tickCount: 24, labelAngle: 0 },
+      },
+      y: {
+        field: "value",
+        type: "quantitative",
+        title: "$ per kWh",
+        axis: { format: ".2f" },
+      },
+      color: {
+        field: "period",
+        type: "nominal",
+        title: "Period",
+        scale: colorScale, // Uses full schedule's color mapping
+      },
+      strokeDash: {
+        field: "tier",
+        type: "ordinal",
+        title: "Tier",
+        legend: null,
+      },
+      tooltip: [
+        { field: "hour", title: "Hour" },
+        { field: "period", title: "Period" },
+        { field: "tier", title: "Tier" },
+        { field: "value", title: "$ per kWh", format: ".4f" },
+      ],
+    },
   };
 
   return (
@@ -147,134 +132,56 @@ export function EnergyRateChart({
   );
 }
 
+type ChartDataPoint = RetailPriceData;
+
 function pullData(
   data: RatePlan | null | undefined,
   date: Dayjs,
-): RetailPriceData[] {
+): ChartDataPoint[] {
   const tiers = data?.energyRate_tiers;
   const schedule = [0, 6].includes(date.day())
     ? data?.energyWeekendSched
     : data?.energyWeekdaySched;
 
-  return (
-    schedule?.[date.month()]?.flatMap((period, i) => {
-      const periodInfo = tiers?.[period];
-      if (!periodInfo) return [];
+  const monthSchedule = schedule?.[date.month()];
+  if (!monthSchedule) return [];
 
-      return periodInfo.flatMap((tierInfo, j) => {
-        if (!tierInfo) return [];
-        const result: RetailPriceData = {
-          hour: i,
-          value: sum([tierInfo.rate].map((x) => x ?? 0)),
-          tier: j,
-          period,
-        };
-        return result.hour === 23 ? [result, { ...result, hour: 24 }] : result;
-      });
-    }) ?? []
-  );
-}
+  const results: ChartDataPoint[] = [];
 
-export function TiersChart({
-  date,
-  selectedPlan,
-}: {
-  selectedPlan?: RatePlan | null;
-  date: Dayjs;
-}) {
-  const periods = new Set(selectedPlan?.energyWeekdaySched?.[date.month()]);
-  const selectedTiers = Array.from(periods).flatMap(
-    (p) => selectedPlan?.energyRate_tiers?.[p] ?? [],
-  );
+  for (let i = 0; i < monthSchedule.length; i++) {
+    const period = monthSchedule[i];
+    if (period == null) {
+      continue;
+    }
+    const nextPeriod = monthSchedule[i + 1];
+    const periodInfo = tiers?.[period];
+    if (!periodInfo) continue;
 
-  const windows = windowed(structuredClone(selectedTiers), 2)
-    .flatMap(([x, y], tier) => {
-      if (!(x?.max || y?.max)) {
-        return [];
+    for (let j = 0; j < periodInfo.length; j++) {
+      const tierInfo = periodInfo[j];
+      if (!tierInfo) continue;
+
+      const value = sum([tierInfo.rate, tierInfo.adj].map((x) => x ?? 0));
+      const base = {
+        tier: j,
+        period,
+        baseRate: tierInfo.rate,
+        adj: tierInfo.adj ?? undefined,
+      };
+
+      results.push({ ...base, hour: i, value });
+
+      // End of day: close with point at hour 24
+      if (i === 23) {
+        results.push({ ...base, hour: 24, value });
       }
-      const nextTier = tier + 1;
-      let padFirst = null;
-      if (tier == 0) {
-        padFirst = { ...x, max: 0, tier };
+      // Period boundary: close the step, then insert null to break the line
+      else if (nextPeriod !== period) {
+        results.push({ ...base, hour: i + 1, value });
+        results.push({ ...base, hour: i + 1, value: null });
       }
-      if (!y?.max && x?.max) {
-        return [
-          padFirst,
-          { ...x, tier },
-          { ...y, tier: nextTier, max: x.max },
-          { ...y, tier: nextTier, max: x.max * 1.5 },
-        ];
-      } else if (y?.max && x?.max) {
-        return [
-          padFirst,
-          { ...x, tier },
-          { ...y, tier: nextTier, max: x.max },
-          { ...y, tier: nextTier },
-        ];
-      }
-
-      return [padFirst, { ...x, tier }, { ...y, tier: tier + 1 }];
-    })
-    .filter((x) => x != null);
-
-  if (windows.length <= 1) {
-    return null;
+    }
   }
 
-  const spec: TopLevelSpec = {
-    $schema: "https://vega.github.io/schema/vega-lite/v6.json",
-    width: 400,
-    height: 200,
-    title: `Energy Usage Tiers (${date.format("dddd LL")})`,
-    data: { values: windows },
-    params: [
-      {
-        name: "hover",
-        select: {
-          type: "point",
-          on: "pointerover",
-          nearest: true,
-          clear: "pointerout",
-        },
-      },
-    ],
-    mark: {
-      type: "line",
-      interpolate: "step-after",
-      point: { filled: true, size: 60 },
-    },
-    encoding: {
-      y: { field: "rate", type: "quantitative", title: "$ per kWh" },
-      x: {
-        field: "max",
-        type: "quantitative",
-        title: `Usage (${selectedTiers?.[0]?.unit})`,
-        scale: {
-          domainMax: Math.max(...windows.map((x) => x.max ?? 0)) || undefined,
-        },
-      },
-      color: {
-        field: "tier",
-        type: "nominal",
-        title: "Tier",
-        scale: { scheme: "viridis" },
-      },
-      tooltip: [
-        { field: "max", title: "Usage Limit", format: ".1f" },
-        { field: "rate", title: "$ per kWh", format: ".3f" },
-        { field: "tier", title: "Tier" },
-      ],
-    },
-  };
-
-  return (
-    <>
-      <Card>
-        <VegaEmbed
-          spec={spec}
-          options={{ mode: "vega-lite", actions: false }}
-        />
-      </Card>
-    </>
-  );
+  return results;
 }

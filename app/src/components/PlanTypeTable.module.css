@@ -1,0 +1,6 @@
+.expandable {
+  width: min(max(80svw, 100%), 800px); /* or whatever width you need */
+  position: relative;
+  left: 50%;
+  transform: translateX(-50%);
+}

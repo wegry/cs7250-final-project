@@ -27,7 +27,6 @@ function Layout() {
           Visualizing Variable Electricity Pricing
         </Link>
         <div className={s.links}>
-          <Link to="/">Home</Link>
           <Link to="/detail">Detail View</Link>
           <Link to="/compare">Compare Plans</Link>
           <Link to="/map">BA Map</Link> {/* ADD THIS */}
