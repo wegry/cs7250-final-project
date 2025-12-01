@@ -54,7 +54,7 @@ function tierShape<T extends SomeType>(shape: T) {
 
 export const RatePlan = z.object({
   _id: z.string(),
-  states: statesArray,
+  states: statesArray.nullable(),
   is_default: z.boolean().nullish(),
   eiaId: z.optional(z.bigint()),
   rateName: z.string(),

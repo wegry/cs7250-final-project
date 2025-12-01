@@ -12,20 +12,88 @@ function normalizeCountyName(n: string) {
     .trim();
 }
 
-function projectPoint(
+// CONUS Albers Equal Area Conic projection
+// Standard parallels: 29.5°N and 45.5°N
+// Central meridian: -96°
+// Latitude of origin: 23°N
+function albersProject(lon: number, lat: number): [number, number] {
+  const toRad = Math.PI / 180;
+  const λ = lon * toRad;
+  const φ = lat * toRad;
+  const λ0 = -96 * toRad;
+  const φ0 = 23 * toRad;
+  const φ1 = 29.5 * toRad;
+  const φ2 = 45.5 * toRad;
+
+  const n = (Math.sin(φ1) + Math.sin(φ2)) / 2;
+  const C = Math.cos(φ1) ** 2 + 2 * n * Math.sin(φ1);
+  const ρ0 = Math.sqrt(C - 2 * n * Math.sin(φ0)) / n;
+  const ρ = Math.sqrt(C - 2 * n * Math.sin(φ)) / n;
+  const θ = n * (λ - λ0);
+
+  const x = ρ * Math.sin(θ);
+  const y = ρ0 - ρ * Math.cos(θ);
+
+  return [x, y];
+}
+
+function projectToSvg(
   lon: number,
   lat: number,
-  bbox: { minLon: number; maxLon: number; minLat: number; maxLat: number },
+  bbox: { minX: number; maxX: number; minY: number; maxY: number },
   width: number,
   height: number,
-  pad = 6,
+  pad = 10,
 ): [number, number] {
-  const { minLon, maxLon, minLat, maxLat } = bbox;
-  const lonRange = maxLon - minLon || 1;
-  const latRange = maxLat - minLat || 1;
-  const x = ((lon - minLon) / lonRange) * (width - pad * 2) + pad;
-  const y = ((maxLat - lat) / latRange) * (height - pad * 2) + pad;
+  const [px, py] = albersProject(lon, lat);
+  const { minX, maxX, minY, maxY } = bbox;
+  const xRange = maxX - minX || 1;
+  const yRange = maxY - minY || 1;
+
+  // Fit to SVG maintaining aspect ratio
+  const scale = Math.min(
+    (width - pad * 2) / xRange,
+    (height - pad * 2) / yRange,
+  );
+  const offsetX = (width - xRange * scale) / 2;
+  const offsetY = (height - yRange * scale) / 2;
+
+  const x = (px - minX) * scale + offsetX;
+  const y = (maxY - py) * scale + offsetY; // flip Y for SVG coords
+
   return [x, y];
+}
+
+function NorthArrow({
+  x,
+  y,
+  size = 30,
+}: {
+  x: number;
+  y: number;
+  size?: number;
+}) {
+  return (
+    <g transform={`translate(${x}, ${y})`}>
+      {/* Arrow body */}
+      <polygon
+        points={`0,${-size / 2} ${size / 6},${size / 3} 0,${size / 6} ${-size / 6},${size / 3}`}
+        fill="#333"
+        stroke="#333"
+        strokeWidth={0.5}
+      />
+      {/* N label */}
+      <text
+        y={-size / 2 - 4}
+        textAnchor="middle"
+        fontSize={10}
+        fontWeight="bold"
+        fill="#333"
+      >
+        N
+      </text>
+    </g>
+  );
 }
 
 export function CountyMap({
@@ -38,7 +106,6 @@ export function CountyMap({
   const [hovered, setHovered] = useState<string | null>(null);
 
   useEffect(() => {
-    // load geojson from public folder
     fetch("/geodata/county-data.geojson")
       .then((r) => r.json())
       .then(setGeojson)
@@ -54,17 +121,11 @@ export function CountyMap({
 
       try {
         if (selectedPlan.eiaId != null) {
-          // convert bigint if present
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          // @ts-ignore
-          const id =
-            typeof selectedPlan.eiaId === "bigint"
-              ? Number(selectedPlan.eiaId)
-              : selectedPlan.eiaId;
+          const id = selectedPlan.eiaId;
           const res = await queries.serviceTerritoryByEiaId(id);
           const rows = res.toArray();
           setTerritories(
-            rows.map((r: any) => ({ county: r.county, state: r.state })),
+            rows.map((r) => ({ county: r.county, state: r.state })),
           );
           return;
         }
@@ -75,7 +136,7 @@ export function CountyMap({
           );
           const rows = res.toArray();
           setTerritories(
-            rows.map((r: any) => ({ county: r.county, state: r.state })),
+            rows.map((r) => ({ county: r.county, state: r.state })),
           );
           return;
         }
@@ -84,7 +145,6 @@ export function CountyMap({
         setTerritories([]);
       }
     }
-
     load();
   }, [selectedPlan]);
 
@@ -92,173 +152,187 @@ export function CountyMap({
     return Array.from(new Set(territories.map((t) => t.state))).sort();
   }, [territories]);
 
+  // Get all features for the relevant states and compute combined bbox
+  const { bbox, featuresByState } = useMemo(() => {
+    if (!geojson?.features || states.length === 0) {
+      return { features: [], bbox: null, featuresByState: {} };
+    }
+
+    const relevantFeatures = geojson.features.filter((f: any) =>
+      states.includes(f.properties?.stusps),
+    );
+
+    // Group by state
+    const byState: Record<string, any[]> = {};
+    for (const f of relevantFeatures) {
+      const st = f.properties?.stusps;
+      if (!byState[st]) byState[st] = [];
+      byState[st].push(f);
+    }
+
+    // Compute projected bbox
+    let minX = Infinity,
+      maxX = -Infinity,
+      minY = Infinity,
+      maxY = -Infinity;
+
+    for (const f of relevantFeatures) {
+      const geom = f.geometry;
+      const polys: any[] =
+        geom.type === "Polygon" ? [geom.coordinates] : geom.coordinates;
+      for (const poly of polys) {
+        for (const ring of poly) {
+          for (const [lon, lat] of ring) {
+            const [px, py] = albersProject(lon, lat);
+            if (px < minX) minX = px;
+            if (px > maxX) maxX = px;
+            if (py < minY) minY = py;
+            if (py > maxY) maxY = py;
+          }
+        }
+      }
+    }
+
+    return {
+      features: relevantFeatures,
+      bbox: minX === Infinity ? null : { minX, maxX, minY, maxY },
+      featuresByState: byState,
+    };
+  }, [geojson, states]);
+
+  const countiesSet = useMemo(() => {
+    return new Set(
+      territories.map((t) => `${t.state}:${normalizeCountyName(t.county)}`),
+    );
+  }, [territories]);
+
   if (!selectedPlan) return null;
+
+  const width = 400;
+  const height = width / 1.61;
+
+  // Build path string for a feature
+  const buildPath = (f: any, bboxData: typeof bbox) => {
+    if (!bboxData) return "";
+    const geom = f.geometry;
+    const polys: any[] =
+      geom.type === "Polygon" ? [geom.coordinates] : geom.coordinates;
+
+    return polys
+      .flatMap((poly) =>
+        poly.map(
+          (ring: number[][]) =>
+            ring
+              .map((pt: number[], i: number) => {
+                if (pt[0] == null || pt[1] == null) return "";
+                const [x, y] = projectToSvg(
+                  pt[0],
+                  pt[1],
+                  bboxData,
+                  width,
+                  height,
+                  15,
+                );
+                return `${i === 0 ? "M" : "L"}${x.toFixed(2)} ${y.toFixed(2)}`;
+              })
+              .join(" ") + " Z",
+        ),
+      )
+      .join(" ");
+  };
 
   return (
     <Card>
-      <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-        {states.length === 0 ? (
-          <div
-            style={{
-              width: 384,
-              height: 250,
-              backgroundColor: "#f0f0f0",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <span style={{ color: "#999" }}>
-              No counties found for this utility
+      {states.length === 0 ? (
+        <div
+          style={{
+            width,
+            height,
+            backgroundColor: "#f5f5f5",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <span style={{ color: "#999" }}>
+            No counties found for this utility
+          </span>
+        </div>
+      ) : (
+        <>
+          <div style={{ marginBottom: 8 }}>
+            <strong>Utility Service Territory</strong>
+            <span style={{ marginLeft: 12, color: "#666", fontSize: 13 }}>
+              {states.join(", ")} · {territories.length}{" "}
+              {territories.length === 1 ? "county" : "counties"}
             </span>
           </div>
-        ) : (
-          states.map((st) => {
-            const features = geojson?.features?.filter(
-              (f: any) => f.properties?.stusps === st,
-            );
+          <svg width={width} height={height}>
+            {/* Draw each state separately: thick outline first, then fills */}
+            {/* This ensures state-to-state borders remain thick while internal county borders are covered */}
+            {Object.entries(featuresByState).map(([st, stFeatures]) => (
+              <g key={`state-group-${st}`}>
+                {/* Thick stroke layer for this state */}
+                {(stFeatures as any[]).map((f: any, idx: number) => (
+                  <path
+                    key={`outline-${idx}`}
+                    d={buildPath(f, bbox)}
+                    fill="none"
+                    stroke="#333"
+                    strokeWidth={3}
+                  />
+                ))}
+                {/* Fill layer for this state (covers internal thick strokes only) */}
+                {(stFeatures as any[]).map((f: any, idx: number) => {
+                  const countyName = f.properties?.name || "";
+                  const key = `${st}:${normalizeCountyName(countyName)}`;
+                  const isHighlighted = countiesSet.has(key);
+                  const isHovered = hovered === `${st}:${countyName}`;
+                  const fillColor = isHighlighted ? "#b03a2e" : "#f5f5f5";
 
-            // collect bbox for this state's features
-            let minLon = Infinity,
-              maxLon = -Infinity,
-              minLat = Infinity,
-              maxLat = -Infinity;
-            if (features && features.length > 0) {
-              for (const f of features) {
-                const geom = f.geometry;
-                const polys: any[] =
-                  geom.type === "Polygon"
-                    ? [geom.coordinates]
-                    : geom.coordinates;
-                for (const poly of polys) {
-                  for (const ring of poly) {
-                    for (const [lon, lat] of ring) {
-                      if (lon < minLon) minLon = lon;
-                      if (lon > maxLon) maxLon = lon;
-                      if (lat < minLat) minLat = lat;
-                      if (lat > maxLat) maxLat = lat;
-                    }
-                  }
-                }
-              }
-            }
+                  return (
+                    <Tooltip
+                      key={`fill-${idx}`}
+                      title={`${countyName}, ${st}`}
+                      placement="top"
+                    >
+                      <path
+                        d={buildPath(f, bbox)}
+                        fill={
+                          isHovered
+                            ? isHighlighted
+                              ? "#8b2e24"
+                              : "#e0e0e0"
+                            : fillColor
+                        }
+                        stroke="#999"
+                        strokeWidth={0.5}
+                        onMouseEnter={() => setHovered(`${st}:${countyName}`)}
+                        onMouseLeave={() => setHovered(null)}
+                        style={{ cursor: "pointer" }}
+                      />
+                    </Tooltip>
+                  );
+                })}
+              </g>
+            ))}
 
-            if (!features || features.length === 0) {
-              return (
-                <div key={st} style={{ width: 180 }}>
-                  <strong>{st}</strong>
-                  <div style={{ color: "#999" }}>No geometry for state</div>
-                </div>
-              );
-            }
-
-            const bbox = {
-              minLon: minLon === Infinity ? -125 : minLon,
-              maxLon: maxLon === -Infinity ? -66 : maxLon,
-              minLat: minLat === Infinity ? 24 : minLat,
-              maxLat: maxLat === -Infinity ? 49 : maxLat,
-            };
-
-            const width = 220;
-            const height = 160;
-
-            const countiesForState = territories
-              .filter((t) => t.state === st)
-              .map((t) => normalizeCountyName(t.county));
-
-            return (
-              <div key={st} style={{ width }}>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                  }}
-                >
-                  <strong>{st}</strong>
-                  <small style={{ color: "#666" }}>
-                    {countiesForState.length}{" "}
-                    {countiesForState.length === 1 ? "county" : "counties"}
-                  </small>
-                </div>
-                <svg
-                  width={width}
-                  height={height}
-                  style={{ background: "#fff", border: "1px solid #eee" }}
-                >
-                  {features.map((f: any, idx: number) => {
-                    const geom = f.geometry;
-                    const polys: any[] =
-                      geom.type === "Polygon"
-                        ? [geom.coordinates]
-                        : geom.coordinates;
-                    return polys.map((poly, pi) =>
-                      poly.map((ring: number[][], ri: number) => {
-                        // build path for this ring
-                        const d =
-                          ring
-                            .map((pt: number[], i: number) => {
-                              if (pt[0] == null || pt[1] == null) return "";
-                              const [x, y]: [number, number] = projectPoint(
-                                pt[0],
-                                pt[1],
-                                bbox,
-                                width,
-                                height,
-                                6,
-                              );
-                              return `${i === 0 ? "M" : "L"}${x.toFixed(2)} ${y.toFixed(2)}`;
-                            })
-                            .join(" ") + " Z";
-
-                        const countyName = f.properties?.name || "";
-                        const isHighlighted = countiesForState.includes(
-                          normalizeCountyName(countyName),
-                        );
-                        const isHovered = hovered === countyName;
-
-                        const fillColor = isHighlighted ? "#b03a2e" : "#f5f5f5"; // new brick red for highlighted
-                        const strokeColor = isHighlighted ? "#000" : "#999"; // stronger borders
-                        const strokeW = isHighlighted || isHovered ? 0.9 : 0.6;
-
-                        return (
-                          <Tooltip
-                            key={`${idx}-${pi}-${ri}`}
-                            title={countyName}
-                            placement="top"
-                          >
-                            <path
-                              d={d}
-                              fill={
-                                isHovered
-                                  ? isHighlighted
-                                    ? "#8b2e24"
-                                    : "#d0d0d0"
-                                  : fillColor
-                              }
-                              stroke={strokeColor}
-                              strokeWidth={strokeW}
-                              opacity={isHighlighted ? 1 : 0.95}
-                              onMouseEnter={() => setHovered(countyName)}
-                              onMouseLeave={() => setHovered(null)}
-                              style={{ cursor: "pointer" }}
-                            />
-                          </Tooltip>
-                        );
-                      }),
-                    );
-                  })}
-                </svg>
-              </div>
-            );
-          })
-        )}
-      </div>
-      <div style={{ marginTop: 8 }}>
-        <p style={{ margin: "4px 0 0 0", color: "#666", fontSize: 12 }}>
-          Counties marked in red are served by the utility.
-        </p>
-      </div>
+            {/* North Arrow */}
+            <NorthArrow x={width - 25} y={30} size={28} />
+          </svg>
+        </>
+      )}
+      <p
+        style={{
+          margin: "8px 0 0 0",
+          color: "#666",
+          fontSize: 12,
+          maxWidth: "40ch",
+        }}
+      >
+        Counties in red are served by the utility. Projection: Albers Equal Area
+        Conic (CONUS).
+      </p>
     </Card>
   );
 }

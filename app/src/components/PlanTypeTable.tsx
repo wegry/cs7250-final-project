@@ -8,15 +8,13 @@ import {
   type PlanType,
   type PlanTypeSummary,
 } from "../data/plan-type-queries";
-import { list } from "../formatters";
+import { countFormatter, list } from "../formatters";
 import s from "./PlanTypeTable.module.css";
 
 interface PlanTypeTableProps {
   planType: PlanType;
   /** Date to filter active plans */
   date?: dayjs.Dayjs;
-  /** Max rows to display */
-  limit?: number;
 }
 
 export function PlanTypeTable({
@@ -74,9 +72,18 @@ export function PlanTypeTable({
     );
   }
 
+  const count = data?.length ?? 0;
+
   return (
     <>
-      <h3>Other Examples</h3>
+      <h3>
+        Other Examples
+        {!isLoading && (
+          <span className={s.count}>
+            &nbsp;({countFormatter.format(count)})
+          </span>
+        )}
+      </h3>
       <div className={s.expandable}>
         <Table<PlanTypeSummary>
           columns={columns}

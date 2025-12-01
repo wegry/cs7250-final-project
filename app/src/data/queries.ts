@@ -4,7 +4,7 @@ import { WholesalePrice, type SynthData } from "./schema";
 
 /** For select list */
 export const selectList = `
-  SELECT DISTINCT ON (concat_ws(' / ', utilityName, rateName ))
+  SELECT DISTINCT ON (utilityName, rateName)
     _id as value
     , concat_ws(' / ', utilityName, rateName ) as label
   FROM flattened.usurdb
@@ -18,9 +18,9 @@ export async function selectListForDate(date: Dayjs) {
   const stmt = await (
     await conn
   ).prepare(`
-  SELECT
+  SELECT DISTINCT ON (utilityName, rateName)
     _id as value
-    , concat_ws('/', utilityName, rateName, _id) as label
+    , concat_ws('/', utilityName, rateName) as label
   FROM flattened.usurdb
   WHERE
     (enddate IS NULL OR
@@ -85,7 +85,7 @@ export async function ratePlanDetail(label: string) {
       )
     SELECT r.*, st.states as states
     FROM ratePlan r
-    JOIN service_territory st ON r.eiaId = st."Utility Number"
+    LEFT OUTER JOIN service_territory st ON r.eiaId = st."Utility Number"
 `);
 
   const result = await stmt.query(label);
@@ -197,7 +197,7 @@ export async function getWholesalePrices(
  * Service territory lookup by EIA utility number
  * Returns distinct county/state pairs for a utility
  */
-export async function serviceTerritoryByEiaId(eiaId: number | string) {
+export async function serviceTerritoryByEiaId(eiaId: bigint) {
   const stmt = await (
     await conn
   ).prepare(`
@@ -205,7 +205,7 @@ export async function serviceTerritoryByEiaId(eiaId: number | string) {
     FROM flattened.eia861_service_territory
     WHERE "Utility Number" = ?
   `);
-  const result = await stmt.query(eiaId);
+  const result = await stmt.query(eiaId.toString());
   return result;
 }
 
