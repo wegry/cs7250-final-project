@@ -1,12 +1,14 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { StrictMode, Suspense } from "react";
+import { StrictMode, Suspense, useState, useEffect } from "react";
 import {
   createBrowserRouter,
   Link,
   Outlet,
   RouterProvider,
-  ScrollRestoration,
+  useLocation,
 } from "react-router-dom";
+import { Drawer, Button } from "antd";
+import { MenuOutlined } from "@ant-design/icons";
 import * as s from "./App.module.css";
 import "./global.css";
 import { Footer } from "./components/Footer";
@@ -20,20 +22,60 @@ const queryClient = new QueryClient({
   },
 });
 
-// Layout component for the nav
 function Layout() {
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 700);
+  const location = useLocation();
+
+  useEffect(() => {
+    const observer = new ResizeObserver((entries) => {
+      const width = entries[0].contentRect.width;
+      setIsMobile(width < 700);
+    });
+    observer.observe(document.body);
+    return () => observer.disconnect();
+  }, []);
+
+  // Close drawer on navigation
+  useEffect(() => {
+    setDrawerOpen(false);
+  }, [location.pathname]);
+
+  const navLinks = (
+    <>
+      <Link to="/detail">Detail View</Link>
+      <Link to="/compare">Compare Plans</Link>
+      <Link to="/map">BA Map</Link>
+      <Link to="/zip-search">Zip Search</Link>
+    </>
+  );
+
   return (
     <div className={s.root}>
       <nav className={s.nav}>
         <Link className={s.title} to="/">
           Visualizing Variable Electricity Pricing
         </Link>
-        <div className={s.links}>
-          <Link to="/detail">Detail View</Link>
-          <Link to="/compare">Compare Plans</Link>
-          <Link to="/map">BA Map</Link>
-          <Link to="/zip-search">Zip Search</Link>
-        </div>
+        {isMobile ? (
+          <>
+            <Button
+              type="text"
+              icon={<MenuOutlined />}
+              onClick={() => setDrawerOpen(true)}
+              className={s.burgerButton}
+            />
+            <Drawer
+              title="Navigation"
+              placement="right"
+              onClose={() => setDrawerOpen(false)}
+              open={drawerOpen}
+            >
+              <div className={s.drawerLinks}>{navLinks}</div>
+            </Drawer>
+          </>
+        ) : (
+          <div className={s.links}>{navLinks}</div>
+        )}
       </nav>
       <Suspense fallback={<div>Loading...</div>}>
         <Outlet />
@@ -76,7 +118,6 @@ const router = createBrowserRouter([
             Component: module.default,
           })),
       },
-      // ADD THIS:
       {
         path: "map",
         lazy: () =>
@@ -95,7 +136,6 @@ const router = createBrowserRouter([
   },
 ]);
 
-// Trigger loading db on app load
 export function App() {
   return (
     <StrictMode>

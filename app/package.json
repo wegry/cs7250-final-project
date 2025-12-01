@@ -14,6 +14,7 @@
     "tsc": "tsc"
   },
   "dependencies": {
+    "@ant-design/icons": "^6.1.0",
     "@ant-design/v5-patch-for-react-19": "^1.0.3",
     "@duckdb/duckdb-wasm": "^1.30.0",
     "@duckdb/node-api": "^1.4.1-r.4",

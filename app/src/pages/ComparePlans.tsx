@@ -121,7 +121,7 @@ function ComparePlans() {
       <Card title="Your Home Profile" style={{ marginBottom: 24 }}>
         <Form layout="vertical">
           <Row gutter={24}>
-            <Col span={6}>
+            <Col>
               <Form.Item label="Dwelling Type">
                 <Select
                   value={state.dwellingType}
@@ -134,7 +134,7 @@ function ComparePlans() {
                 />
               </Form.Item>
             </Col>
-            <Col span={6}>
+            <Col>
               <Form.Item label="Region">
                 <Select
                   value={state.region}
@@ -147,7 +147,7 @@ function ComparePlans() {
                 />
               </Form.Item>
             </Col>
-            <Col span={6}>
+            <Col>
               <Form.Item label="Billing Month">
                 <DatePicker
                   picker="month"
