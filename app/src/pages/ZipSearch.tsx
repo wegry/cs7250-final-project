@@ -149,7 +149,7 @@ export function ZipSearch() {
           showSizeChanger: true,
           pageSizeOptions: ["10", "20", "50", "100"],
           showTotal: (total, range) =>
-            `${range[0]}-${range[1]} of ${total} utilities`,
+            `${range[0]}-${range[1]} of ${total} utility/zip code pairs`,
         }}
         locale={{
           emptyText:
