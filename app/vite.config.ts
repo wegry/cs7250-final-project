@@ -18,12 +18,12 @@ export default {
     },
     proxy: {
       // Proxy tile requests to avoid CORS
-      '/tiles': {
-        target: 'https://tile.openstreetmap.org',
+      "/tiles": {
+        target: "https://tile.openstreetmap.org",
         changeOrigin: true,
-        rewrite: (path: string) => path.replace(/^\/tiles/, ''),
-      }
-    }
+        rewrite: (path: string) => path.replace(/^\/tiles/, ""),
+      },
+    },
   },
   preview: {
     headers: {

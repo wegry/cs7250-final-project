@@ -166,7 +166,7 @@ export default function DetailView() {
         return params;
       });
     },
-    [setParams]
+    [setParams],
   );
 
   return (
