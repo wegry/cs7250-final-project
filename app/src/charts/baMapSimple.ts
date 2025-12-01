@@ -38,7 +38,7 @@ const defaultConfig: Required<LeafletMapConfig> = {
 
 export async function createLeafletMap(
   container: HTMLElement,
-  config: LeafletMapConfig = {}
+  config: LeafletMapConfig = {},
 ): Promise<L.Map> {
   const finalConfig = { ...defaultConfig, ...config };
 
