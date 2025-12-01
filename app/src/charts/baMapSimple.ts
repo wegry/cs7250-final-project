@@ -9,6 +9,7 @@ export interface LeafletMapConfig {
   tooltipFormatter?: (properties: any) => string
   geojsonUrl?: string // Add URL option
   baSummaryUrl?: string // optional BA summary JSON to enrich tooltips
+  onFeatureClick?: (properties: any) => void
 }
 
 const defaultConfig: Required<LeafletMapConfig> = {
@@ -32,6 +33,7 @@ const defaultConfig: Required<LeafletMapConfig> = {
   `,
   geojsonUrl: '/geodata/ba-data.geojson', // Default URL
   baSummaryUrl: '/ba-summary.json',
+  onFeatureClick: () => { },
 }
 
 export async function createLeafletMap(
@@ -49,7 +51,7 @@ export async function createLeafletMap(
 
   // Use proxied tiles in development, direct in production
   const isDev = import.meta.env.DEV
-  const tileUrl = isDev 
+  const tileUrl = isDev
     ? '/tiles/{z}/{x}/{y}.png'
     : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
 
@@ -87,7 +89,7 @@ export async function createLeafletMap(
 
     const geoJsonLayer = L.geoJSON(geojsonData, {
       style: () => finalConfig.style,
-      onEachFeature: (feature: { properties: any }, layer: { on: (arg0: { mouseover: (e: any) => void; mouseout: (e: any) => void }) => void; bindTooltip: (arg0: string, arg1: { sticky: boolean; className: string }) => void }) => {
+      onEachFeature: (feature: { properties: any }, layer: any) => {
         // Hover effects
         layer.on({
           mouseover: (e: { target: { setStyle: (arg0: any) => void } }) => {
@@ -126,6 +128,13 @@ export async function createLeafletMap(
             sticky: true,
             className: 'ba-tooltip',
           })
+
+          // Click handler: notify consumer with merged properties
+          if (finalConfig.onFeatureClick) {
+            // attach a simple click event
+            // eslint-disable-next-line @typescript-eslint/no-misused-promises
+            layer.on('click', () => finalConfig.onFeatureClick!(mergedProps))
+          }
         }
       },
     }).addTo(map)
