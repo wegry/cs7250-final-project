@@ -1,6 +1,12 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
 .nav {
   display: flex;
-  --bg-color: lch(61% 64 145);
+  --bg-color: var(--highlight-color);
   background-color: var(--bg-color);
   padding: 12px 16px;
 

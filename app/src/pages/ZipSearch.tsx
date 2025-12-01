@@ -106,7 +106,7 @@ export function ZipSearch() {
   });
 
   return (
-    <div className={s.container}>
+    <main className={s.container}>
       <h1>Search Utilities by Zip Code</h1>
       <div className={s.searchSection}>
         <Input
@@ -160,6 +160,6 @@ export function ZipSearch() {
               : "Enter at least 1 digit to search.",
         }}
       />
-    </div>
+    </main>
   );
 }

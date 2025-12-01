@@ -5,6 +5,8 @@ html {
 html,
 body {
   margin: 0;
+  overscroll-behavior-y: none;
+  --highlight-color: lch(61% 64 145);
 }
 
 /* Leaflet BA tooltip styling */

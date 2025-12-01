@@ -1,0 +1,108 @@
+.footer {
+  margin-top: auto; /* Push to bottom in flex container */
+  background-color: #1a1a2e;
+  color: #a0a0b0;
+  padding: 1.5rem 2rem;
+  font-size: 0.85rem;
+  border-top: 1px solid #2a2a4e;
+}
+
+.content {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1.5rem;
+}
+
+.course {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.courseCode {
+  font-weight: 600;
+  color: #e0e0e0;
+  font-size: 1rem;
+}
+
+.courseTitle {
+  color: #c0c0d0;
+  font-style: italic;
+}
+
+.school {
+  color: #808090;
+  font-size: 0.8rem;
+}
+
+.sources {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sourcesHeading {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #909090;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.sourcesList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+}
+
+.sourceItem {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+}
+
+.sourceLink {
+  color: var(--highlight-color);
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.sourceLink:hover {
+  color: lch(from var(--highlight-color) calc(l * 110) c h);
+  text-decoration: underline;
+}
+
+.sourceNote {
+  color: #606070;
+  font-size: 0.75rem;
+}
+
+.sourceNote::before {
+  content: "·";
+  margin-right: 0.35rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .footer {
+    padding: 1.25rem 1rem;
+  }
+
+  .content {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .sourcesList {
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+}

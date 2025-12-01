@@ -1,7 +1,6 @@
 .main {
   --x-padding: 32px;
-  max-width: calc(100vw - calc(--x-padding * 2));
-  height: 100vw;
+  max-width: calc(100vw - calc(var(--x-padding) * 2));
   scrollbar-gutter: preserve;
   margin: 0 var(--x-padding);
 

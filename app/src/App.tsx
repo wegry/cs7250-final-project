@@ -5,9 +5,11 @@ import {
   Link,
   Outlet,
   RouterProvider,
+  ScrollRestoration,
 } from "react-router-dom";
 import * as s from "./App.module.css";
 import "./global.css";
+import { Footer } from "./components/Footer";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -21,7 +23,7 @@ const queryClient = new QueryClient({
 // Layout component for the nav
 function Layout() {
   return (
-    <>
+    <div className={s.root}>
       <nav className={s.nav}>
         <Link className={s.title} to="/">
           Visualizing Variable Electricity Pricing
@@ -36,7 +38,8 @@ function Layout() {
       <Suspense fallback={<div>Loading...</div>}>
         <Outlet />
       </Suspense>
-    </>
+      <Footer />
+    </div>
   );
 }
 
