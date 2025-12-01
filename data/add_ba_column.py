@@ -48,11 +48,43 @@ def load_ba_assignments() -> Dict[int, str]:
     return ba_map
 
 
+def load_ba_mappings_from_sales() -> Dict[int, str]:
+    """
+    Load BA mappings from EIA-861 Sales_Ult_Cust_2024.xlsx file.
+    """
+    SALES_DATA = "raw/eia-861-2024/Sales_Ult_Cust_2024.xlsx"
+
+    UTILITY_COLUMN_INDEX = 1
+    BA_COLUMN_INDEX = 8
+
+    df = pl.read_excel(SALES_DATA, has_header=False, read_options={"skip_rows": 2})
+
+    ba_map: dict[int, str] = {}
+
+    for row in df.iter_rows(named=False):
+        utility_num = row[UTILITY_COLUMN_INDEX]
+        if utility_num is None:
+            continue
+
+        try:
+            utility_id = int(utility_num)
+        except (ValueError, TypeError):
+            continue
+
+        ba = row[BA_COLUMN_INDEX]
+        if ba and ba != "N/A":
+            ba_map[utility_id] = ba
+
+    print(f"✅ Loaded {len(ba_map)} BA assignments from EIA-861 Sales data")
+    return ba_map
+
+
 if __name__ == "__main__":
     print("Adding balancingAuthority column to existing database...")
 
     # Load BA assignments
-    ba_assignments = load_ba_assignments()
+    # ba_assignments = load_ba_assignments()
+    ba_assignments: Dict[int, str] = load_ba_mappings_from_sales()
 
     # Connect to database
     con = duckdb.connect("flattened.duckdb")

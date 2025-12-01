@@ -84,14 +84,17 @@ ba_mapping = {z.split("-")[-1]: z for z in ZONE_LIST}
 # Add explicit alias for BANC which may appear as a raw short code
 ba_mapping["BANC"] = "US-CAL-BANC"
 # Add concrete aliases for common short codes / variants we expect in the DB
-ba_mapping.update({
-    "ISONE": "US-NE-ISNE",
-    "NYISO": "US-NY-NYIS",
-    "ERCOT": "US-TEX-ERCO",
-})
+ba_mapping.update(
+    {
+        "ISONE": "US-NE-ISNE",
+        "NYISO": "US-NY-NYIS",
+        "ERCOT": "US-TEX-ERCO",
+    }
+)
 
 # Build reverse mapping (full zone id -> short key) for normalization
 full_to_short = {v: k for k, v in ba_mapping.items()}
+
 
 def normalize_ba_raw(val: str) -> str | None:
     if val is None:
@@ -106,17 +109,18 @@ def normalize_ba_raw(val: str) -> str | None:
         return full_to_short[s]
     if up in full_to_short:
         return full_to_short[up]
-    if '-' in s:
-        seg = s.split('-')[-1].upper()
+    if "-" in s:
+        seg = s.split("-")[-1].upper()
         if seg in ba_mapping:
             return seg
-    if 'ERCOT' in up or 'TEX' in up:
-        return 'ERCOT'
-    if 'NY' in up and 'ISO' in up:
-        return 'NYISO'
-    if 'ISO' in up and 'NE' in up:
-        return 'ISONE'
+    if "ERCOT" in up or "TEX" in up:
+        return "ERCOT"
+    if "NY" in up and "ISO" in up:
+        return "NYISO"
+    if "ISO" in up and "NE" in up:
+        return "ISONE"
     return None
+
 
 rows = con.execute(
     "SELECT eiaId, ba FROM utility_data WHERE eiaId IS NOT NULL"
@@ -153,7 +157,12 @@ SELECT
     utilityName,
     COUNT(*) as num_rate_plans
 FROM usurdb
-WHERE eiaId IS NOT NULL
+WHERE 
+eiaId IS NOT NULL 
+AND 
+(
+    effectiveDate <= CURRENT_DATE AND (endDate IS NULL OR endDate >= CURRENT_DATE)
+)
 GROUP BY eiaId, utilityName
 """
 
@@ -192,7 +201,7 @@ for ba_code, v in ba_data.items():
     ba_summary.append(v)
 
 OUT_PATH = os.path.normpath(
-    os.path.join(os.path.dirname(__file__), ".", "app", "public", "ba-summary.json")
+    os.path.join(os.path.dirname(__file__), "..", "app", "public", "ba-summary.json")
 )
 os.makedirs(os.path.dirname(OUT_PATH), exist_ok=True)
 with open(OUT_PATH, "w") as f:
