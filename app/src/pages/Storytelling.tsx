@@ -2,9 +2,20 @@ import { Link } from "react-router-dom";
 import dayjs from "dayjs";
 import { PlanTypeTable } from "../components/PlanTypeTable";
 import s from "./Storytelling.module.css";
+import { Card } from "antd";
 
 // Use current date for filtering active plans
 const TODAY = dayjs();
+
+const sections = [
+  { id: "flat", title: "Flat Rate Plans" },
+  { id: "tiered", title: "Flat Rate Plans with Lots of Tiers" },
+  { id: "tou", title: "Time of Day" },
+  { id: "coincident", title: "Coincident Demand" },
+  { id: "demand", title: "Demand" },
+  { id: "flat-demand", title: "Flat Demand" },
+  { id: "complex", title: "All of the Above" },
+] as const;
 
 function Storytelling() {
   return (
@@ -17,7 +28,17 @@ function Storytelling() {
         Note: these rates and prices are mostly generation charges and do not
         include distribution charges.
       </i>
-      <section>
+      <Card className={s.toc}>
+        <strong>Jump to:</strong>
+        <ul>
+          {sections.map(({ id, title }) => (
+            <li key={id}>
+              <a href={`#${id}`}>{title}</a>
+            </li>
+          ))}
+        </ul>
+      </Card>
+      <section id="flat">
         <h2>Flat Rate Plans</h2>
         <p>
           Flat rate plans are the simplest form of electricity pricing—you pay
@@ -33,7 +54,7 @@ function Storytelling() {
         </p>
         <PlanTypeTable planType="flat" date={TODAY} />
       </section>
-      <section>
+      <section id="tiered">
         <h2>Flat Rate Plans with Lots of Tiers</h2>
         <p>
           Tiered rate plans charge different prices depending on how much
@@ -47,9 +68,9 @@ function Storytelling() {
           </Link>
           .
         </p>
-        <PlanTypeTable planType="tiered" date={TODAY} limit={5} />
+        <PlanTypeTable planType="tiered" date={TODAY} />
       </section>
-      <section>
+      <section id="tou">
         <h2>Time of Day</h2>
         <p>
           Time-of-use (TOU) plans charge different rates depending on when you
@@ -63,9 +84,9 @@ function Storytelling() {
           </Link>
           .
         </p>
-        <PlanTypeTable planType="tou" date={TODAY} limit={5} />
+        <PlanTypeTable planType="tou" date={TODAY} />
       </section>
-      <section>
+      <section id="coincident">
         <h2>Coincident Demand</h2>
         <p>
           Coincident demand plans charge based on your usage during the single
@@ -79,9 +100,9 @@ function Storytelling() {
           </Link>
           .
         </p>
-        <PlanTypeTable planType="coincident" date={TODAY} limit={5} />
+        <PlanTypeTable planType="coincident" date={TODAY} />
       </section>
-      <section>
+      <section id="demand">
         <h2>Demand</h2>
         <p>
           Demand-based plans charge not just for total energy consumed, but also
@@ -96,9 +117,9 @@ function Storytelling() {
           use this model to encourage customers to spread their usage more
           evenly.
         </p>
-        <PlanTypeTable planType="demand" date={TODAY} limit={5} />
+        <PlanTypeTable planType="demand" date={TODAY} />
       </section>
-      <section>
+      <section id="flat-demand">
         <h2>Flat Demand</h2>
         <p>
           Flat demand plans include a fixed monthly charge based on a
@@ -112,9 +133,9 @@ function Storytelling() {
           demonstrate how utilities balance simplicity with demand-based cost
           recovery.
         </p>
-        <PlanTypeTable planType="flatDemand" date={TODAY} limit={5} />
+        <PlanTypeTable planType="flatDemand" date={TODAY} />
       </section>
-      <section>
+      <section id="complex">
         <h2>All of the Above</h2>
         <p>
           Some rate structures combine multiple pricing mechanisms into a single
@@ -128,7 +149,7 @@ function Storytelling() {
           show how intricate electricity pricing can become, making tools like
           this one essential for understanding your bill.
         </p>
-        <PlanTypeTable planType="complex" date={TODAY} limit={5} />
+        <PlanTypeTable planType="complex" date={TODAY} />
       </section>
     </main>
   );

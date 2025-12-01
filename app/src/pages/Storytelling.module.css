@@ -2,3 +2,15 @@
   margin: 0 auto;
   max-width: 50ch;
 }
+
+.toc {
+  margin-top: 1rem;
+}
+
+.toc ul {
+  margin-bottom: 0;
+}
+
+.toc a:hover {
+  text-decoration: underline;
+}
