@@ -29,7 +29,8 @@ function Layout() {
         <div className={s.links}>
           <Link to="/detail">Detail View</Link>
           <Link to="/compare">Compare Plans</Link>
-          <Link to="/map">BA Map</Link> {/* ADD THIS */}
+          <Link to="/map">BA Map</Link>
+          <Link to="/zip-search">Zip Search</Link>
         </div>
       </nav>
       <Suspense fallback={<div>Loading...</div>}>
@@ -78,6 +79,13 @@ const router = createBrowserRouter([
         lazy: () =>
           import("./pages/BAMap").then((module) => ({
             Component: module.default,
+          })),
+      },
+      {
+        path: "zip-search",
+        lazy: () =>
+          import("./pages/ZipSearch").then((module) => ({
+            Component: module.ZipSearch,
           })),
       },
     ],
