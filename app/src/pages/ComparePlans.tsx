@@ -1,178 +1,250 @@
-import { useMemo, useRef } from "react";
-import { useVegaEmbed, type VegaEmbedProps } from "react-vega";
+import { useMemo } from "react";
 import { useImmer } from "use-immer";
-import { SynthData } from "../data/schema";
 import {
   Form,
-  Radio,
   DatePicker,
   Row,
   Col,
-  Segmented,
-  InputNumber,
+  Select,
+  Switch,
+  Card,
+  Statistic,
 } from "antd";
 import dayjs, { Dayjs } from "dayjs";
 import { useRatePlan } from "../hooks/useRatePlan";
 import { RatePlanSelector } from "../components/RatePlanSelector";
-import { generationPriceInAMonth } from "../prices";
+import { calculateMonthlyBill, type PriceBreakdown } from "../prices";
 import { Link, useSearchParams } from "react-router-dom";
-import { useSynthData } from "../hooks/useSynthData";
-import { capitalize } from "es-toolkit";
-import { RatePlanSummary } from "../components/RatePlanSummary";
+import {
+  type DwellingType,
+  type Region,
+  type DwellingProfile,
+  estimateHourlyUsage,
+  estimateMonthlyKwh,
+} from "../data/usage-estimator";
 import s from "./ComparePlans.module.css";
 
 const DATE_MIN = dayjs("2024-01-01");
-const DATE_DEFAULT = dayjs().clone().set("year", 2024);
+const DATE_DEFAULT = dayjs().clone().set("year", 2024).set("month", 0);
 const DATE_MAX = dayjs("2024-12-31");
-
-type State = {
-  region: SynthData["region"];
-  date: Dayjs;
-  targetUsage?: number;
-};
 
 const RATE_PLAN_QUERY_PARAM = "rate-plan";
 const RATE_PLAN_2_QUERY_PARAM = "other-rate-plan";
-const ENERGY_USAGE_QUERY_PARAM = "energy-usage";
 
-function RegionalElectricityPatterns() {
+type State = {
+  dwellingType: DwellingType;
+  region: Region;
+  hasGasHeat: boolean;
+  hasGasAppliances: boolean;
+  hasEV: boolean;
+  date: Dayjs;
+};
+
+const DWELLING_OPTIONS = [
+  { value: "house", label: "🏠 Single Family Home" },
+  { value: "townhouse", label: "🏘️ Townhouse / Duplex" },
+  { value: "apartment", label: "🏢 Apartment / Condo" },
+];
+
+const REGION_OPTIONS = [
+  { value: "northeast", label: "Northeast" },
+  { value: "midwest", label: "Midwest" },
+  { value: "south", label: "South" },
+  { value: "west", label: "West" },
+];
+
+function ComparePlans() {
   const [searchParams, setSearchParams] = useSearchParams();
-
   const ratePlanSelected = searchParams.get(RATE_PLAN_QUERY_PARAM);
   const ratePlan2Selected = searchParams.get(RATE_PLAN_2_QUERY_PARAM);
-  const energyUsage = searchParams.get(ENERGY_USAGE_QUERY_PARAM);
-  // Vega mutates data in place.
+
   const [state, updateState] = useImmer<State>({
-    region: "New England",
+    dwellingType: "house",
+    region: "northeast",
+    hasGasHeat: true,
+    hasGasAppliances: false,
+    hasEV: false,
     date: DATE_DEFAULT,
-    targetUsage: isFinite(energyUsage as unknown as number)
-      ? parseFloat(energyUsage!)
-      : undefined,
   });
 
   const season = useMemo(() => {
-    if (state.date.isAfter("2024-10-01") || state.date.isBefore("2024-03-01")) {
-      return "winter";
-    }
-
-    return "summer";
+    const month = state.date.month();
+    return month >= 4 && month <= 9 ? "summer" : "winter";
   }, [state.date]);
 
-  const usuageSparklines = useMemo(() => {
-    return (["New England", "Texas", "Southern California"] as const).map(
-      (name) => ({
-        label: (
-          <Sparkline
-            region={name}
-            season={season}
-            selected={name == state.region}
-            targetUsage={state.targetUsage}
-          />
-        ),
-        value: name,
-      }),
-    );
-  }, [season, state.region, state.targetUsage]);
+  const dwellingProfile: DwellingProfile = useMemo(
+    () => ({
+      dwellingType: state.dwellingType,
+      region: state.region,
+      hasGasHeat: state.hasGasHeat,
+      hasGasAppliances: state.hasGasAppliances,
+      hasEV: state.hasEV,
+    }),
+    [state],
+  );
+
+  const synthData = useMemo(
+    () => estimateHourlyUsage(dwellingProfile, season),
+    [dwellingProfile, season],
+  );
+
+  const estimatedMonthlyKwh = useMemo(
+    () => estimateMonthlyKwh(dwellingProfile, season),
+    [dwellingProfile, season],
+  );
 
   const { data: ratePlan } = useRatePlan(ratePlanSelected);
   const { data: ratePlan2 } = useRatePlan(ratePlan2Selected);
-  const { data: synthData } = useSynthData({
-    season: season,
-    region: state.region,
-    targetUsage: state.targetUsage,
-  });
 
-  const usagePlan1 = generationPriceInAMonth({
+  const bill1 = calculateMonthlyBill({
     ratePlan,
-    synthData: synthData,
+    synthData,
     monthStarting: state.date,
   });
-  const usagePlan2 = generationPriceInAMonth({
+
+  const bill2 = calculateMonthlyBill({
     ratePlan: ratePlan2,
-    synthData: synthData,
+    synthData,
     monthStarting: state.date,
   });
 
   return (
     <div className={s.main}>
       <div>
-        <h2>Regional Electricity Usage Patterns</h2>
-        <p>Compare heating vs. cooling loads across regions and seasons</p>
+        <h2>Compare Rate Plans</h2>
+        <p>
+          See how different rate plans affect your bill based on your home and
+          usage patterns
+        </p>
+      </div>
 
-        <Form layout="horizontal">
+      <Card title="Your Home Profile" style={{ marginBottom: 24 }}>
+        <Form layout="vertical">
           <Row gutter={24}>
-            <Col>
-              <Form.Item label="Energy Usage (kWh)">
-                <InputNumber
-                  onChange={(value) => {
-                    updateState((v) => {
-                      v.targetUsage = value ?? undefined;
-                    });
-                    setSearchParams((prev) => {
-                      prev.set(
-                        ENERGY_USAGE_QUERY_PARAM,
-                        value! as unknown as string,
-                      );
-
-                      return prev;
-                    });
-                  }}
-                  value={state.targetUsage}
-                  type="number"
-                  min={0.01}
-                  placeholder="380"
+            <Col span={6}>
+              <Form.Item label="Dwelling Type">
+                <Select
+                  value={state.dwellingType}
+                  options={DWELLING_OPTIONS}
+                  onChange={(value) =>
+                    updateState((s) => {
+                      s.dwellingType = value;
+                    })
+                  }
                 />
               </Form.Item>
             </Col>
-            <Col>
-              <Form.Item label="Date">
+            <Col span={6}>
+              <Form.Item label="Region">
+                <Select
+                  value={state.region}
+                  options={REGION_OPTIONS}
+                  onChange={(value) =>
+                    updateState((s) => {
+                      s.region = value;
+                    })
+                  }
+                />
+              </Form.Item>
+            </Col>
+            <Col span={6}>
+              <Form.Item label="Billing Month">
                 <DatePicker
+                  picker="month"
                   allowClear={false}
                   minDate={DATE_MIN}
                   maxDate={DATE_MAX}
                   value={state.date}
-                  onChange={(value) => {
-                    updateState((state) => {
-                      state.date = value;
-                    });
-                  }}
+                  onChange={(value) =>
+                    updateState((s) => {
+                      s.date = value;
+                    })
+                  }
                 />
               </Form.Item>
             </Col>
+          </Row>
+          <Row gutter={48}>
             <Col>
-              <Form.Item label="Season">
-                <Radio.Group
-                  value={season}
-                  onChange={(e) => {
-                    if (
-                      e.target.value === "winter" &&
-                      state.date.month() > 2 &&
-                      state.date.month() < 10
-                    ) {
-                      updateState((state) => {
-                        state.date = state.date.set("month", 0);
-                      });
-                    } else if (
-                      e.target.value === "summer" &&
-                      !(state.date.month() <= 2 && state.date.month() > 9)
-                    ) {
-                      updateState((state) => {
-                        state.date = state.date.set("month", 7);
-                      });
-                    }
-                  }}
-                >
-                  <Radio.Button value="winter">
-                    ❄️ Winter (January)
-                  </Radio.Button>
-                  <Radio.Button value="summer">☀️ Summer (July)</Radio.Button>
-                </Radio.Group>
+              <Form.Item
+                label="Gas Heating"
+                tooltip="Furnace or boiler uses natural gas"
+              >
+                <Switch
+                  checked={state.hasGasHeat}
+                  onChange={(checked) =>
+                    updateState((s) => {
+                      s.hasGasHeat = checked;
+                    })
+                  }
+                />
+                <span style={{ marginLeft: 8 }}>
+                  {state.hasGasHeat ? "Yes" : "No (Electric)"}
+                </span>
+              </Form.Item>
+            </Col>
+            <Col>
+              <Form.Item
+                label="Gas Appliances"
+                tooltip="Gas stove, water heater, or dryer"
+              >
+                <Switch
+                  checked={state.hasGasAppliances}
+                  onChange={(checked) =>
+                    updateState((s) => {
+                      s.hasGasAppliances = checked;
+                    })
+                  }
+                />
+                <span style={{ marginLeft: 8 }}>
+                  {state.hasGasAppliances ? "Yes" : "No"}
+                </span>
+              </Form.Item>
+            </Col>
+            <Col>
+              <Form.Item
+                label="EV Charging at Home"
+                tooltip="Tesla Model Y or similar (~7.6kW Level 2)"
+              >
+                <Switch
+                  checked={state.hasEV}
+                  onChange={(checked) =>
+                    updateState((s) => {
+                      s.hasEV = checked;
+                    })
+                  }
+                />
+                <span style={{ marginLeft: 8 }}>
+                  {state.hasEV ? "Model Y" : "No EV"}
+                </span>
               </Form.Item>
             </Col>
           </Row>
-          <Form.Item label="Rate Plan" required>
-            <Row gutter={16} align="middle">
-              <Col span={14}>
+        </Form>
+
+        <Row gutter={16} style={{ marginTop: 16 }}>
+          <Col>
+            <Statistic
+              title="Est. Monthly Usage"
+              value={estimatedMonthlyKwh}
+              suffix="kWh"
+              precision={0}
+            />
+          </Col>
+          <Col>
+            <Statistic
+              title="Season"
+              value={season === "winter" ? "❄️ Winter" : "☀️ Summer"}
+            />
+          </Col>
+        </Row>
+      </Card>
+
+      <Card title="Select Rate Plans" style={{ marginBottom: 24 }}>
+        <Form layout="vertical">
+          <Row gutter={24}>
+            <Col span={12}>
+              <Form.Item label="Rate Plan 1">
                 <RatePlanSelector
                   byDate={state.date}
                   value={ratePlanSelected}
@@ -183,15 +255,18 @@ function RegionalElectricityPatterns() {
                     })
                   }
                 />
-              </Col>
-              <Col>
-                <Link to={`/detail/${ratePlanSelected}`}>Details</Link>
-              </Col>
-            </Row>
-          </Form.Item>
-          <Form.Item label="Other Rate Plan">
-            <Row gutter={16} align="middle">
-              <Col span={14}>
+                {ratePlanSelected && (
+                  <Link
+                    to={`/detail/${ratePlanSelected}`}
+                    style={{ marginLeft: 8 }}
+                  >
+                    View Details →
+                  </Link>
+                )}
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item label="Rate Plan 2 (Optional)">
                 <RatePlanSelector
                   byDate={state.date}
                   value={ratePlan2Selected}
@@ -202,92 +277,43 @@ function RegionalElectricityPatterns() {
                     })
                   }
                 />
-              </Col>
-              <Col>
-                <Link to={`/detail/${ratePlan2Selected}`}>Details</Link>
-              </Col>
-            </Row>
-          </Form.Item>
-
-          <Form.Item label="Electricity Use Pattern">
-            <Segmented
-              value={state.region}
-              onChange={(value) =>
-                updateState((state) => {
-                  state.region = value;
-                })
-              }
-              options={usuageSparklines}
-            />
-          </Form.Item>
+                {ratePlan2Selected && (
+                  <Link
+                    to={`/detail/${ratePlan2Selected}`}
+                    style={{ marginLeft: 8 }}
+                  >
+                    View Details →
+                  </Link>
+                )}
+              </Form.Item>
+            </Col>
+          </Row>
         </Form>
-      </div>
-      <SeasonBlurb region={state.region} season={season} />
-      {season === "winter" ? (
-        <>
-          <div>
-            <h3>Winter Insights</h3>
-            <ul>
-              <li>
-                <strong>Peak Usage:</strong> Texas shows 50-75% higher peak
-                demand than New England due to electric heating
-              </li>
-              <li>
-                <strong>EV Impact:</strong> California's overnight charging adds
-                6-7 kW but occurs during off-peak hours
-              </li>
-              <li>
-                <strong>Grid Impact:</strong> Electric heating creates sustained
-                evening loads that challenge grid capacity
-              </li>
-              <li>
-                <strong>Cost Advantage:</strong> California EV charging happens
-                when rates are lowest (overnight)
-              </li>
-            </ul>
-          </div>
-        </>
-      ) : (
-        <>
-          <div>
-            <h3>Summer Insights</h3>
-            <ul>
-              <li>
-                <strong>Texas Crisis:</strong> Summer peaks can reach 12+ kW per
-                home during heat waves—higher than winter
-              </li>
-              <li>
-                <strong>Peak Timing:</strong> AC loads peak 2-8pm, exactly when
-                solar production drops and grid stress is highest
-              </li>
-              <li>
-                <strong>New England Flip:</strong> Now shows electric load for
-                cooling, but still moderate vs. Texas extremes
-              </li>
-              <li>
-                <strong>California Strategy:</strong> EV owners can use TOU
-                rates effectively—charge at night, minimize AC during peak
-              </li>
-            </ul>
-          </div>
-        </>
-      )}
-      <Row gutter={36}>
-        {ratePlan && (
-          <Col span={6}>
-            <RatePlanSummary
-              ratePlan={ratePlan}
-              usage={usagePlan1}
-              energyUsage={energyUsage}
+      </Card>
+
+      <Row gutter={24}>
+        {ratePlan && "total" in bill1 && (
+          <Col span={12}>
+            <BillBreakdown
+              rateName={ratePlan.rateName}
+              utilityName={ratePlan.utilityName}
+              effectiveDate={ratePlan.effectiveDate?.format("YYYY-MM-DD")}
+              endDate={ratePlan.endDate?.format("YYYY-MM-DD")}
+              breakdown={bill1}
             />
           </Col>
         )}
-        {ratePlan2 && (
-          <Col span={6}>
-            <RatePlanSummary
-              ratePlan={ratePlan2}
-              usage={usagePlan2}
-              energyUsage={energyUsage}
+        {ratePlan2 && "total" in bill2 && (
+          <Col span={12}>
+            <BillBreakdown
+              rateName={ratePlan2.rateName}
+              utilityName={ratePlan2.utilityName}
+              effectiveDate={ratePlan2.effectiveDate?.format("YYYY-MM-DD")}
+              endDate={ratePlan2.endDate?.format("YYYY-MM-DD")}
+              breakdown={bill2 as PriceBreakdown}
+              comparison={
+                ratePlan && "total" in bill1 ? bill1.total : undefined
+              }
             />
           </Col>
         )}
@@ -296,163 +322,238 @@ function RegionalElectricityPatterns() {
   );
 }
 
-function SeasonBlurb({
-  season,
-  region,
-}: {
-  season: SynthData["season"];
-  region: SynthData["region"];
-}) {
-  const key = `${season}/${region}` as const;
-
-  const capitalSeason = capitalize(season);
-
-  switch (key) {
-    case "winter/New England":
-      return (
-        <div>
-          <h3>{capitalSeason} in New England (Gas Heat)</h3>
-          <p>
-            Two distinct peaks for cooking and activities. No heating load on
-            electric grid since homes use natural gas or oil furnaces.
-          </p>
-        </div>
-      );
-    case "winter/Texas":
-      return (
-        <div>
-          <h3>Texas (Electric Heat)</h3>
-          <p>
-            Higher overall usage with elevated morning and evening peaks. Many
-            homes use electric heat pumps or resistance heating.
-          </p>
-        </div>
-      );
-    case "winter/Southern California":
-      return (
-        <div>
-          <h3>Southern California + EV</h3>
-          <p>
-            Minimal heating needs create flat daytime profile. Large overnight
-            spike from EV charging (7.2 kW Level 2 charger).
-          </p>
-        </div>
-      );
-    case "summer/New England":
-      return (
-        <div>
-          <h3>New England (Moderate AC)</h3>
-          <p>
-            Afternoon AC load creates new peak (1-8pm). Less extreme than
-            heating season since gas furnaces don't help in summer.
-          </p>
-        </div>
-      );
-    case "summer/Texas":
-      return (
-        <div>
-          <h3>Texas (Extreme Cooling)</h3>
-          <p>
-            Massive cooling loads dominate. Peak usage 2-3x higher than winter
-            as AC runs continuously during brutal heat.
-          </p>
-        </div>
-      );
-    case "summer/Southern California":
-      return (
-        <div>
-          <h3>Southern California + EV</h3>
-          <p>
-            Moderate afternoon AC peak plus overnight EV charging. Mild climate
-            keeps cooling needs reasonable.
-          </p>
-        </div>
-      );
-  }
+function formatCurrency(val: number) {
+  return val.toLocaleString([], { style: "currency", currency: "USD" });
 }
 
-function Sparkline({
-  season,
-  region,
-  selected,
-  targetUsage,
+function BillBreakdown({
+  rateName,
+  utilityName,
+  effectiveDate,
+  endDate,
+  breakdown,
+  comparison,
 }: {
-  season: SynthData["season"];
-  region: SynthData["region"];
-  selected: boolean;
-  targetUsage?: number;
+  rateName: string;
+  utilityName: string;
+  effectiveDate?: string;
+  endDate?: string;
+  breakdown: PriceBreakdown;
+  comparison?: number;
 }) {
-  const { data: synthData } = useSynthData({ season, region, targetUsage });
+  const {
+    total,
+    fixedCharge,
+    energyCharge,
+    demandCharge,
+    flatDemandCharge,
+    coincidentDemandCharge,
+    minChargeAdjustment,
+    kWh,
+    peakDemand_kW,
+  } = breakdown;
 
-  // Vega-Lite specification
-  const spec: VegaEmbedProps["spec"] = {
-    $schema: "https://vega.github.io/schema/vega-lite/v6.json",
-    width: 160,
-    height: 150,
-    data: { values: synthData ?? [] },
-    transform: [
-      {
-        calculate: "datetime(0, 0, 1,datum.hour, 0, 0, 0)",
-        as: "datetime",
-      },
-    ],
-    mark: {
-      type: "bar",
-      point: false,
-      strokeWidth: 3,
-      interpolate: "natural",
-      color: selected ? undefined : "lightgray",
+  const rows = [
+    { label: "Fixed Charge", value: fixedCharge, color: "#64748b" },
+    { label: "Energy Charge", value: energyCharge, color: "#2563eb" },
+    { label: "TOU Demand", value: demandCharge, color: "#f97316" },
+    { label: "Flat Demand", value: flatDemandCharge, color: "#f59e0b" },
+    {
+      label: "Coincident Demand",
+      value: coincidentDemandCharge,
+      color: "#a855f7",
     },
-    encoding: {
-      x: {
-        field: "datetime",
-        type: "temporal",
-        timeUnit: "hours",
-        title: "Hour of Day",
-        axis: {
-          format: "%H",
-          tickCount: 8,
-        },
-        scale: {
-          domain: [0, 24],
-        },
-      },
-      y: {
-        field: "usage_kw",
-        type: "quantitative",
-        title: "Electricity Usage (kW)",
-        scale: { zero: true },
-      },
-      tooltip: [
-        { field: "hour", type: "quantitative", title: "Hour" },
-        { field: "region", type: "nominal", title: "Region" },
-        {
-          field: "usage_kw",
-          type: "quantitative",
-          title: "Usage (kW)",
-          format: ".2f",
-        },
-      ],
-    },
-    config: {
-      view: { stroke: null },
-      axis: { grid: true },
-    },
-  };
+    { label: "Min Charge Adj.", value: minChargeAdjustment, color: "#22c55e" },
+  ].filter((row) => row.value > 0);
 
-  const chartRef = useRef<HTMLDivElement>(null);
-  useVegaEmbed({
-    ref: chartRef,
-    spec,
-    options: { mode: "vega-lite", actions: false },
-  });
+  const formatDate = (d?: string) => (d ? dayjs(d).format("MMM YYYY") : null);
+  const dateRange = [formatDate(effectiveDate), formatDate(endDate)]
+    .filter(Boolean)
+    .join(" – ");
+
+  const diff = comparison !== undefined ? total - comparison : undefined;
 
   return (
-    <div style={{ width: 200 }}>
-      <div ref={chartRef} />
-      <div>{region} </div>
+    <div
+      style={{
+        border: "2px solid #000",
+        background: "#fff",
+        padding: 16,
+        fontFamily: "system-ui",
+      }}
+    >
+      <div
+        style={{
+          borderBottom: "8px solid #000",
+          paddingBottom: 4,
+          marginBottom: 8,
+        }}
+      >
+        <h2 style={{ fontSize: 24, fontWeight: 900, margin: 0 }}>Bill Facts</h2>
+        <p style={{ fontSize: 14, color: "#666", margin: 0 }}>{rateName}</p>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <span style={{ fontSize: 12, color: "#999" }}>{utilityName}</span>
+          {dateRange && (
+            <span style={{ fontSize: 11, color: "#999", fontStyle: "italic" }}>
+              {dateRange}
+            </span>
+          )}
+        </div>
+      </div>
+
+      <div
+        style={{
+          borderBottom: "1px solid #000",
+          padding: "8px 0",
+          fontSize: 14,
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between" }}>
+          <span>Total Usage</span>
+          <strong>{kWh.toLocaleString()} kWh</strong>
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between" }}>
+          <span>Peak Demand</span>
+          <strong>{peakDemand_kW.toFixed(1)} kW</strong>
+        </div>
+      </div>
+
+      <div style={{ borderBottom: "4px solid #000", padding: "8px 0" }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "baseline",
+          }}
+        >
+          <span style={{ fontSize: 18, fontWeight: 900 }}>Total Due</span>
+          <span style={{ fontSize: 32, fontWeight: 900 }}>
+            {formatCurrency(total)}
+          </span>
+        </div>
+        {diff !== undefined && (
+          <div
+            style={{
+              textAlign: "right",
+              fontSize: 14,
+              color: diff > 0 ? "#dc2626" : "#16a34a",
+            }}
+          >
+            {diff > 0
+              ? `+${formatCurrency(diff)} more`
+              : `${formatCurrency(Math.abs(diff))} savings`}
+          </div>
+        )}
+      </div>
+
+      <div style={{ borderBottom: "1px solid #000", padding: "4px 0" }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            fontSize: 12,
+            fontWeight: 700,
+          }}
+        >
+          <span>Charge Type</span>
+          <span>Amount</span>
+        </div>
+      </div>
+
+      <div style={{ borderBottom: "4px solid #000" }}>
+        {rows.map((row, idx) => (
+          <div
+            key={row.label}
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              padding: "6px 0",
+              fontSize: 14,
+              borderBottom: idx < rows.length - 1 ? "1px solid #eee" : "none",
+            }}
+          >
+            <span>{row.label}</span>
+            <span>{formatCurrency(row.value)}</span>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ paddingTop: 8 }}>
+        <p style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>
+          % of Total Bill
+        </p>
+        <div
+          style={{
+            display: "flex",
+            height: 24,
+            borderRadius: 4,
+            overflow: "hidden",
+          }}
+        >
+          {rows.map((row) => {
+            const pct = (row.value / total) * 100;
+            if (pct < 2) return null;
+            return (
+              <div
+                key={row.label}
+                style={{
+                  width: `${pct}%`,
+                  backgroundColor: row.color,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#fff",
+                  fontSize: 11,
+                }}
+                title={`${row.label}: ${pct.toFixed(1)}%`}
+              >
+                {pct > 12 ? `${pct.toFixed(0)}%` : ""}
+              </div>
+            );
+          })}
+        </div>
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: "4px 12px",
+            marginTop: 8,
+            fontSize: 11,
+          }}
+        >
+          {rows.map((row) => (
+            <div
+              key={row.label}
+              style={{ display: "flex", alignItems: "center", gap: 4 }}
+            >
+              <div
+                style={{ width: 8, height: 8, backgroundColor: row.color }}
+              />
+              <span>{row.label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div
+        style={{
+          marginTop: 12,
+          paddingTop: 8,
+          borderTop: "1px solid #ccc",
+          fontSize: 12,
+          color: "#666",
+        }}
+      >
+        Avg. rate: {((total / kWh) * 100).toFixed(2)}¢/kWh
+      </div>
     </div>
   );
 }
 
-export default RegionalElectricityPatterns;
+export default ComparePlans;
