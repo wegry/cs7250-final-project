@@ -4,7 +4,7 @@ import { WholesalePrice, type SynthData } from "./schema";
 
 /** For select list */
 export const selectList = `
-  SELECT DISTINCT ON (concat_ws(' / ', utilityName, rateName ))
+  SELECT DISTINCT ON (utilityName, rateName)
     _id as value
     , concat_ws(' / ', utilityName, rateName ) as label
   FROM flattened.usurdb
@@ -18,9 +18,9 @@ export async function selectListForDate(date: Dayjs) {
   const stmt = await (
     await conn
   ).prepare(`
-  SELECT
+  SELECT DISTINCT ON (utilityName, rateName)
     _id as value
-    , concat_ws('/', utilityName, rateName, _id) as label
+    , concat_ws('/', utilityName, rateName) as label
   FROM flattened.usurdb
   WHERE
     (enddate IS NULL OR
