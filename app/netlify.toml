@@ -11,7 +11,11 @@
 [[headers]]
   for = "/*.duckdb"
   [headers.values]
-    # Cache for 1 hour, then must check with server
     Cache-Control = "public, max-age=3600, must-revalidate"
-    # Enable range requests for partial loading
     Accept-Ranges = "bytes"
+
+[[redirects]]
+  from = "/tiles/*"
+  to = "https://tile.openstreetmap.org/:splat"
+  status = 200
+  force = true

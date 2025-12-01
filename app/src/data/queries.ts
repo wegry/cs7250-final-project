@@ -192,3 +192,34 @@ export async function getWholesalePrices(
     return null;
   }
 }
+
+/**
+ * Service territory lookup by EIA utility number
+ * Returns distinct county/state pairs for a utility
+ */
+export async function serviceTerritoryByEiaId(eiaId: number | string) {
+  const stmt = await (
+    await conn
+  ).prepare(`
+    SELECT DISTINCT "County" AS county, "State" AS state
+    FROM flattened.eia861_service_territory
+    WHERE "Utility Number" = ?
+  `);
+  const result = await stmt.query(eiaId);
+  return result;
+}
+
+/**
+ * Fallback lookup by utility name (case-insensitive)
+ */
+export async function serviceTerritoryByUtilityName(name: string) {
+  const stmt = await (
+    await conn
+  ).prepare(`
+    SELECT DISTINCT "County" AS county, "State" AS state
+    FROM flattened.eia861_service_territory
+    WHERE lower("Utility Name") = lower(?)
+  `);
+  const result = await stmt.query(name);
+  return result;
+}

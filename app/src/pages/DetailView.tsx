@@ -1,6 +1,5 @@
 import {
   Button,
-  Card,
   Col,
   Collapse,
   DatePicker,
@@ -37,7 +36,7 @@ import { RatePlanTimeline } from "../components/RatePlanTimeline";
 import { ScheduleHeatmap } from "../components/Schedule";
 import { list } from "../formatters";
 import { EnergyTiersChart } from "../charts/EnergyTiersChart";
-
+import CountyMap from "../components/CountyMap";
 const DATE_PARAM = "date";
 
 const DESCRIPTIONS = {
@@ -278,44 +277,7 @@ export default function DetailView() {
             onDateChange={onDateChange}
           />
         </DetailSection>
-        <Card>
-          <div
-            style={{
-              width: "384px",
-              height: "250px",
-              backgroundColor: "#f0f0f0",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-            role="img"
-            aria-label="Map of United States showing counties served by this utility highlighted in color against a base map"
-          >
-            <span
-              style={{
-                color: "#999",
-                textAlign: "center",
-                display: "block",
-                padding: "8px",
-                maxWidth: "92%",
-                lineHeight: 1.4,
-              }}
-            >
-              Map of United States showing counties served by this utility
-              highlighted in color against a base map
-            </span>
-          </div>
-          <p
-            style={{
-              textAlign: "center",
-              marginTop: "8px",
-              marginBottom: "0",
-              color: "#666",
-            }}
-          >
-            Counties covered by Utility
-          </p>
-        </Card>
+        <CountyMap selectedPlan={selectedPlan} />
       </div>
       <Col sm={10} md={10} lg={6}>
         <RatePlanTimeline ratePlan={selectedPlan} />

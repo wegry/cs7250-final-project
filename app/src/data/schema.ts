@@ -192,3 +192,10 @@ export const WholesalePrice = z.object({
 });
 
 export type WholesalePrice = z.infer<typeof WholesalePrice>;
+
+export const BASummary = z.object({
+  utilities: z.array(z.string()),
+  name: z.string(),
+});
+export type BASummary = z.infer<typeof BASummary>;
+export const BASummaryArraySchema = z.array(BASummary);
