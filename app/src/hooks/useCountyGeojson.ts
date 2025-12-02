@@ -16,13 +16,10 @@ const MultiPolygonGeometrySchema = z.object({
   coordinates: z.array(PolygonCoordinatesSchema),
 });
 
-const CountyPropertiesSchema = z
-  .object({
-    name: z.string().optional(),
-    stusps: z.string().optional(),
-  })
-  .loose();
-
+const CountyPropertiesSchema = z.object({
+  Name: z.string(),
+  STUSPS: z.string(),
+});
 const CountyFeatureSchema = z.object({
   type: z.literal("Feature"),
   properties: CountyPropertiesSchema.nullable(),
@@ -114,8 +111,9 @@ async function fetchGeoJSON(): Promise<CountyGeoJSON> {
   if (!res.ok) throw new Error(`Failed to fetch GeoJSON: ${res.status}`);
   const raw: unknown = await res.json();
 
-  const { data, error } = RawGeoJSONSchema.safeParse(raw);
-  if (!data) {
+  const { data, error } = await RawGeoJSONSchema.safeParseAsync(raw);
+
+  if (error) {
     console.error(error);
     throw error;
   }
@@ -146,12 +144,12 @@ export function computeBBoxAndFeaturesByState(
 
   const statesSet = new Set(statesArray);
   const relevantFeatures = geojson.features.filter((f) =>
-    statesSet.has(f.properties?.stusps ?? ""),
+    statesSet.has(f.properties?.STUSPS ?? ""),
   );
 
   const byState: Record<string, CountyFeature[]> = {};
   for (const f of relevantFeatures) {
-    const st = f.properties?.stusps ?? "";
+    const st = f.properties?.STUSPS ?? "";
     if (!byState[st]) byState[st] = [];
     byState[st].push(f);
   }

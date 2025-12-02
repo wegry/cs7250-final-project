@@ -87,7 +87,10 @@ export default function DetailView() {
         children: selectedPlan?.rateName,
         span: { md: 3, lg: 2 },
       },
-      { label: "States", children: list.format(selectedPlan?.states ?? []) },
+      {
+        label: "Utility Service Territory",
+        children: list.format(selectedPlan?.states ?? []),
+      },
       {
         label: "Supercedes",
         children: selectedPlan?.supercedes ? (
@@ -177,7 +180,7 @@ export default function DetailView() {
   return (
     <PageBody className={s.main}>
       <Form layout="horizontal" className={s.form}>
-        <Row gutter={16} className={s.header}>
+        <Row gutter={[16, 8]} className={s.header}>
           <Col>
             <h1>Details</h1>
           </Col>
@@ -247,6 +250,7 @@ export default function DetailView() {
         </DetailSection>
 
         <DetailSection
+          breakBefore
           description={DESCRIPTIONS.energy}
           hide={selectedPlan?.energyWeekdaySched == null}
           title="Energy"
@@ -293,10 +297,8 @@ export default function DetailView() {
           />
         </DetailSection>
         <CountyMap selectedPlan={selectedPlan} />
-      </div>
-      <Col sm={10} md={10} lg={6}>
         <RatePlanTimeline ratePlan={selectedPlan} />
-      </Col>
+      </div>
     </PageBody>
   );
 }

@@ -12,6 +12,7 @@ import { MenuOutlined } from "@ant-design/icons";
 import * as s from "./App.module.css";
 import "./global.css";
 import { Footer } from "./components/Footer";
+import { useBodyResizeObserver } from "./hooks/useBodyResizeObserver";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -24,17 +25,9 @@ const queryClient = new QueryClient({
 
 function Layout() {
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 700);
   const location = useLocation();
 
-  useEffect(() => {
-    const observer = new ResizeObserver((entries) => {
-      const width = entries[0]!.contentRect.width;
-      setIsMobile(width < 700);
-    });
-    observer.observe(document.body);
-    return () => observer.disconnect();
-  }, []);
+  const { isMobile } = useBodyResizeObserver();
 
   // Close drawer on navigation
   useEffect(() => {

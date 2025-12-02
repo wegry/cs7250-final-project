@@ -79,7 +79,7 @@ export function CountyMapSvg({
           ))}
           {/* County fills */}
           {stFeatures.map((f: CountyFeature, idx: number) => {
-            const countyName = f.properties?.name ?? "";
+            const countyName = f.properties?.Name ?? "";
             const key = `${st}:${normalizeCountyName(countyName)}`;
             const isHighlighted = highlightedCounties.has(key);
             const isHovered = hovered === `${st}:${countyName}`;

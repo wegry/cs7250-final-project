@@ -2,8 +2,11 @@ import { orderBy } from "es-toolkit";
 import { useMemo } from "react";
 import type { RatePlan } from "../data/schema";
 import { Timeline } from "antd";
+import { DetailSection } from "./DetailSection";
+import { useBodyResizeObserver } from "../hooks/useBodyResizeObserver";
 
 export function RatePlanTimeline({ ratePlan }: { ratePlan?: RatePlan | null }) {
+  const { isMobile } = useBodyResizeObserver();
   const timelineEntries = useMemo(() => {
     const values = Object.entries({
       "Plan End": { date: ratePlan?.endDate, color: "red" },
@@ -14,24 +17,32 @@ export function RatePlanTimeline({ ratePlan }: { ratePlan?: RatePlan | null }) {
         { color: "gray", ...x },
       ]) ?? [],
     );
-    return orderBy(values, [([, v]) => v.date], ["desc"]).flatMap(([k, v]) => {
-      if (v.date == null) {
-        return [];
-      }
-      return {
-        label: k,
-        children: v.date.format("ll"),
-        color: v.color,
-      };
-    });
+    return orderBy(values, [([, v]) => v.date ?? 0], ["desc"]).flatMap(
+      ([k, v]) => {
+        if (v.date == null) {
+          return [];
+        }
+        return {
+          label: k,
+          children: v.date.format("ll"),
+          color: v.color,
+        };
+      },
+    );
   }, [ratePlan]);
 
   return (
-    timelineEntries.length > 0 && (
-      <>
-        <h4>Timeline</h4>
-        <Timeline mode="left" items={timelineEntries} />
-      </>
-    )
+    <DetailSection
+      breakBefore
+      description={null}
+      hide={timelineEntries.length === 0}
+      title="Timeline"
+    >
+      <Timeline
+        orientation={isMobile ? "vertical" : "horizontal"}
+        mode="start"
+        items={timelineEntries}
+      />
+    </DetailSection>
   );
 }

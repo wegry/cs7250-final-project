@@ -6,7 +6,9 @@ export function DetailSection({
   children,
   description,
   hide,
+  breakBefore,
 }: {
+  breakBefore?: boolean;
   children: ReactNode[] | ReactNode;
   title: string;
   description: ReactNode;
@@ -18,6 +20,7 @@ export function DetailSection({
 
   return (
     <>
+      {breakBefore && <div className={s.breakBefore} />}
       <div className={s.infoBlock}>
         <h2>{title}</h2>
         {description}

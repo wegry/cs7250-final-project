@@ -62,7 +62,7 @@ async function fetchUtilitiesByZip(zipCode: string): Promise<UtilityResult[]> {
       FROM flattened.usurdb
       QUALIFY ROW_NUMBER() OVER (PARTITION BY eiaId ORDER BY is_default DESC, effectiveDate DESC) = 1
     )
-    SELECT DISTINCT
+    SELECT DISTINCT ON (z.zipcode, est."Utility Number")
       est."Utility Name",
       est."Utility Number",
       est.State,
@@ -222,7 +222,7 @@ export function ZipSearch() {
             tableLayout="fixed"
             loading={isLoading}
             pagination={{
-              pageSize: 20,
+              pageSize: 10,
               showSizeChanger: true,
               pageSizeOptions: ["10", "20", "50", "100"],
               showTotal: (total, range) =>

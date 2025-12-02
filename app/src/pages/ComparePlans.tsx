@@ -25,9 +25,9 @@ import {
 import s from "./ComparePlans.module.css";
 import { PageBody } from "../components/PageBody";
 
-const DATE_MIN = dayjs("2024-01-01");
-const DATE_DEFAULT = dayjs().clone().set("year", 2024).set("month", 0);
-const DATE_MAX = dayjs("2024-12-31");
+const DATE_MIN = dayjs("2025-01-01");
+const DATE_DEFAULT = dayjs().clone().set("year", 2025);
+const DATE_MAX = dayjs("2025-12-31");
 
 export const RATE_PLAN_QUERY_PARAM = "rate-plan";
 const RATE_PLAN_2_QUERY_PARAM = "other-rate-plan";

@@ -2,9 +2,9 @@ import styles from "./Footer.module.css";
 
 const dataSources = [
   {
-    name: "EIA 861 Annual",
+    name: "EIA 861 Annual (2024)",
     url: "https://www.eia.gov/electricity/data/eia861/",
-    note: "Dynamic Pricing table",
+    note: "Service Territory table",
   },
   {
     name: "US Utility Rate DB (USURDB)",
@@ -12,7 +12,7 @@ const dataSources = [
     note: "OpenEI",
   },
   {
-    name: "Census TIGER/Line",
+    name: "Census TIGER/Line (2020)",
     url: "https://www.census.gov/geographies/mapping-files/time-series/geo/cartographic-boundary.html",
     note: "State & county boundaries",
   },
@@ -25,6 +25,11 @@ const dataSources = [
     name: "EIA Wholesale Pricing",
     url: "https://www.eia.gov/electricity/wholesale/",
     note: "2020–2024 data",
+  },
+  {
+    name: "GitHub (@scpike)",
+    url: "https://github.com/scpike/us-state-county-zip/blob/a8fcfcbc5978d40b2105b9b8a8151ad54b5aad8d/geo-data.csv",
+    note: "County/zip code mappings",
   },
 ];
 
