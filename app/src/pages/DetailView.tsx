@@ -38,6 +38,7 @@ import { list } from "../formatters";
 import { EnergyTiersChart } from "../charts/EnergyTiersChart";
 import CountyMap from "../components/CountyMap";
 import { RATE_PLAN_QUERY_PARAM } from "./ComparePlans";
+import { PageBody } from "../components/PageBody";
 const DATE_PARAM = "date";
 
 const DESCRIPTIONS = {
@@ -174,7 +175,7 @@ export default function DetailView() {
   );
 
   return (
-    <main className={s.main}>
+    <PageBody className={s.main}>
       <Form layout="horizontal" className={s.form}>
         <Row gutter={16} className={s.header}>
           <Col>
@@ -296,6 +297,6 @@ export default function DetailView() {
       <Col sm={10} md={10} lg={6}>
         <RatePlanTimeline ratePlan={selectedPlan} />
       </Col>
-    </main>
+    </PageBody>
   );
 }

@@ -23,6 +23,7 @@ import {
   estimateMonthlyKwh,
 } from "../data/usage-estimator";
 import s from "./ComparePlans.module.css";
+import { PageBody } from "../components/PageBody";
 
 const DATE_MIN = dayjs("2024-01-01");
 const DATE_DEFAULT = dayjs().clone().set("year", 2024).set("month", 0);
@@ -109,7 +110,7 @@ function ComparePlans() {
   });
 
   return (
-    <div className={s.main}>
+    <PageBody className={s.main}>
       <div>
         <h1>Compare Rate Plans</h1>
         <p>
@@ -318,7 +319,7 @@ function ComparePlans() {
           </Col>
         )}
       </Row>
-    </div>
+    </PageBody>
   );
 }
 

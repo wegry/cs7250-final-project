@@ -1,9 +1,7 @@
-.container {
-  padding: 20px;
-  max-width: 1200px;
-  margin: 0 auto;
+.searchSection {
+  margin-bottom: 20px;
 }
 
-.searchSection {
-  margin-bottom: 30px;
+.container h1 {
+  margin-bottom: 24px;
 }
