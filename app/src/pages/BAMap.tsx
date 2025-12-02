@@ -1,16 +1,33 @@
 import { useRef, useEffect, useState } from "react";
 import { Spin, Alert, Card, Typography, Table } from "antd";
-import { createLeafletMap, destroyLeafletMap } from "../charts/baMapSimple";
-import type L from "leaflet";
 import { Link } from "react-router-dom";
 import { conn } from "../data/duckdb";
+import * as d3 from "d3";
+import type { FeatureCollection } from "geojson";
 import * as s from "./DetailView.module.css";
 
 const { Title, Paragraph } = Typography;
 
+interface BASummary {
+  name: string;
+  zoneName: string;
+  totalPlans: number;
+  numUtilities: number;
+}
+
+interface BAProperties {
+  name?: string;
+  BA_NAME?: string;
+  BA_CODE?: string;
+  zoneName?: string;
+  zone_name?: string;
+  code?: string;
+  baSummary?: BASummary;
+}
+
 export default function BAMap() {
-  const mapRef = useRef<HTMLDivElement>(null);
-  const leafletMapRef = useRef<L.Map | null>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
+  const tooltipRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [utilities, setUtilities] = useState<any[]>([]);
@@ -18,91 +35,230 @@ export default function BAMap() {
   const [utilsLoading, setUtilsLoading] = useState(false);
 
   useEffect(() => {
-    if (!mapRef.current) return;
+    if (!svgRef.current) return;
 
-    setLoading(true);
+    const svg = d3.select(svgRef.current);
+    const width = svgRef.current.clientWidth || 900;
+    const height = 600;
 
-    createLeafletMap(mapRef.current, {
-      center: [39.8283, -98.5795],
-      zoom: 4,
-      geojsonUrl: "/geodata/ba-data.geojson", // Your GeoJSON file path
-      baSummaryUrl: "/ba-summary.json",
-      style: {
-        fillColor: "#3388ff",
-        fillOpacity: 0.3,
-        color: "#2c3e50",
-        weight: 2,
-        opacity: 0.8,
-      },
-      hoverStyle: {
-        fillOpacity: 0.6,
-        weight: 3,
-      },
-      // Tooltip receives merged properties. If BA summary was found it's available at `props.baSummary`.
-      tooltipFormatter: (props) => {
-        const ba = props.baSummary;
-        const name =
-          props.name || props.BA_NAME || props.zoneName || "Unknown BA";
-        const code = props.code || props.BA_CODE || "";
+    svg.attr("viewBox", `0 0 ${width} ${height}`);
 
-        const summaryLines = [];
-        if (ba && typeof ba.totalPlans !== "undefined")
-          summaryLines.push(`Plans: ${ba.totalPlans}`);
-        if (ba && typeof ba.numUtilities !== "undefined")
-          summaryLines.push(`Utilities: ${ba.numUtilities}`);
+    // CONUS Albers projection with fixed parameters
+    const projection = d3
+      .geoAlbers()
+      .rotate([96, 0])
+      .center([0, 38.5])
+      .parallels([29.5, 45.5])
+      .scale(1100)
+      .translate([width / 2, height / 2]);
 
-        return `
-          <div style="padding:8px;">
-            <strong>${name}</strong>
-            ${code ? `<br/>Code: ${code}` : ""}
-            ${summaryLines.length ? `<br/>${summaryLines.join("<br/>")}` : ""}
-          </div>
-        `;
-      },
-      onFeatureClick: (props) => {
-        // Prefer short BA code from baSummary.name (e.g., 'ISONE', 'PJM').
-        // Fallback to the last segment of zoneName (e.g., 'US-NE-ISNE' -> 'ISNE').
-        const baShortFromSummary = props?.baSummary?.name;
-        const baShortFromZone = props?.zoneName
-          ? String(props.zoneName).split("-").slice(-1)[0]
-          : null;
-        const baShort =
-          baShortFromSummary ||
-          baShortFromZone ||
-          props.name ||
-          props.BA_NAME ||
-          props.BA_CODE ||
-          props.zone_name ||
-          null;
+    const path = d3.geoPath().projection(projection);
 
-        // Display a friendly name (prefer full zoneName or name)
-        const baDisplay =
-          props?.baSummary?.zoneName ||
-          props?.zoneName ||
-          props?.name ||
-          "Unknown BA";
+    // Tooltip
+    const tooltip = d3.select(tooltipRef.current);
 
-        setSelectedBA(baDisplay);
-        // Pass the short code (or fallback) to the DB matcher which expects short codes like 'ISONE'
-        fetchUtilitiesForBA(baShort);
-      },
-    })
-      .then((map) => {
-        leafletMapRef.current = map;
+    async function loadMap() {
+      setLoading(true);
+      try {
+        // Load GeoJSON and BA summary in parallel
+        const [geojson, baSummaryData] = await Promise.all([
+          d3.json<FeatureCollection>("/geodata/ba-data.geojson"),
+          d3
+            .json<BASummary[]>("/ba-summary.json")
+            .catch(() => [] as BASummary[]),
+        ]);
+
+        if (!geojson) throw new Error("Failed to load GeoJSON");
+
+        // Create lookup map for BA summaries
+        const baSummaryMap = new Map<string, BASummary>();
+        if (baSummaryData) {
+          baSummaryData.forEach((ba) => {
+            baSummaryMap.set(ba.name, ba);
+            if (ba.zoneName) baSummaryMap.set(ba.zoneName, ba);
+          });
+        }
+
+        // Rewind polygon coordinates to correct winding order for D3
+        // D3 expects counterclockwise exterior rings (RFC 7946)
+        function rewindRing(ring: number[][]) {
+          // Calculate signed area to determine winding
+          let area = 0;
+          const n = ring.length;
+          for (let i = 0; i < n; i++) {
+            const j = (i + 1) % n;
+            const pi = ring[i];
+            const pj = ring[j];
+            if (pi && pj) {
+              area += (pi[0] ?? 0) * (pj[1] ?? 0);
+              area -= (pj[0] ?? 0) * (pi[1] ?? 0);
+            }
+          }
+          // If area > 0, ring is clockwise - reverse it for exterior
+          if (area > 0) {
+            ring.reverse();
+          }
+          return ring;
+        }
+
+        function rewindPolygon(coords: number[][][]) {
+          // First ring is exterior (should be counterclockwise)
+          if (coords[0]) rewindRing(coords[0]);
+          // Subsequent rings are holes (should be clockwise - opposite)
+          for (let i = 1; i < coords.length; i++) {
+            const ring = coords[i];
+            if (!ring) continue;
+            let area = 0;
+            const n = ring.length;
+            for (let j = 0; j < n; j++) {
+              const k = (j + 1) % n;
+              const pj = ring[j];
+              const pk = ring[k];
+              if (pj && pk) {
+                area += (pj[0] ?? 0) * (pk[1] ?? 0);
+                area -= (pk[0] ?? 0) * (pj[1] ?? 0);
+              }
+            }
+            // Holes should be clockwise (area < 0 after standard calc means CCW, so reverse)
+            if (area < 0) {
+              ring.reverse();
+            }
+          }
+          return coords;
+        }
+
+        function rewindGeometry(geometry: any) {
+          if (!geometry) return geometry;
+          if (geometry.type === "Polygon") {
+            rewindPolygon(geometry.coordinates);
+          } else if (geometry.type === "MultiPolygon") {
+            geometry.coordinates.forEach((poly: number[][][]) =>
+              rewindPolygon(poly),
+            );
+          }
+          return geometry;
+        }
+
+        // Filter out Alaska and Hawaii by zone name pattern
+        let conusFeatures = geojson.features.filter((f) => {
+          if (!f.geometry) return false;
+          const props = f.properties as BAProperties;
+          const zoneName = props?.zoneName || props?.zone_name || "";
+          if (zoneName.startsWith("US-AK-") || zoneName.startsWith("US-HI-")) {
+            return false;
+          }
+          return true;
+        });
+
+        // Rewind all geometries to fix winding order
+        conusFeatures.forEach((f) => {
+          rewindGeometry(f.geometry);
+        });
+
+        // Sort by area descending so smaller features render on top
+        conusFeatures.sort((a, b) => {
+          const areaA = path.area(a as any) || 0;
+          const areaB = path.area(b as any) || 0;
+          return areaB - areaA;
+        });
+
+        // Merge BA summary into properties
+        conusFeatures.forEach((f) => {
+          const props = f.properties as BAProperties;
+          const zoneName = props?.zoneName || props?.zone_name;
+          const baCode = props?.code || props?.BA_CODE;
+          const summary =
+            baSummaryMap.get(zoneName || "") || baSummaryMap.get(baCode || "");
+          if (summary) {
+            (f.properties as any).baSummary = summary;
+          }
+        });
+
+        console.log(`Rendering ${conusFeatures.length} features`);
+
+        // Clear previous content
+        svg.selectAll("*").remove();
+
+        // Draw features
+        svg
+          .append("g")
+          .selectAll("path")
+          .data(conusFeatures)
+          .join("path")
+          .attr("d", (d) => path(d as any) || "")
+          .attr("fill", "#3388ff")
+          .attr("fill-opacity", 0.3)
+          .attr("stroke", "#2c3e50")
+          .attr("stroke-width", 2)
+          .attr("stroke-opacity", 0.8)
+          .attr("cursor", "pointer")
+          .on("mouseenter", function (event, d) {
+            d3.select(this).attr("fill-opacity", 0.6).attr("stroke-width", 3);
+
+            const props = d.properties as BAProperties;
+            const ba = props.baSummary;
+            const name =
+              props.name || props.BA_NAME || props.zoneName || "Unknown BA";
+            const code = props.code || props.BA_CODE || "";
+
+            const summaryLines: string[] = [];
+            if (ba?.totalPlans !== undefined)
+              summaryLines.push(`Plans: ${ba.totalPlans}`);
+            if (ba?.numUtilities !== undefined)
+              summaryLines.push(`Utilities: ${ba.numUtilities}`);
+
+            tooltip
+              .style("opacity", 1)
+              .style("left", `${event.pageX + 10}px`)
+              .style("top", `${event.pageY + 10}px`).html(`
+                <strong>${name}</strong>
+                ${code ? `<br/>Code: ${code}` : ""}
+                ${summaryLines.length ? `<br/>${summaryLines.join("<br/>")}` : ""}
+              `);
+          })
+          .on("mousemove", (event) => {
+            tooltip
+              .style("left", `${event.clientX + 10}px`)
+              .style("top", `${event.clientY + 10}px`);
+          })
+          .on("mouseleave", function () {
+            d3.select(this).attr("fill-opacity", 0.3).attr("stroke-width", 2);
+            tooltip.style("opacity", 0);
+          })
+          .on("click", (_event, d) => {
+            const props = d.properties as BAProperties;
+            const baShortFromSummary = props?.baSummary?.name;
+            const baShortFromZone = props?.zoneName
+              ? String(props.zoneName).split("-").slice(-1)[0]
+              : null;
+            const baShort =
+              baShortFromSummary ||
+              baShortFromZone ||
+              props.name ||
+              props.BA_NAME ||
+              props.BA_CODE ||
+              props.zone_name ||
+              null;
+
+            const baDisplay =
+              props?.baSummary?.zoneName ||
+              props?.zoneName ||
+              props?.name ||
+              "Unknown BA";
+
+            setSelectedBA(baDisplay);
+            fetchUtilitiesForBA(baShort);
+          });
+
         setLoading(false);
-      })
-      .catch((err) => {
+      } catch (err) {
         console.error("Error creating map:", err);
-        setError(err);
+        setError(err as Error);
         setLoading(false);
-      });
-
-    return () => {
-      if (leafletMapRef.current) {
-        destroyLeafletMap(leafletMapRef.current);
-        leafletMapRef.current = null;
       }
-    };
+    }
+
+    loadMap();
   }, []);
 
   async function fetchUtilitiesForBA(baKey: string | null) {
@@ -115,8 +271,6 @@ export default function BAMap() {
     try {
       const c = await conn;
 
-      // Join to utility_data where BA assignments are stored and match ba key.
-      // utility_data.ba may be an ARRAY or a string; cast to VARCHAR and use LIKE for robustness.
       const q = `
         SELECT
           u.utilityName,
@@ -149,7 +303,7 @@ export default function BAMap() {
       className={s.main}
       style={{ padding: "24px", maxWidth: "1400px", margin: "0 auto" }}
     >
-      <Title level={2}>U.S. Balancing Authorities</Title>
+      <h1>U.S. Balancing Authorities</h1>
 
       {error && (
         <Alert
@@ -180,13 +334,28 @@ export default function BAMap() {
             <Spin size="large" />
           </div>
         )}
-        <div
-          ref={mapRef}
+        <svg
+          ref={svgRef}
           style={{
             width: "100%",
             height: "600px",
-            position: "relative",
-            zIndex: 0,
+            display: "block",
+          }}
+        />
+        {/* Tooltip element */}
+        <div
+          ref={tooltipRef}
+          style={{
+            position: "fixed",
+            opacity: 0,
+            background: "white",
+            border: "1px solid #ccc",
+            borderRadius: "4px",
+            padding: "8px",
+            pointerEvents: "none",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+            zIndex: 1000,
+            fontSize: "14px",
           }}
         />
       </Card>

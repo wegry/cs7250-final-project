@@ -29,7 +29,7 @@ function Layout() {
 
   useEffect(() => {
     const observer = new ResizeObserver((entries) => {
-      const width = entries[0].contentRect.width;
+      const width = entries[0]!.contentRect.width;
       setIsMobile(width < 700);
     });
     observer.observe(document.body);
@@ -43,10 +43,10 @@ function Layout() {
 
   const navLinks = (
     <>
+      <Link to="/zip-search">Zip Search</Link>
       <Link to="/detail">Detail View</Link>
       <Link to="/compare">Compare Plans</Link>
       <Link to="/map">BA Map</Link>
-      <Link to="/zip-search">Zip Search</Link>
     </>
   );
 

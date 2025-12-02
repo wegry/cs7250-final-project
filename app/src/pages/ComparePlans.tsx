@@ -111,7 +111,7 @@ function ComparePlans() {
   return (
     <div className={s.main}>
       <div>
-        <h2>Compare Rate Plans</h2>
+        <h1>Compare Rate Plans</h1>
         <p>
           See how different rate plans affect your bill based on your home and
           usage patterns
