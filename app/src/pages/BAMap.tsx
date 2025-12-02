@@ -4,7 +4,7 @@ import type { FeatureCollection } from "geojson";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { conn } from "../data/duckdb";
-import * as s from "./DetailView.module.css";
+import { PageBody } from "../components/PageBody";
 
 const { Paragraph } = Typography;
 
@@ -299,12 +299,7 @@ export default function BAMap() {
   }
 
   return (
-    <main
-      className={s.main}
-      style={{ padding: "24px", maxWidth: "1400px", margin: "0 auto" }}
-    >
-      <h1>U.S. Balancing Authorities</h1>
-
+    <PageBody title="U.S. Balancing Authorities">
       {error && (
         <Alert
           message="Error Loading Map"
@@ -396,6 +391,6 @@ export default function BAMap() {
           respective control areas.
         </Paragraph>
       </Card>
-    </main>
+    </PageBody>
   );
 }

@@ -8,6 +8,7 @@ import { conn } from "../data/duckdb";
 import { useDebouncedValue } from "../hooks/useDebouncedValue";
 import * as s from "./ZipSearch.module.css";
 import { countFormatter } from "../formatters";
+import { PageBody } from "../components/PageBody";
 
 // --- Zod Schemas for GeoJSON (same as CountyMap.tsx) ---
 const PositionSchema = z.tuple([z.number(), z.number()]).rest(z.number());
@@ -348,9 +349,7 @@ export function ZipSearch() {
   const states = Array.from(relevantStates).sort();
 
   return (
-    <main className={s.container}>
-      <h1>Search Utilities by Zip Code</h1>
-
+    <PageBody title="Search Utilities by Zip Code">
       <Row gutter={[24, 24]}>
         <Col xs={24} lg={14}>
           <div className={s.searchSection}>
@@ -551,6 +550,6 @@ export function ZipSearch() {
           </Card>
         </Col>
       </Row>
-    </main>
+    </PageBody>
   );
 }

@@ -1,0 +1,12 @@
+.main {
+  --x-padding: 32px;
+  max-width: min(calc(100vw - calc(var(--x-padding) * 2)), 1400px);
+  scrollbar-gutter: preserve;
+  margin: 0 var(--x-padding);
+}
+
+@media screen and (width < 800px) {
+  .main {
+    --x-padding: 8px;
+  }
+}
