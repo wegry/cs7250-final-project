@@ -1,12 +1,12 @@
-import { useRef, useEffect, useState } from "react";
-import { Spin, Alert, Card, Typography, Table } from "antd";
-import { Link } from "react-router-dom";
-import { conn } from "../data/duckdb";
+import { Alert, Card, Spin, Table, Typography } from "antd";
 import * as d3 from "d3";
 import type { FeatureCollection } from "geojson";
+import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
+import { conn } from "../data/duckdb";
 import * as s from "./DetailView.module.css";
 
-const { Title, Paragraph } = Typography;
+const { Paragraph } = Typography;
 
 interface BASummary {
   name: string;
