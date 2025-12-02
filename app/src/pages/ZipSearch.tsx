@@ -7,6 +7,7 @@ import { z } from "zod";
 import { conn } from "../data/duckdb";
 import { useDebouncedValue } from "../hooks/useDebouncedValue";
 import * as s from "./ZipSearch.module.css";
+import { countFormatter } from "../formatters";
 
 // --- Zod Schemas for GeoJSON (same as CountyMap.tsx) ---
 const PositionSchema = z.tuple([z.number(), z.number()]).rest(z.number());
@@ -25,10 +26,10 @@ const MultiPolygonGeometrySchema = z.object({
 
 const CountyPropertiesSchema = z
   .object({
-    name: z.string().optional(),
-    stusps: z.string().optional(),
+    name: z.string(),
+    stusps: z.string(),
   })
-  .passthrough();
+  .loose();
 
 const CountyFeatureSchema = z.object({
   type: z.literal("Feature"),
@@ -232,7 +233,11 @@ export function ZipSearch() {
   });
 
   // Fetch GeoJSON for county map
-  const { data: geojson, isLoading: geoLoading, error: geoError } = useQuery({
+  const {
+    data: geojson,
+    isLoading: geoLoading,
+    error: geoError,
+  } = useQuery({
     queryKey: ["county-geojson"],
     queryFn: fetchGeoJSON,
     staleTime: Infinity,
@@ -375,7 +380,9 @@ export function ZipSearch() {
             <Alert
               type="error"
               description={
-                error instanceof Error ? error.message : "Failed to fetch utilities"
+                error instanceof Error
+                  ? error.message
+                  : "Failed to fetch utilities"
               }
               style={{ marginBottom: 16 }}
             />
@@ -385,13 +392,17 @@ export function ZipSearch() {
             <Card size="small" style={{ marginBottom: 16 }}>
               <Row gutter={16}>
                 <Col>
-                  <strong>{uniqueZipCodes}</strong> zip code{uniqueZipCodes !== 1 ? "s" : ""}
+                  <strong>{countFormatter.format(uniqueZipCodes)}</strong> zip
+                  code
+                  {uniqueZipCodes !== 1 ? "s" : ""}
                 </Col>
                 <Col>
-                  <strong>{uniqueCounties}</strong> {uniqueCounties === 1 ? "county" : "counties"}
+                  <strong>{countFormatter.format(uniqueCounties)}</strong>{" "}
+                  {uniqueCounties === 1 ? "county" : "counties"}
                 </Col>
                 <Col>
-                  <strong>{uniqueUtilities}</strong> {uniqueUtilities === 1 ? "utility" : "utilities"}
+                  <strong>{countFormatter.format(uniqueUtilities)}</strong>{" "}
+                  {uniqueUtilities === 1 ? "utility" : "utilities"}
                 </Col>
               </Row>
             </Card>
@@ -408,7 +419,7 @@ export function ZipSearch() {
               showSizeChanger: true,
               pageSizeOptions: ["10", "20", "50", "100"],
               showTotal: (total, range) =>
-                `${range[0]}-${range[1]} of ${total} utility/zip code pairs`,
+                `${countFormatter.format(range[0])}-${countFormatter.format(range[1])} of ${countFormatter.format(total)} utility/zip code pairs`,
             }}
             locale={{
               emptyText:
@@ -427,7 +438,8 @@ export function ZipSearch() {
             extra={
               highlightedCounties.size > 0 && (
                 <span style={{ color: "#666", fontSize: 12 }}>
-                  {states.join(", ")} · {highlightedCounties.size} {highlightedCounties.size === 1 ? "county" : "counties"}
+                  {states.join(", ")} · {highlightedCounties.size}{" "}
+                  {highlightedCounties.size === 1 ? "county" : "counties"}
                 </span>
               )
             }
@@ -512,7 +524,9 @@ export function ZipSearch() {
                               }
                               stroke="#999"
                               strokeWidth={0.5}
-                              onMouseEnter={() => setHovered(`${st}:${countyName}`)}
+                              onMouseEnter={() =>
+                                setHovered(`${st}:${countyName}`)
+                              }
                               onMouseLeave={() => setHovered(null)}
                               style={{ cursor: "pointer" }}
                             />
