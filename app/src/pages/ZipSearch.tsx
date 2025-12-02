@@ -1,60 +1,22 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { Alert, Card, Col, Input, Row, Spin, Table, Tooltip } from "antd";
+import { Alert, Card, Col, Input, Row, Spin, Table } from "antd";
 import type { ColumnsType } from "antd/es/table";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { z } from "zod";
 import { conn } from "../data/duckdb";
 import { useDebouncedValue } from "../hooks/useDebouncedValue";
+import {
+  useCountyGeoJSON,
+  computeBBoxAndFeaturesByState,
+  normalizeCountyName,
+} from "../hooks/useCountyGeojson";
+import { CountyMapSvg } from "../charts/CountyMapSvg";
 import * as s from "./ZipSearch.module.css";
 import { countFormatter } from "../formatters";
 import { PageBody } from "../components/PageBody";
 
-// --- Zod Schemas for GeoJSON (same as CountyMap.tsx) ---
-const PositionSchema = z.tuple([z.number(), z.number()]).rest(z.number());
-const LinearRingSchema = z.array(PositionSchema);
-const PolygonCoordinatesSchema = z.array(LinearRingSchema);
-
-const PolygonGeometrySchema = z.object({
-  type: z.literal("Polygon"),
-  coordinates: PolygonCoordinatesSchema,
-});
-
-const MultiPolygonGeometrySchema = z.object({
-  type: z.literal("MultiPolygon"),
-  coordinates: z.array(PolygonCoordinatesSchema),
-});
-
-const CountyPropertiesSchema = z
-  .object({
-    name: z.string(),
-    stusps: z.string(),
-  })
-  .loose();
-
-const CountyFeatureSchema = z.object({
-  type: z.literal("Feature"),
-  properties: CountyPropertiesSchema.nullable(),
-  geometry: z.union([PolygonGeometrySchema, MultiPolygonGeometrySchema]),
-});
-
-const CountyGeoJSONSchema = z.object({
-  type: z.literal("FeatureCollection"),
-  features: z.array(CountyFeatureSchema),
-});
-
-const RawGeoJSONSchema = z.object({
-  type: z.literal("FeatureCollection"),
-  features: z.array(z.unknown()),
-});
-
-type CountyGeoJSON = z.infer<typeof CountyGeoJSONSchema>;
-type CountyFeature = z.infer<typeof CountyFeatureSchema>;
-type Geometry = CountyFeature["geometry"];
-type Position = z.infer<typeof PositionSchema>;
-type BBox = { minX: number; maxX: number; minY: number; maxY: number };
-
-// Zod schema for validation
+// Zod schema for utility results
 const UtilityResultSchema = z.object({
   "Utility Name": z.string(),
   "Utility Number": z.bigint(),
@@ -68,92 +30,9 @@ const UtilityResultsSchema = z.array(UtilityResultSchema);
 
 type UtilityResult = z.infer<typeof UtilityResultSchema>;
 
-// --- Projection functions (same as CountyMap.tsx) ---
-function albersProject(lon: number, lat: number): Position {
-  const toRad = Math.PI / 180;
-  const λ = lon * toRad;
-  const φ = lat * toRad;
-  const λ0 = -96 * toRad;
-  const φ0 = 23 * toRad;
-  const φ1 = 29.5 * toRad;
-  const φ2 = 45.5 * toRad;
-
-  const n = (Math.sin(φ1) + Math.sin(φ2)) / 2;
-  const C = Math.cos(φ1) ** 2 + 2 * n * Math.sin(φ1);
-  const ρ0 = Math.sqrt(C - 2 * n * Math.sin(φ0)) / n;
-  const ρ = Math.sqrt(C - 2 * n * Math.sin(φ)) / n;
-  const θ = n * (λ - λ0);
-
-  const x = ρ * Math.sin(θ);
-  const y = ρ0 - ρ * Math.cos(θ);
-
-  return [x, y];
-}
-
-function projectToSvg(
-  lon: number,
-  lat: number,
-  bbox: BBox,
-  width: number,
-  height: number,
-  pad = 10,
-): Position {
-  const [px, py] = albersProject(lon, lat);
-  const { minX, maxX, minY, maxY } = bbox;
-  const xRange = maxX - minX || 1;
-  const yRange = maxY - minY || 1;
-
-  const scale = Math.min(
-    (width - pad * 2) / xRange,
-    (height - pad * 2) / yRange,
-  );
-  const offsetX = (width - xRange * scale) / 2;
-  const offsetY = (height - yRange * scale) / 2;
-
-  const x = (px - minX) * scale + offsetX;
-  const y = (maxY - py) * scale + offsetY;
-
-  return [x, y];
-}
-
-function getPolygons(geometry: Geometry): Position[][][] {
-  return geometry.type === "Polygon"
-    ? [geometry.coordinates]
-    : geometry.coordinates;
-}
-
-function normalizeCountyName(name: string): string {
-  return name
-    ?.toLowerCase()
-    .replace(/\s*county\s*$/i, "")
-    .trim();
-}
-
-async function fetchGeoJSON(): Promise<CountyGeoJSON> {
-  const res = await fetch("/geodata/county-data.geojson");
-  if (!res.ok) throw new Error(`Failed to fetch GeoJSON: ${res.status}`);
-  const data: unknown = await res.json();
-
-  const raw = RawGeoJSONSchema.parse(data);
-  const validFeatures: CountyFeature[] = [];
-
-  for (const feature of raw.features) {
-    const result = CountyFeatureSchema.safeParse(feature);
-    if (result.success) {
-      validFeatures.push(result.data);
-    }
-  }
-
-  return { type: "FeatureCollection", features: validFeatures };
-}
-
 // Table columns configuration
 const columns: ColumnsType<UtilityResult> = [
-  {
-    title: "Zip Code",
-    dataIndex: "zipcode",
-    key: "zipcode",
-  },
+  { title: "Zip Code", dataIndex: "zipcode", key: "zipcode" },
   {
     title: "Utility Name",
     dataIndex: "Utility Name",
@@ -171,16 +50,8 @@ const columns: ColumnsType<UtilityResult> = [
     key: "utilityNumber",
     render: (value: bigint) => value.toString(),
   },
-  {
-    title: "State",
-    dataIndex: "State",
-    key: "state",
-  },
-  {
-    title: "County",
-    dataIndex: "County",
-    key: "county",
-  },
+  { title: "State", dataIndex: "State", key: "state" },
+  { title: "County", dataIndex: "County", key: "county" },
 ];
 
 // Query function
@@ -219,7 +90,6 @@ export function ZipSearch() {
   const [params, setParams] = useSearchParams();
   const zipCode = params.get(ZIP) ?? "";
   const debouncedZipCode = useDebouncedValue(zipCode, 300);
-  const [hovered, setHovered] = useState<string | null>(null);
 
   const {
     data: results = [],
@@ -233,16 +103,12 @@ export function ZipSearch() {
     placeholderData: keepPreviousData,
   });
 
-  // Fetch GeoJSON for county map
+  // Use shared GeoJSON hook
   const {
     data: geojson,
     isLoading: geoLoading,
     error: geoError,
-  } = useQuery({
-    queryKey: ["county-geojson"],
-    queryFn: fetchGeoJSON,
-    staleTime: Infinity,
-  });
+  } = useCountyGeoJSON();
 
   // Extract unique counties and states from results for highlighting
   const { highlightedCounties, relevantStates } = useMemo(() => {
@@ -256,76 +122,14 @@ export function ZipSearch() {
     return { highlightedCounties: counties, relevantStates: states };
   }, [results]);
 
-  // Compute bbox and features for relevant states
-  const { bbox, featuresByState } = useMemo(() => {
-    if (!geojson?.features || relevantStates.size === 0) {
-      return {
-        bbox: null,
-        featuresByState: {} as Record<string, CountyFeature[]>,
-      };
-    }
-
-    const relevantFeatures = geojson.features.filter((f) =>
-      relevantStates.has(f.properties?.stusps ?? ""),
-    );
-
-    const byState: Record<string, CountyFeature[]> = {};
-    for (const f of relevantFeatures) {
-      const st = f.properties?.stusps ?? "";
-      if (!byState[st]) byState[st] = [];
-      byState[st].push(f);
-    }
-
-    let minX = Infinity,
-      maxX = -Infinity,
-      minY = Infinity,
-      maxY = -Infinity;
-
-    for (const f of relevantFeatures) {
-      for (const poly of getPolygons(f.geometry)) {
-        for (const ring of poly) {
-          for (const [lon, lat] of ring) {
-            const [px, py] = albersProject(lon, lat);
-            if (px < minX) minX = px;
-            if (px > maxX) maxX = px;
-            if (py < minY) minY = py;
-            if (py > maxY) maxY = py;
-          }
-        }
-      }
-    }
-
-    return {
-      bbox: minX === Infinity ? null : { minX, maxX, minY, maxY },
-      featuresByState: byState,
-    };
-  }, [geojson, relevantStates]);
+  // Compute bbox and features using shared utility
+  const { bbox, featuresByState } = useMemo(
+    () => computeBBoxAndFeaturesByState(geojson, relevantStates),
+    [geojson, relevantStates],
+  );
 
   const width = 500;
   const height = width / 1.61;
-
-  const buildPath = (f: CountyFeature, bboxData: BBox) => {
-    return getPolygons(f.geometry)
-      .flatMap((poly) =>
-        poly.map(
-          (ring) =>
-            ring
-              .map((pt, i) => {
-                const [x, y] = projectToSvg(
-                  pt[0],
-                  pt[1],
-                  bboxData,
-                  width,
-                  height,
-                  15,
-                );
-                return `${i === 0 ? "M" : "L"}${x.toFixed(2)} ${y.toFixed(2)}`;
-              })
-              .join(" ") + " Z",
-        ),
-      )
-      .join(" ");
-  };
 
   // Summary stats
   const uniqueCounties = useMemo(() => {
@@ -348,6 +152,12 @@ export function ZipSearch() {
 
   const states = Array.from(relevantStates).sort();
 
+  const getTooltip = (
+    countyName: string,
+    state: string,
+    isHighlighted: boolean,
+  ) => `${countyName}, ${state}${isHighlighted ? " (Matched)" : ""}`;
+
   return (
     <PageBody title="Search Utilities by Zip Code">
       <Row gutter={[24, 24]}>
@@ -360,11 +170,9 @@ export function ZipSearch() {
                 setParams(
                   (params) => {
                     const { value } = e.target;
-
                     if (value != params.get(ZIP)) {
                       params.set(ZIP, value);
                     }
-
                     return params;
                   },
                   { replace: true },
@@ -485,63 +293,15 @@ export function ZipSearch() {
               </div>
             ) : (
               <>
-                <svg width={width} height={height}>
-                  {Object.entries(featuresByState).map(([st, stFeatures]) => (
-                    <g key={`state-group-${st}`}>
-                      {/* State outline */}
-                      {stFeatures.map((f, idx) => (
-                        <path
-                          key={`outline-${idx}`}
-                          d={bbox ? buildPath(f, bbox) : ""}
-                          fill="none"
-                          stroke="#333"
-                          strokeWidth={3}
-                        />
-                      ))}
-                      {/* County fills */}
-                      {stFeatures.map((f, idx) => {
-                        const countyName = f.properties?.name ?? "";
-                        const key = `${st}:${normalizeCountyName(countyName)}`;
-                        const isHighlighted = highlightedCounties.has(key);
-                        const isHovered = hovered === `${st}:${countyName}`;
-                        const fillColor = isHighlighted ? "#b03a2e" : "#f5f5f5";
-
-                        return (
-                          <Tooltip
-                            key={`fill-${idx}`}
-                            title={`${countyName}, ${st}${isHighlighted ? " (Matched)" : ""}`}
-                            placement="top"
-                          >
-                            <path
-                              d={bbox ? buildPath(f, bbox) : ""}
-                              fill={
-                                isHovered
-                                  ? isHighlighted
-                                    ? "#8b2e24"
-                                    : "#e0e0e0"
-                                  : fillColor
-                              }
-                              stroke="#999"
-                              strokeWidth={0.5}
-                              onMouseEnter={() =>
-                                setHovered(`${st}:${countyName}`)
-                              }
-                              onMouseLeave={() => setHovered(null)}
-                              style={{ cursor: "pointer" }}
-                            />
-                          </Tooltip>
-                        );
-                      })}
-                    </g>
-                  ))}
-                </svg>
-                <p
-                  style={{
-                    margin: "8px 0 0 0",
-                    color: "#666",
-                    fontSize: 12,
-                  }}
-                >
+                <CountyMapSvg
+                  width={width}
+                  height={height}
+                  bbox={bbox}
+                  featuresByState={featuresByState}
+                  highlightedCounties={highlightedCounties}
+                  getTooltip={getTooltip}
+                />
+                <p style={{ margin: "8px 0 0 0", color: "#666", fontSize: 12 }}>
                   Counties in red are served by utilities matching your search.
                   Projection: Albers Equal Area Conic (CONUS).
                 </p>
