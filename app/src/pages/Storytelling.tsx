@@ -18,7 +18,7 @@ const sections = [
 ] as const;
 
 function Storytelling() {
-  return (
+  const body = (
     <main className={s.main}>
       <h1>How is electricity priced in the US?</h1>
       This app uses{" "}
@@ -153,6 +153,8 @@ function Storytelling() {
       </section>
     </main>
   );
+
+  return <div className={s.clipper}>{body}</div>;
 }
 
 export default Storytelling;

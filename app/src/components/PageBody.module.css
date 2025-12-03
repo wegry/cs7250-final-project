@@ -2,11 +2,20 @@
   --x-padding: 32px;
   max-width: min(calc(100vw - calc(var(--x-padding) * 2)), 1400px);
   scrollbar-gutter: preserve;
-  margin: 0 var(--x-padding);
+  padding: 0 var(--x-padding);
+  overflow-x: clip;
 }
 
 @media screen and (width < 800px) {
   .main {
     --x-padding: 8px;
+    /* overflow-x: unset; */
+  }
+}
+
+@media screen and (width < 600px) {
+  .main {
+    --x-padding: 2px;
+    overflow-x: unset;
   }
 }

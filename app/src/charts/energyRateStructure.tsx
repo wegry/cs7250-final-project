@@ -31,7 +31,7 @@ export function EnergyRateChart({
     () =>
       uniqBy(retailData, (x) => [x.period, x.tier, x.value, x.adj].join("/"))
         .length === 1,
-    [retailData]
+    [retailData],
   );
 
   const sameAllYearLong = useMemo(
@@ -39,14 +39,14 @@ export function EnergyRateChart({
       new Set(
         selectedPlan?.energyWeekdaySched
           ?.concat(selectedPlan.energyWeekendSched ?? [])
-          ?.flat()
+          ?.flat(),
       ).size === 1,
-    [selectedPlan]
+    [selectedPlan],
   );
 
   const colorScale = useMemo(
     () => buildPeriodColorScale(selectedPlan, "energy"),
-    [selectedPlan]
+    [selectedPlan],
   );
 
   if (!retailData.length) {
@@ -135,7 +135,7 @@ export function EnergyRateChart({
 
 function pullData(
   data: RatePlan | null | undefined,
-  date: Dayjs
+  date: Dayjs,
 ): ChartDataPoint[] {
   const tiers = data?.energyRate_tiers;
   const schedule = [0, 6].includes(date.day())

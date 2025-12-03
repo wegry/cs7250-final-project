@@ -26,14 +26,29 @@
 }
 
 .charts {
-  display: flex;
-  flex-wrap: wrap;
-  margin-bottom: 16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min-content, 30ch));
+  grid-auto-rows: minmax(min-content, max-content);
+  padding-bottom: 16px;
+
   gap: 16px;
   align-items: center;
 
-  & :global(.ant-card-body) > div {
-    width: -webkit-fill-available;
+  & > :nth-of-type(2n + 1) {
+    position: relative;
+
+    &::before {
+      content: "";
+      background-color: var(--row-alt-color);
+      position: absolute;
+      inset: -8px calc(var(--x-padding) * -1);
+      z-index: -1;
+      width: 100vw;
+    }
+  }
+
+  & :global(.ant-card) {
+    width: fit-content;
     height: fit-content;
   }
 }

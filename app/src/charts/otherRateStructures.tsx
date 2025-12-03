@@ -155,7 +155,7 @@ export function DemandRateChart({ date, selectedPlan }: DayAndPlan) {
 
   const colorScale = useMemo(
     () => buildPeriodColorScale(selectedPlan, "demand"),
-    [selectedPlan]
+    [selectedPlan],
   );
 
   const segments = useMemo(() => {
@@ -269,7 +269,7 @@ export function DemandTierRateChart({ date, selectedPlan }: DayAndPlan) {
 
   const colorScale = useMemo(
     () => buildPeriodColorScale(selectedPlan, "demand"),
-    [selectedPlan]
+    [selectedPlan],
   );
 
   const periods = schedule?.[date.month()];
@@ -480,7 +480,7 @@ export function FlatDemandChart({
 }) {
   const colorScale = useMemo(
     () => buildPeriodColorScale(selectedPlan, "flatDemand"),
-    [selectedPlan]
+    [selectedPlan],
   );
 
   const currentMonth = date.month();

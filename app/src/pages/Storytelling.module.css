@@ -1,6 +1,28 @@
+.clipper {
+  overflow-x: clip;
+}
+
 .main {
   margin: 0 auto;
   max-width: 50ch;
+
+  section {
+    &:nth-of-type(2n + 1) {
+      position: relative;
+      &::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        top: -8px;
+        bottom: -8px;
+        left: 50%;
+        background-color: var(--row-alt-color);
+        z-index: -1;
+        transform: translateX(-50%);
+        width: 100vw;
+      }
+    }
+  }
 }
 
 .toc {
