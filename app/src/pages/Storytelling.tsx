@@ -2,10 +2,12 @@ import { Link } from "react-router-dom";
 import dayjs from "dayjs";
 import { PlanTypeTable } from "../components/PlanTypeTable";
 import s from "./Storytelling.module.css";
-import { Card } from "antd";
+import { Card, Typography } from "antd";
 
 // Use current date for filtering active plans
 const TODAY = dayjs();
+
+const { Paragraph } = Typography;
 
 const sections = [
   { id: "flat", title: "Flat Rate Plans" },
@@ -40,7 +42,7 @@ function Storytelling() {
       </Card>
       <section id="flat">
         <h2>Flat Rate Plans</h2>
-        <p>
+        <Paragraph>
           Flat rate plans are the simplest form of electricity pricing—you pay
           the same price per kilowatt-hour no matter when you use power or how
           much you consume. This predictability makes budgeting easy, but it
@@ -51,12 +53,12 @@ function Storytelling() {
           </Link>{" "}
           offer these straightforward plans that work well for households with
           consistent energy habits.
-        </p>
+        </Paragraph>
         <PlanTypeTable planType="flat" date={TODAY} />
       </section>
       <section id="tiered">
         <h2>Flat Rate Plans with Lots of Tiers</h2>
-        <p>
+        <Paragraph>
           Tiered rate plans charge different prices depending on how much
           electricity you use each month. The first block of kilowatt-hours
           might be relatively cheap, but as your consumption climbs into higher
@@ -67,12 +69,12 @@ function Storytelling() {
             City of Kosciusko, Mississippi
           </Link>
           .
-        </p>
+        </Paragraph>
         <PlanTypeTable planType="tiered" date={TODAY} />
       </section>
       <section id="tou">
         <h2>Time of Day</h2>
-        <p>
+        <Paragraph>
           Time-of-use (TOU) plans charge different rates depending on when you
           consume electricity. Peak hours—typically late afternoon and early
           evening when demand is highest—cost significantly more than off-peak
@@ -83,12 +85,12 @@ function Storytelling() {
             Virginia Electric & Power Co
           </Link>
           .
-        </p>
+        </Paragraph>
         <PlanTypeTable planType="tou" date={TODAY} />
       </section>
       <section id="coincident">
         <h2>Coincident Demand</h2>
-        <p>
+        <Paragraph>
           Coincident demand plans charge based on your usage during the single
           peak hour each month—a window chosen by the utility based on
           system-wide demand. This means your bill depends heavily on whether
@@ -99,12 +101,12 @@ function Storytelling() {
             Oklahoma Electric Coop Inc
           </Link>
           .
-        </p>
+        </Paragraph>
         <PlanTypeTable planType="coincident" date={TODAY} />
       </section>
       <section id="demand">
         <h2>Demand</h2>
-        <p>
+        <Paragraph>
           Demand-based plans charge not just for total energy consumed, but also
           for your peak power draw measured in kilowatts. Think of it like
           paying for the size of the pipe, not just the water that flows through
@@ -116,12 +118,12 @@ function Storytelling() {
           </Link>{" "}
           use this model to encourage customers to spread their usage more
           evenly.
-        </p>
+        </Paragraph>
         <PlanTypeTable planType="demand" date={TODAY} />
       </section>
       <section id="flat-demand">
         <h2>Flat Demand</h2>
-        <p>
+        <Paragraph>
           Flat demand plans include a fixed monthly charge based on a
           predetermined demand threshold, regardless of your actual peak usage.
           This provides cost certainty for customers while still accounting for
@@ -132,12 +134,12 @@ function Storytelling() {
           </Link>{" "}
           demonstrate how utilities balance simplicity with demand-based cost
           recovery.
-        </p>
+        </Paragraph>
         <PlanTypeTable planType="flatDemand" date={TODAY} />
       </section>
       <section id="complex">
         <h2>All of the Above</h2>
-        <p>
+        <Paragraph>
           Some rate structures combine multiple pricing mechanisms into a single
           plan—tiered energy rates, time-of-use pricing, coincident demand
           charges, and flat demand fees all layered together. These complex
@@ -148,7 +150,7 @@ function Storytelling() {
           </Link>{" "}
           show how intricate electricity pricing can become, making tools like
           this one essential for understanding your bill.
-        </p>
+        </Paragraph>
         <PlanTypeTable planType="complex" date={TODAY} />
       </section>
     </main>
