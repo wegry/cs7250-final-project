@@ -4,9 +4,19 @@ import { sum, uniqBy } from "es-toolkit";
 import { useMemo } from "react";
 import { VegaEmbed } from "react-vega";
 import type { TopLevelSpec } from "vega-lite";
-import type { RatePlan, RetailPriceData } from "../data/schema";
+import type { RatePlan } from "../data/schema";
 import { price } from "../formatters";
 import { buildPeriodColorScale } from "./color";
+
+interface ChartDataPoint {
+  hourStart: number;
+  hourEnd: number;
+  tier: number;
+  period: number;
+  baseRate: number | null;
+  adj?: number;
+  value: number;
+}
 
 export function EnergyRateChart({
   date,
@@ -19,11 +29,9 @@ export function EnergyRateChart({
 
   const isBoring = useMemo(
     () =>
-      uniqBy(
-        retailData.filter((x) => x.value !== null),
-        (x) => [x.period, x.tier, x.value, x.adj].join("/"),
-      ).length === 1,
-    [retailData],
+      uniqBy(retailData, (x) => [x.period, x.tier, x.value, x.adj].join("/"))
+        .length === 1,
+    [retailData]
   );
 
   const sameAllYearLong = useMemo(
@@ -31,16 +39,14 @@ export function EnergyRateChart({
       new Set(
         selectedPlan?.energyWeekdaySched
           ?.concat(selectedPlan.energyWeekendSched ?? [])
-          ?.flat(),
+          ?.flat()
       ).size === 1,
-    [selectedPlan],
+    [selectedPlan]
   );
 
-  // Build color scale from ALL periods in the schedule (not just today's)
-  // This ensures colors match the ScheduleHeatmap
   const colorScale = useMemo(
     () => buildPeriodColorScale(selectedPlan, "energy"),
-    [selectedPlan],
+    [selectedPlan]
   );
 
   if (!retailData.length) {
@@ -48,11 +54,7 @@ export function EnergyRateChart({
   }
 
   if (isBoring) {
-    const first = retailData.find((d) => d.value !== null);
-    if (!first) {
-      return null;
-    }
-
+    const first = retailData[0]!;
     return (
       <Card>
         <Statistic
@@ -85,19 +87,18 @@ export function EnergyRateChart({
     title: `Energy Rate Structure (${date.format("dddd LL")})`,
     data: { values: retailData },
     mark: {
-      type: "line",
-      strokeWidth: 2,
-      interpolate: "step-after",
-      point: { filled: true, size: 50 },
+      type: "rule",
+      strokeWidth: 3,
     },
     encoding: {
       x: {
-        field: "hour",
+        field: "hourStart",
         type: "quantitative",
         title: "Hour of Day",
         scale: { domain: [0, 24] },
         axis: { tickCount: 24, labelAngle: 0 },
       },
+      x2: { field: "hourEnd" },
       y: {
         field: "value",
         type: "quantitative",
@@ -108,16 +109,16 @@ export function EnergyRateChart({
         field: "period",
         type: "nominal",
         title: "Period",
-        scale: colorScale, // Uses full schedule's color mapping
+        scale: colorScale,
       },
       strokeDash: {
         field: "tier",
         type: "ordinal",
         title: "Tier",
-        legend: null,
       },
       tooltip: [
-        { field: "hour", title: "Hour" },
+        { field: "hourStart", title: "From Hour" },
+        { field: "hourEnd", title: "To Hour" },
         { field: "period", title: "Period" },
         { field: "tier", title: "Tier" },
         { field: "value", title: "$ per kWh", format: ".4f" },
@@ -132,11 +133,9 @@ export function EnergyRateChart({
   );
 }
 
-type ChartDataPoint = RetailPriceData;
-
 function pullData(
   data: RatePlan | null | undefined,
-  date: Dayjs,
+  date: Dayjs
 ): ChartDataPoint[] {
   const tiers = data?.energyRate_tiers;
   const schedule = [0, 6].includes(date.day())
@@ -148,38 +147,35 @@ function pullData(
 
   const results: ChartDataPoint[] = [];
 
-  for (let i = 0; i < monthSchedule.length; i++) {
-    const period = monthSchedule[i];
-    if (period == null) {
-      continue;
-    }
-    const nextPeriod = monthSchedule[i + 1];
-    const periodInfo = tiers?.[period];
-    if (!periodInfo) continue;
+  let segmentStart = 0;
+  let currentPeriod = monthSchedule[0]!;
 
-    for (let j = 0; j < periodInfo.length; j++) {
-      const tierInfo = periodInfo[j];
-      if (!tierInfo) continue;
+  for (let hour = 1; hour <= 24; hour++) {
+    const period = hour < 24 ? monthSchedule[hour] : null;
 
-      const value = sum([tierInfo.rate, tierInfo.adj].map((x) => x ?? 0));
-      const base = {
-        tier: j,
-        period,
-        baseRate: tierInfo.rate,
-        adj: tierInfo.adj ?? undefined,
-      };
+    if (period !== currentPeriod) {
+      // Close the current segment
+      if (currentPeriod != null) {
+        const periodInfo = tiers?.[currentPeriod];
+        if (periodInfo) {
+          for (let t = 0; t < periodInfo.length; t++) {
+            const tierInfo = periodInfo[t];
+            if (!tierInfo) continue;
 
-      results.push({ ...base, hour: i, value });
-
-      // End of day: close with point at hour 24
-      if (i === 23) {
-        results.push({ ...base, hour: 24, value });
+            results.push({
+              hourStart: segmentStart,
+              hourEnd: hour,
+              tier: t,
+              period: currentPeriod,
+              baseRate: tierInfo.rate!,
+              adj: tierInfo.adj ?? undefined,
+              value: sum([tierInfo.rate, tierInfo.adj].map((x) => x ?? 0)),
+            });
+          }
+        }
       }
-      // Period boundary: close the step, then insert null to break the line
-      else if (nextPeriod !== period) {
-        results.push({ ...base, hour: i + 1, value });
-        results.push({ ...base, hour: i + 1, value: null });
-      }
+      segmentStart = hour;
+      currentPeriod = period!;
     }
   }
 
