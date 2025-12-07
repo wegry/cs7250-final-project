@@ -47,11 +47,11 @@ export interface CountyMapSvgProps {
   getTooltip?: (
     countyName: string,
     state: string,
-    isHighlighted: boolean,
+    isHighlighted: boolean
   ) => string;
 }
 
-const highlightColor = "lch(57.588% 68.242 283.865)";
+const highlightColor = "var(--highlight-color)";
 
 export function CountyMapSvg({
   width,
@@ -86,7 +86,7 @@ export function CountyMapSvg({
             const isHovered = hovered === `${st}:${countyName}`;
             const fillColor = isHighlighted
               ? `lch(from ${highlightColor} calc(l * 1.3) c h)`
-              : "#f5f5f5";
+              : "lch(100% 0 0)";
 
             const tooltipText = getTooltip
               ? getTooltip(countyName, st, isHighlighted)
