@@ -25,7 +25,7 @@ function normalizeDuckDBRow(row: any) {
 
 beforeAll(async () => {
   instance = await duckdb.DuckDBInstance.create(
-    "../app/public/flattened.duckdb"
+    "../app/public/flattened.duckdb",
   );
   const conn = await instance.connect();
   const result = await conn.runAndReadAll(`SELECT * FROM flattened.usurdb`);
