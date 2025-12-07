@@ -1,5 +1,5 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { Alert, Card, Col, Input, Row, Spin, Table } from "antd";
+import { Alert, Card, Col, Form, Input, Row, Spin, Table } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { useMemo } from "react";
 import { Link, useSearchParams } from "react-router-dom";
@@ -15,15 +15,17 @@ import { CountyMapSvg } from "../charts/CountyMapSvg";
 import * as s from "./ZipSearch.module.css";
 import { countFormatter } from "../formatters";
 import { PageBody } from "../components/PageBody";
+import { preprocessVector } from "../data/schema";
+import { zipCodeSearchTooltip } from "../copy";
 
 // Zod schema for utility results
 const UtilityResultSchema = z.object({
-  "Utility Name": z.string(),
-  "Utility Number": z.bigint(),
-  State: z.string(),
-  County: z.string(),
-  zipcode: z.string(),
+  utilityName: z.string().nullable(),
+  utilityNumber: z.bigint(),
   usurdb_id: z.string().nullable(),
+  states: preprocessVector(z.array(z.string())),
+  counties: preprocessVector(z.array(z.string())),
+  zipcodes: preprocessVector(z.array(z.string())),
 });
 
 const UtilityResultsSchema = z.array(UtilityResultSchema);
@@ -32,50 +34,98 @@ type UtilityResult = z.infer<typeof UtilityResultSchema>;
 
 // Table columns configuration
 const columns: ColumnsType<UtilityResult> = [
-  { title: "Zip Code", dataIndex: "zipcode", key: "zipcode" },
   {
     title: "Utility Name",
-    dataIndex: "Utility Name",
+    dataIndex: "utilityName",
     key: "utilityName",
-    render: (value: string, record) =>
+    render: (value: string | null, record) =>
       record.usurdb_id ? (
-        <Link to={`/detail/${record.usurdb_id}`}>{value}</Link>
+        <Link to={`/detail/${record.usurdb_id}`}>{value ?? "Unknown"}</Link>
       ) : (
-        value
+        (value ?? "Unknown")
       ),
   },
   {
-    title: "Utility Number",
-    dataIndex: "Utility Number",
-    key: "utilityNumber",
-    render: (value: bigint) => value.toString(),
+    title: "States",
+    dataIndex: "states",
+    key: "states",
+    width: 100,
+    render: (states: string[]) => states.join(", "),
   },
-  { title: "State", dataIndex: "State", key: "state" },
-  { title: "County", dataIndex: "County", key: "county" },
+  {
+    title: "Counties",
+    dataIndex: "counties",
+    key: "counties",
+    render: (counties: string[]) => (
+      <span title={counties.join(", ")}>
+        {counties.length <= 3
+          ? counties.join(", ")
+          : `${counties.slice(0, 3).join(", ")} +${counties.length - 3} more`}
+      </span>
+    ),
+  },
+  {
+    title: "Zip Codes",
+    dataIndex: "zipcodes",
+    key: "zipcodes",
+    render: (zips: string[]) => (
+      <span title={zips.join(", ")}>
+        {zips.length <= 3
+          ? zips.join(", ")
+          : `${zips.slice(0, 3).join(", ")} +${zips.length - 3} more`}
+      </span>
+    ),
+  },
 ];
 
 // Query function
 async function fetchUtilitiesByZip(zipCode: string): Promise<UtilityResult[]> {
   const stmt = (await conn).prepare(`
-    WITH latest_usurdb AS (
+    WITH
+    -- Find all rate plans that have been superseded by another
+    superseded_ids AS (
+      SELECT DISTINCT supercedes AS superseded_id
+      FROM flattened.usurdb
+      WHERE supercedes IS NOT NULL
+    ),
+    -- Get the default (or most recent) active plan per utility for linking
+    default_plans AS (
       SELECT _id, eiaId
       FROM flattened.usurdb
-      QUALIFY ROW_NUMBER() OVER (PARTITION BY eiaId ORDER BY is_default DESC, effectiveDate DESC) = 1
+      WHERE _id NOT IN (SELECT superseded_id FROM superseded_ids)
+        AND endDate IS NULL
+      QUALIFY ROW_NUMBER() OVER (
+        PARTITION BY eiaId
+        ORDER BY is_default DESC, effectiveDate DESC
+      ) = 1
+    ),
+    -- Match zip codes to counties and utilities
+    zip_matches AS (
+      SELECT
+        est."Utility Name" AS utilityName,
+        est."Utility Number" AS utilityNumber,
+        dp._id AS usurdb_id,
+        est.State AS state,
+        est.County AS county,
+        z.zipcode
+      FROM flattened.zip_county_map z
+      INNER JOIN flattened.eia861_service_territory est
+        ON z.county = est.County AND z.state_abbr = est.State
+      INNER JOIN default_plans dp
+        ON dp.eiaId = est."Utility Number"
+      WHERE starts_with(z.zipcode, $1)
     )
-    SELECT DISTINCT ON (z.zipcode, est."Utility Number")
-      est."Utility Name",
-      est."Utility Number",
-      est.State,
-      est.County,
-      z.zipcode,
-      lu._id as usurdb_id
-    FROM flattened.zip_county_map z
-    JOIN flattened.eia861_service_territory est
-      ON z.county = est.County AND z.state_abbr = est.State
-    LEFT JOIN latest_usurdb lu
-      ON lu.eiaId = est."Utility Number"
-    WHERE starts_with(z.zipcode, $1)
-    ORDER BY z.zipcode
+    -- Group by utility, aggregating states, counties, and zip codes
+    SELECT
+      utilityName,
+      utilityNumber,
+      usurdb_id,
+      list(DISTINCT state ORDER BY state) AS states,
+      list(DISTINCT county ORDER BY county) AS counties,
+      list(DISTINCT zipcode ORDER BY zipcode) AS zipcodes
+    FROM zip_matches
+    GROUP BY utilityName, utilityNumber, usurdb_id
+    ORDER BY utilityName
   `);
 
   const arrowResult = await (await stmt).query(`${zipCode}`);
@@ -115,9 +165,13 @@ export function ZipSearch() {
     const counties = new Set<string>();
     const states = new Set<string>();
     results.forEach((r) => {
-      const key = `${r.State}:${normalizeCountyName(r.County)}`;
-      counties.add(key);
-      states.add(r.State);
+      r.states.forEach((s) => states.add(s));
+      r.counties.forEach((c, i) => {
+        const state =
+          r.states.length === 1 ? r.states[0] : (r.states[i] ?? r.states[0]);
+        const key = `${state}:${normalizeCountyName(c)}`;
+        counties.add(key);
+      });
     });
     return { highlightedCounties: counties, relevantStates: states };
   }, [results]);
@@ -125,7 +179,7 @@ export function ZipSearch() {
   // Compute bbox and features using shared utility
   const { bbox, featuresByState } = useMemo(
     () => computeBBoxAndFeaturesByState(geojson, relevantStates),
-    [geojson, relevantStates],
+    [geojson, relevantStates]
   );
 
   const width = 500;
@@ -134,19 +188,13 @@ export function ZipSearch() {
   // Summary stats
   const uniqueCounties = useMemo(() => {
     const set = new Set<string>();
-    results.forEach((r) => set.add(`${r.State}:${r.County}`));
-    return set.size;
-  }, [results]);
-
-  const uniqueUtilities = useMemo(() => {
-    const set = new Set<string>();
-    results.forEach((r) => set.add(r["Utility Name"]));
+    results.forEach((r) => r.counties.forEach((c) => set.add(c)));
     return set.size;
   }, [results]);
 
   const uniqueZipCodes = useMemo(() => {
     const set = new Set<string>();
-    results.forEach((r) => set.add(r.zipcode));
+    results.forEach((r) => r.zipcodes.forEach((z) => set.add(z)));
     return set.size;
   }, [results]);
 
@@ -155,14 +203,14 @@ export function ZipSearch() {
   const getTooltip = (
     countyName: string,
     state: string,
-    isHighlighted: boolean,
+    isHighlighted: boolean
   ) => `${countyName}, ${state}${isHighlighted ? " (Matched)" : ""}`;
 
   return (
-    <PageBody title="Search Utilities by Zip Code">
-      <Row gutter={[24, 24]}>
-        <Col xs={24} lg={14}>
-          <div className={s.searchSection}>
+    <PageBody title="Search Rate Plans by Zip Code">
+      <Row>
+        <Form className={s.searchSection} style={{ marginBottom: 0 }}>
+          <Form.Item required label="Zip Code" tooltip={zipCodeSearchTooltip}>
             <Input
               placeholder="Enter Zip Code..."
               value={zipCode}
@@ -170,63 +218,62 @@ export function ZipSearch() {
                 setParams(
                   (params) => {
                     const { value } = e.target;
-                    if (value != params.get(ZIP)) {
+                    if (value !== params.get(ZIP)) {
                       params.set(ZIP, value);
                     }
                     return params;
                   },
-                  { replace: true },
+                  { replace: true }
                 )
               }
               style={{ maxWidth: 300 }}
               size="large"
             />
-          </div>
+          </Form.Item>
+        </Form>
+      </Row>
+      {isError && (
+        <Alert
+          type="error"
+          description={
+            error instanceof Error ? error.message : "Failed to fetch utilities"
+          }
+          style={{ marginBottom: 16 }}
+        />
+      )}
+      {debouncedZipCode.length >= 1 && results.length > 0 && (
+        <Card size="small" style={{ width: "fit-content", marginBottom: 16 }}>
+          <Row gutter={16}>
+            <Col>
+              <strong>{countFormatter.format(uniqueZipCodes)}</strong> zip code
+              {uniqueZipCodes !== 1 ? "s" : ""}
+            </Col>
+            <Col>
+              <strong>{countFormatter.format(uniqueCounties)}</strong>{" "}
+              {uniqueCounties === 1 ? "county" : "counties"}
+            </Col>
+            <Col>
+              <strong>{countFormatter.format(results.length)}</strong>{" "}
+              {results.length === 1 ? "utility" : "utilities"}
+            </Col>
+          </Row>
+        </Card>
+      )}
 
-          {isError && (
-            <Alert
-              type="error"
-              description={
-                error instanceof Error
-                  ? error.message
-                  : "Failed to fetch utilities"
-              }
-              style={{ marginBottom: 16 }}
-            />
-          )}
-
-          {debouncedZipCode.length >= 1 && results.length > 0 && (
-            <Card size="small" style={{ marginBottom: 16 }}>
-              <Row gutter={16}>
-                <Col>
-                  <strong>{countFormatter.format(uniqueZipCodes)}</strong> zip
-                  code
-                  {uniqueZipCodes !== 1 ? "s" : ""}
-                </Col>
-                <Col>
-                  <strong>{countFormatter.format(uniqueCounties)}</strong>{" "}
-                  {uniqueCounties === 1 ? "county" : "counties"}
-                </Col>
-                <Col>
-                  <strong>{countFormatter.format(uniqueUtilities)}</strong>{" "}
-                  {uniqueUtilities === 1 ? "utility" : "utilities"}
-                </Col>
-              </Row>
-            </Card>
-          )}
-
+      <Row gutter={[24, 24]}>
+        <Col>
           <Table
             columns={columns}
             dataSource={results}
-            rowKey={(r) => `${r.zipcode}-${r["Utility Number"]}`}
+            rowKey={(r) => r.utilityNumber.toString()}
             tableLayout="fixed"
             loading={isLoading}
             pagination={{
-              pageSize: 10,
+              pageSize: 5,
               showSizeChanger: true,
               pageSizeOptions: ["10", "20", "50", "100"],
               showTotal: (total, range) =>
-                `${countFormatter.format(range[0])}-${countFormatter.format(range[1])} of ${countFormatter.format(total)} utility/zip code pairs`,
+                `${countFormatter.format(range[0])}-${countFormatter.format(range[1])} of ${countFormatter.format(total)} utilities`,
             }}
             locale={{
               emptyText:
@@ -239,8 +286,9 @@ export function ZipSearch() {
           />
         </Col>
 
-        <Col xs={24} lg={10}>
+        <Col>
           <Card
+            style={{ width: "fit-content" }}
             title="Service Territory Map"
             extra={
               highlightedCounties.size > 0 && (
@@ -301,8 +349,15 @@ export function ZipSearch() {
                   highlightedCounties={highlightedCounties}
                   getTooltip={getTooltip}
                 />
-                <p style={{ margin: "8px 0 0 0", color: "#666", fontSize: 12 }}>
-                  Counties in red are served by utilities matching your search.
+                <p
+                  style={{
+                    margin: "8px 0 0 0",
+                    color: "#666",
+                    fontSize: 12,
+                    maxWidth: "40ch",
+                  }}
+                >
+                  Counties in blue served by utilities matching your search.
                   Projection: Albers Equal Area Conic (CONUS).
                 </p>
               </>

@@ -12,6 +12,13 @@ function unionOfLiterals<T extends string | number>(constants: readonly T[]) {
   return z.union(literals);
 }
 
+export function preprocessVector<T extends z.core.SomeType>(schema: T) {
+  return z.preprocess(
+    (arg) => (arg ? Array.from(arg as unknown[]) : arg),
+    schema,
+  );
+}
+
 const fixedChargeUnits = unionOfLiterals([
   "$/month",
   "$/day",

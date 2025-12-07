@@ -13,3 +13,5 @@ export const complexEnergyScheduleTooltip = (
     the charts.
   </>
 );
+
+export const zipCodeSearchTooltip = `If you don't know your electricity provider, you can check which ones are present in your zip code here.`;

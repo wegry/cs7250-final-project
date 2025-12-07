@@ -157,8 +157,8 @@ export function CountyMap({
           maxWidth: "40ch",
         }}
       >
-        Counties in red are served by the utility. Projection: Albers Equal Area
-        Conic (CONUS).
+        Counties in blue are served by the utility. Projection: Albers Equal
+        Area Conic (CONUS).
       </p>
     </Card>
   );
