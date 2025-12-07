@@ -14,8 +14,9 @@
     Cache-Control = "public, max-age=3600, must-revalidate"
     Accept-Ranges = "bytes"
 
-[[redirects]]
-  from = "/tiles/*"
-  to = "https://tile.openstreetmap.org/:splat"
-  status = 200
-  force = true
+[[headers]]
+  for = "/geodata/*.geojson"
+  [headers.values]
+    Cache-Control = "public, max-age=3600, must-revalidate"
+    Accept-Ranges = "bytes"
+
