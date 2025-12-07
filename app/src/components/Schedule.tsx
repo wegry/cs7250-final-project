@@ -35,7 +35,7 @@ type DataPoint = {
 
 function transformToHourly(
   schedule: number[][] | null,
-  dayType?: string,
+  dayType?: string
 ): DataPoint[] {
   if (!schedule) return [];
   const data: DataPoint[] = [];
@@ -55,7 +55,7 @@ function transformToHourly(
 
 function transformCollapsed(
   schedule: number[][] | null,
-  dayType?: string,
+  dayType?: string
 ): DataPoint[] {
   if (!schedule) return [];
   const data: DataPoint[] = [];
@@ -74,22 +74,31 @@ function transformCollapsed(
 
 function filterColorScale(
   colorScale: { domain: string[]; range: string[] },
-  data: DataPoint[],
+  data: DataPoint[]
 ): { domain: string[]; range: string[] } {
   const periodsInData = new Set(data.map((d) => d.period));
   return {
     domain: colorScale.domain.filter((p) => periodsInData.has(p)),
     range: colorScale.domain.flatMap((p, i) =>
-      periodsInData.has(p) && colorScale.range[i] ? [colorScale.range[i]] : [],
+      periodsInData.has(p) && colorScale.range[i] ? [colorScale.range[i]] : []
     ),
   };
 }
+
+const baseMarkConfig = (interactive: boolean) => ({
+  type: "rect" as const,
+  width: 18,
+  height: 18,
+  strokeWidth: 0,
+  stroke: "transparent",
+  cursor: interactive ? ("pointer" as const) : ("default" as const),
+});
 
 function createSingleScheduleSpec(
   title: string,
   schedule: number[][] | null,
   colorScale: { domain: string[]; range: string[] },
-  interactive: boolean,
+  interactive: boolean
 ): TopLevelSpec {
   const hourly = hasHourlyVariation(schedule);
   const data = hourly
@@ -115,13 +124,7 @@ function createSingleScheduleSpec(
           },
         ]
       : [],
-    mark: {
-      type: "rect",
-      width: 15,
-      height: 15,
-      stroke: "white",
-      cursor: interactive ? "pointer" : "default",
-    },
+    mark: baseMarkConfig(interactive),
     encoding: {
       y: { field: "month", type: "ordinal", title: null, sort: MONTHS },
       color: {
@@ -159,7 +162,7 @@ function createCombinedScheduleSpec(
   weekdaySchedule: number[][] | null,
   weekendSchedule: number[][] | null,
   colorScale: { domain: string[]; range: string[] },
-  interactive: boolean,
+  interactive: boolean
 ): TopLevelSpec {
   const weekdayHourly = hasHourlyVariation(weekdaySchedule);
   const weekendHourly = hasHourlyVariation(weekendSchedule);
@@ -188,25 +191,17 @@ function createCombinedScheduleSpec(
       ]
     : [];
 
-  const baseMarkConfig = {
-    type: "rect" as const,
-    width: 15,
-    height: 15,
-    stroke: "white",
-    cursor: interactive ? ("pointer" as const) : ("default" as const),
-  };
-
   const createUnitSpec = (
     data: DataPoint[],
     hourly: boolean,
     showYAxis: boolean,
-    subTitle: string,
+    subTitle: string
   ) => ({
     title: subTitle,
     width: hourly ? 400 : 15,
     height: 200,
     data: { values: data },
-    mark: baseMarkConfig,
+    mark: baseMarkConfig(interactive),
     encoding: {
       y: {
         field: "month",
@@ -329,7 +324,7 @@ export function ScheduleHeatmap({
 
   const handleCellClick = (
     monthIndex: number,
-    dayType: "weekday" | "weekend",
+    dayType: "weekday" | "weekend"
   ) => {
     if (!onDateChange) return;
     const newDate = getFirstDayOfType(date.year(), monthIndex, dayType);
@@ -346,14 +341,14 @@ export function ScheduleHeatmap({
         "All Week " + title,
         weekdaySchedule,
         colorScale,
-        interactive,
+        interactive
       )
     : createCombinedScheduleSpec(
         title,
         weekdaySchedule,
         weekendSchedule,
         colorScale,
-        interactive,
+        interactive
       );
 
   return (
