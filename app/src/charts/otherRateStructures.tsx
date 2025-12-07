@@ -465,6 +465,7 @@ export function FlatDemandMonthsChart({
 
   return (
     <Heatmap
+      type="flat demand"
       spec={spec}
       onCellClick={onDateChange ? (m) => handleCellClick(m) : undefined}
     />

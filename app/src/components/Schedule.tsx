@@ -1,13 +1,14 @@
-import { useCallback, useRef, useEffect } from "react";
-import { Card } from "antd";
+import { type Dayjs } from "dayjs";
+import { useCallback, useEffect, useRef } from "react";
 import { VegaEmbed } from "react-vega";
 import type { Result } from "vega-embed";
 import type { TopLevelSpec } from "vega-lite";
-import { RatePlan } from "../data/schema";
-import { type Dayjs } from "dayjs";
 import { getViridisColors } from "../charts/color";
 import { MONTHS } from "../charts/constants";
+import * as copy from "../copy";
+import { RatePlan } from "../data/schema";
 import { getFirstDayOfType } from "../dates";
+import { CardWithTooltip } from "./CardWithTooltip";
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 
@@ -35,7 +36,7 @@ type DataPoint = {
 
 function transformToHourly(
   schedule: number[][] | null,
-  dayType?: string
+  dayType?: string,
 ): DataPoint[] {
   if (!schedule) return [];
   const data: DataPoint[] = [];
@@ -55,7 +56,7 @@ function transformToHourly(
 
 function transformCollapsed(
   schedule: number[][] | null,
-  dayType?: string
+  dayType?: string,
 ): DataPoint[] {
   if (!schedule) return [];
   const data: DataPoint[] = [];
@@ -74,13 +75,13 @@ function transformCollapsed(
 
 function filterColorScale(
   colorScale: { domain: string[]; range: string[] },
-  data: DataPoint[]
+  data: DataPoint[],
 ): { domain: string[]; range: string[] } {
   const periodsInData = new Set(data.map((d) => d.period));
   return {
     domain: colorScale.domain.filter((p) => periodsInData.has(p)),
     range: colorScale.domain.flatMap((p, i) =>
-      periodsInData.has(p) && colorScale.range[i] ? [colorScale.range[i]] : []
+      periodsInData.has(p) && colorScale.range[i] ? [colorScale.range[i]] : [],
     ),
   };
 }
@@ -98,7 +99,7 @@ function createSingleScheduleSpec(
   title: string,
   schedule: number[][] | null,
   colorScale: { domain: string[]; range: string[] },
-  interactive: boolean
+  interactive: boolean,
 ): TopLevelSpec {
   const hourly = hasHourlyVariation(schedule);
   const data = hourly
@@ -157,12 +158,16 @@ function createSingleScheduleSpec(
   };
 }
 
+export interface RateAspect<T extends string | null = null> {
+  type: "energy" | "demand" | Exclude<T, null>;
+}
+
 function createCombinedScheduleSpec(
   title: string,
   weekdaySchedule: number[][] | null,
   weekendSchedule: number[][] | null,
   colorScale: { domain: string[]; range: string[] },
-  interactive: boolean
+  interactive: boolean,
 ): TopLevelSpec {
   const weekdayHourly = hasHourlyVariation(weekdaySchedule);
   const weekendHourly = hasHourlyVariation(weekendSchedule);
@@ -195,7 +200,7 @@ function createCombinedScheduleSpec(
     data: DataPoint[],
     hourly: boolean,
     showYAxis: boolean,
-    subTitle: string
+    subTitle: string,
   ) => ({
     title: subTitle,
     width: hourly ? 400 : 15,
@@ -259,7 +264,11 @@ interface HeatmapProps {
   onCellClick?: (monthIndex: number, dayType: "weekday" | "weekend") => void;
 }
 
-export function Heatmap({ spec, onCellClick }: HeatmapProps) {
+export function Heatmap({
+  type,
+  spec,
+  onCellClick,
+}: HeatmapProps & RateAspect<"flat demand">) {
   const resultRef = useRef<Result | null>(null);
   const callbackRef = useRef(onCellClick);
 
@@ -282,13 +291,13 @@ export function Heatmap({ spec, onCellClick }: HeatmapProps) {
   }, []);
 
   return (
-    <Card>
+    <CardWithTooltip tooltip={copy.complexEnergyScheduleTooltip(type)}>
       <VegaEmbed
         spec={spec}
         options={{ actions: false }}
         onEmbed={handleEmbed}
       />
-    </Card>
+    </CardWithTooltip>
   );
 }
 
@@ -300,9 +309,8 @@ export function ScheduleHeatmap({
 }: {
   selectedPlan?: RatePlan | null;
   date: Dayjs;
-  type: "energy" | "demand";
   onDateChange?: (newDate: Dayjs) => void;
-}) {
+} & RateAspect) {
   if (!selectedPlan) return null;
 
   const weekdaySchedule = selectedPlan[`${type}WeekdaySched`];
@@ -324,7 +332,7 @@ export function ScheduleHeatmap({
 
   const handleCellClick = (
     monthIndex: number,
-    dayType: "weekday" | "weekend"
+    dayType: "weekday" | "weekend",
   ) => {
     if (!onDateChange) return;
     const newDate = getFirstDayOfType(date.year(), monthIndex, dayType);
@@ -341,19 +349,20 @@ export function ScheduleHeatmap({
         "All Week " + title,
         weekdaySchedule,
         colorScale,
-        interactive
+        interactive,
       )
     : createCombinedScheduleSpec(
         title,
         weekdaySchedule,
         weekendSchedule,
         colorScale,
-        interactive
+        interactive,
       );
 
   return (
     <Heatmap
       spec={spec}
+      type={type}
       onCellClick={onDateChange ? handleCellClick : undefined}
     />
   );

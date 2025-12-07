@@ -1,4 +1,4 @@
-import { Button, Card, Popover, Statistic } from "antd";
+import { Button, Card, Statistic, Tooltip } from "antd";
 import type { Dayjs } from "dayjs";
 import { sum, uniqBy } from "es-toolkit";
 import { useMemo } from "react";
@@ -64,14 +64,13 @@ export function EnergyRateChart({
             <>
               / kWh all day {sameAllYearLong ? "all year" : ""}
               {first.adj != null && (
-                <Popover
-                  trigger="click"
-                  content={`Base rate of ${price.format(first.baseRate ?? 0)} includes adjustment of ${price.format(first.adj ?? 0)}`}
+                <Tooltip
+                  title={`This rate is the base rate + the adjustment. ${price.format(first.baseRate ?? 0)} + ${price.format(first.adj ?? 0)}`}
                 >
                   <Button size="large" style={{ marginLeft: 8 }}>
                     Adj.
                   </Button>
-                </Popover>
+                </Tooltip>
               )}
             </>
           }

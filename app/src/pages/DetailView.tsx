@@ -242,14 +242,6 @@ export default function DetailView() {
         className={clsx(s.charts, { [s.chartLoading]: selectedPlanLoading })}
       >
         <DetailSection
-          description={DESCRIPTIONS.fixedCharges}
-          hide={!hasFixedCharges}
-          title="Fixed & Minimum Charges"
-        >
-          <FixedChargesCard selectedPlan={selectedPlan} />
-        </DetailSection>
-
-        <DetailSection
           breakBefore
           description={DESCRIPTIONS.energy}
           hide={selectedPlan?.energyWeekdaySched == null}
@@ -264,6 +256,7 @@ export default function DetailView() {
           <EnergyRateChart selectedPlan={selectedPlan} date={date} />
           <EnergyTiersChart selectedPlan={selectedPlan} date={date} />
         </DetailSection>
+        <CountyMap selectedPlan={selectedPlan} />
         <DetailSection
           description={DESCRIPTIONS.coincidentDemand}
           hide={selectedPlan?.coincidentSched == null}
@@ -296,7 +289,13 @@ export default function DetailView() {
             onDateChange={onDateChange}
           />
         </DetailSection>
-        <CountyMap selectedPlan={selectedPlan} />
+        <DetailSection
+          description={DESCRIPTIONS.fixedCharges}
+          hide={!hasFixedCharges}
+          title="Fixed & Minimum Charges"
+        >
+          <FixedChargesCard selectedPlan={selectedPlan} />
+        </DetailSection>
         <RatePlanTimeline ratePlan={selectedPlan} />
       </div>
     </PageBody>
