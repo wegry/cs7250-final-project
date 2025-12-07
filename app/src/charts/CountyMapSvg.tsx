@@ -47,7 +47,7 @@ export interface CountyMapSvgProps {
   getTooltip?: (
     countyName: string,
     state: string,
-    isHighlighted: boolean
+    isHighlighted: boolean,
   ) => string;
 }
 

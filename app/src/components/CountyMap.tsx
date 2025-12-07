@@ -8,6 +8,8 @@ import {
   normalizeCountyName,
 } from "../hooks/useCountyGeojson";
 import { CountyMapSvg } from "../charts/CountyMapSvg";
+import { CardWithTooltip } from "./CardWithTooltip";
+import { countyMapTooltip } from "../copy";
 
 type TerritoryRow = { county: string; state: string };
 
@@ -115,7 +117,7 @@ export function CountyMap({
   }
 
   return (
-    <Card>
+    <CardWithTooltip tooltip={countyMapTooltip}>
       {states.length === 0 ? (
         <div
           style={{
@@ -149,18 +151,7 @@ export function CountyMap({
           />
         </>
       )}
-      <p
-        style={{
-          margin: "8px 0 0 0",
-          color: "#666",
-          fontSize: 12,
-          maxWidth: "40ch",
-        }}
-      >
-        Counties in blue are served by the utility. Projection: Albers Equal
-        Area Conic (CONUS).
-      </p>
-    </Card>
+    </CardWithTooltip>
   );
 }
 

@@ -59,7 +59,7 @@ export default function BAMap() {
         prev.set(BA_PARAM, baKey);
         return prev;
       },
-      { replace: true }
+      { replace: true },
     );
     fetchUtilitiesForBA(baKey);
   };
@@ -171,7 +171,7 @@ export default function BAMap() {
             rewindPolygon(geometry.coordinates);
           } else if (geometry.type === "MultiPolygon") {
             geometry.coordinates.forEach((poly: number[][][]) =>
-              rewindPolygon(poly)
+              rewindPolygon(poly),
             );
           }
           return geometry;

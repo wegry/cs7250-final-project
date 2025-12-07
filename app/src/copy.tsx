@@ -15,3 +15,5 @@ export const complexEnergyScheduleTooltip = (
 );
 
 export const zipCodeSearchTooltip = `If you don't know your electricity provider, you can check which ones are present in your zip code here.`;
+
+export const countyMapTooltip = `Counties in green are served by the utility. Projection: Albers Equal Area Conic (CONUS).`;

@@ -16,7 +16,7 @@ import * as s from "./ZipSearch.module.css";
 import { countFormatter } from "../formatters";
 import { PageBody } from "../components/PageBody";
 import { preprocessVector } from "../data/schema";
-import { zipCodeSearchTooltip } from "../copy";
+import { countyMapTooltip, zipCodeSearchTooltip } from "../copy";
 
 // Zod schema for utility results
 const UtilityResultSchema = z.object({
@@ -357,8 +357,7 @@ export function ZipSearch() {
                     maxWidth: "40ch",
                   }}
                 >
-                  Counties in blue served by utilities matching your search.
-                  Projection: Albers Equal Area Conic (CONUS).
+                  {countyMapTooltip}
                 </p>
               </>
             )}
