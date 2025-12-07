@@ -2,11 +2,26 @@ import { Alert, Card, Spin, Table, Typography } from "antd";
 import * as d3 from "d3";
 import type { FeatureCollection } from "geojson";
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
+import { z } from "zod";
 import { conn } from "../data/duckdb";
+import { statesArray } from "../data/schema";
 import { PageBody } from "../components/PageBody";
 
 const { Paragraph } = Typography;
+
+// Zod schema for BA utility results
+const BAUtilitySchema = z.object({
+  utilityName: z.string().nullable(),
+  usurdb_id: z.string(),
+  plans: z.bigint().transform((n) => Number(n)),
+  eiaId: z.bigint().transform((n) => Number(n)),
+  states: statesArray,
+});
+
+const BAUtilityArraySchema = z.array(BAUtilitySchema);
+
+type BAUtility = z.infer<typeof BAUtilitySchema>;
 
 interface BASummary {
   name: string;
@@ -25,14 +40,37 @@ interface BAProperties {
   baSummary?: BASummary;
 }
 
+const BA_PARAM = "ba";
+
 export default function BAMap() {
   const svgRef = useRef<SVGSVGElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
-  const [utilities, setUtilities] = useState<any[]>([]);
-  const [selectedBA, setSelectedBA] = useState<string | null>(null);
+  const [utilities, setUtilities] = useState<BAUtility[]>([]);
   const [utilsLoading, setUtilsLoading] = useState(false);
+  const [params, setParams] = useSearchParams();
+
+  const selectedBA = params.get(BA_PARAM);
+
+  const setSelectedBA = (baKey: string) => {
+    setParams(
+      (prev) => {
+        prev.set(BA_PARAM, baKey);
+        return prev;
+      },
+      { replace: true }
+    );
+    fetchUtilitiesForBA(baKey);
+  };
+
+  // Load utilities from URL params on mount
+  useEffect(() => {
+    const baFromParams = params.get(BA_PARAM);
+    if (baFromParams) {
+      fetchUtilitiesForBA(baFromParams);
+    }
+  }, []);
 
   useEffect(() => {
     if (!svgRef.current) return;
@@ -133,7 +171,7 @@ export default function BAMap() {
             rewindPolygon(geometry.coordinates);
           } else if (geometry.type === "MultiPolygon") {
             geometry.coordinates.forEach((poly: number[][][]) =>
-              rewindPolygon(poly),
+              rewindPolygon(poly)
             );
           }
           return geometry;
@@ -240,14 +278,9 @@ export default function BAMap() {
               props.zone_name ||
               null;
 
-            const baDisplay =
-              props?.baSummary?.zoneName ||
-              props?.zoneName ||
-              props?.name ||
-              "Unknown BA";
-
-            setSelectedBA(baDisplay);
-            fetchUtilitiesForBA(baShort);
+            if (baShort) {
+              setSelectedBA(baShort);
+            }
           });
 
         setLoading(false);
@@ -272,24 +305,58 @@ export default function BAMap() {
       const c = await conn;
 
       const q = `
+        WITH
+        -- Find all rate plans that have been superseded by another
+        superseded_ids AS (
+          SELECT DISTINCT supercedes AS superseded_id
+          FROM flattened.usurdb
+          WHERE supercedes IS NOT NULL
+        ),
+        -- Get the default (or most recent) active plan per utility for linking
+        default_plans AS (
+          SELECT _id, eiaId, utilityName
+          FROM flattened.usurdb
+          WHERE _id NOT IN (SELECT superseded_id FROM superseded_ids)
+            AND endDate IS NULL
+          QUALIFY ROW_NUMBER() OVER (
+            PARTITION BY eiaId
+            ORDER BY is_default DESC, effectiveDate DESC
+          ) = 1
+        ),
+        -- Count all active plans per utility
+        plan_counts AS (
+          SELECT eiaId, COUNT(*) AS plans
+          FROM flattened.usurdb
+          WHERE _id NOT IN (SELECT superseded_id FROM superseded_ids)
+            AND endDate IS NULL
+          GROUP BY eiaId
+        ),
+        -- Get states from service territory
+        service_territory AS (
+          SELECT "Utility Number",
+            array_agg(DISTINCT State) AS states
+          FROM flattened.eia861_service_territory
+          GROUP BY "Utility Number"
+        )
         SELECT
-          u.utilityName,
-          MIN(u._id) AS sample_id,
-          COUNT(*) AS plans,
-          MIN(u.eiaId) AS eiaId
-        FROM flattened.usurdb u
-        LEFT JOIN flattened.utility_data ud ON ud.eiaId = u.eiaId
-        WHERE ud.eiaId IS NOT NULL
-          AND lower(CAST(ud.ba AS VARCHAR)) LIKE '%' || lower(?) || '%'
-        GROUP BY u.utilityName
-        ORDER BY u.utilityName
+          dp.utilityName,
+          dp._id AS usurdb_id,
+          pc.plans,
+          dp.eiaId,
+          st.states
+        FROM default_plans dp
+        INNER JOIN plan_counts pc ON pc.eiaId = dp.eiaId
+        INNER JOIN flattened.utility_data ud ON ud.eiaId = dp.eiaId
+        LEFT JOIN service_territory st ON st."Utility Number" = dp.eiaId
+        WHERE lower(CAST(ud.ba AS VARCHAR)) LIKE '%' || lower(?) || '%'
+        ORDER BY dp.utilityName
       `;
 
       const stmt = await c.prepare(q);
       const result = await stmt.query(baKey);
       const rows = result.toArray();
 
-      setUtilities(rows);
+      setUtilities(BAUtilityArraySchema.parse(rows));
     } catch (err) {
       console.error("Error fetching utilities for BA:", err);
       setUtilities([]);
@@ -372,6 +439,7 @@ export default function BAMap() {
             display: "block",
           }}
         />
+        {/* Tooltip element */}
         <div
           ref={tooltipRef}
           style={{
@@ -395,22 +463,29 @@ export default function BAMap() {
       >
         <Table
           columns={[
-            { title: "Utility", dataIndex: "utilityName", key: "utilityName" },
-            { title: "Plans", dataIndex: "plans", key: "plans" },
-            { title: "EIA ID", dataIndex: "eiaId", key: "eiaId" },
             {
-              title: "Details",
-              key: "detail",
-              render: (_: any, record: any) =>
-                record.sample_id ? (
-                  <Link to={`/detail/${record.sample_id}`}>View</Link>
+              title: "Utility",
+              dataIndex: "utilityName",
+              key: "utilityName",
+              render: (value: string, record: BAUtility) =>
+                record.usurdb_id ? (
+                  <Link to={`/detail/${record.usurdb_id}`}>{value}</Link>
                 ) : (
-                  <>—</>
+                  value
                 ),
             },
+            {
+              title: "States",
+              dataIndex: "states",
+              key: "states",
+              width: 120,
+              render: (states: string[]) => states?.join(", ") ?? "—",
+            },
+            { title: "Plans", dataIndex: "plans", key: "plans", width: 80 },
+            { title: "EIA ID", dataIndex: "eiaId", key: "eiaId", width: 100 },
           ]}
           dataSource={utilities}
-          rowKey={(r) => r.utilityName}
+          rowKey={(r) => r.eiaId.toString()}
           loading={utilsLoading}
           pagination={{ pageSize: 10 }}
         />
