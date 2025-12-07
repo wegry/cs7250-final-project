@@ -11,7 +11,7 @@ df = df.rename({"Delivery \r\nend date": "Delivery end date"})
 
 import duckdb
 
-con = duckdb.connect("flattened.duckdb")
+con = duckdb.connect("../app/public/flattened.duckdb")
 
 # Or use DuckDB's register method for zero-copy
 con.register("raw_wholesale", df)

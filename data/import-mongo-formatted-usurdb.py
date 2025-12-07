@@ -42,7 +42,7 @@ for doc in data:
     cleaned = clean_mongo_json(doc)
     f.write(json.dumps(cleaned) + "\n")
 
-conn = duckdb.connect("flattened.duckdb")
+conn = duckdb.connect("../app/public/flattened.duckdb")
 # DuckDB can handle nested JSON structures
 conn.execute(
     f"""

@@ -16,7 +16,7 @@ from collections import defaultdict
 import os
 
 # Resolve duckdb path relative to this script so the script can be run from any CWD
-DB_PATH = os.path.join(os.path.dirname(__file__), "flattened.duckdb")
+DB_PATH = os.path.join(os.path.dirname(__file__), "../app/public/flattened.duckdb")
 
 # Connect to DuckDB
 con = duckdb.connect(DB_PATH, read_only=True)
@@ -152,14 +152,14 @@ print(f"Found {len(utility_ba_map)} utilities with BA mapping from utility_data"
 
 # Query utility data from DuckDB
 query = """
-SELECT 
+SELECT
     eiaId,
     utilityName,
     COUNT(*) as num_rate_plans
 FROM usurdb
-WHERE 
-eiaId IS NOT NULL 
-AND 
+WHERE
+eiaId IS NOT NULL
+AND
 (
     effectiveDate <= CURRENT_DATE AND (endDate IS NULL OR endDate >= CURRENT_DATE)
 )

@@ -25,7 +25,7 @@ if __name__ == "__main__":
     df = load_ba_assignments()
 
     # Connect to database
-    con = duckdb.connect("flattened.duckdb")
+    con = duckdb.connect("../app/public/flattened.duckdb")
 
     f = NamedTemporaryFile("w")
     # Clean and write each document

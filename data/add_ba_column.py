@@ -87,7 +87,7 @@ if __name__ == "__main__":
     ba_assignments: Dict[int, str] = load_ba_mappings_from_sales()
 
     # Connect to database
-    con = duckdb.connect("flattened.duckdb")
+    con = duckdb.connect("../app/public/flattened.duckdb")
 
     f = NamedTemporaryFile("w")
     # Clean and write each document
