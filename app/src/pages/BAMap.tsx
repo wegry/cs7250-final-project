@@ -302,16 +302,37 @@ export default function BAMap() {
     <PageBody title="U.S. Balancing Authorities">
       <Card title="About This Map" style={{ marginBottom: "24px" }}>
         <Paragraph>
-          This map displays the geographic boundaries of Balancing Authorities (BAs) in the continental United States. A Balancing Authority is the organization responsible for keeping electricity supply and demand in balance across a region, operating the transmission grid, and managing wholesale electricity markets.
+          This map displays the geographic boundaries of Balancing Authorities
+          (BAs) in the continental United States. A Balancing Authority is the
+          organization responsible for keeping electricity supply and demand in
+          balance across a region, operating the transmission grid, and managing
+          wholesale electricity markets.
         </Paragraph>
         <Paragraph>
-          The United States is divided into dozens of these regions, each with its own market rules, pricing structures, and mix of utilities. The boundaries you see here represent the areas where each BA coordinates power generation and delivery.
+          The United States is divided into dozens of these regions, each with
+          its own market rules, pricing structures, and mix of utilities. The
+          boundaries you see here represent the areas where each BA coordinates
+          power generation and delivery.
         </Paragraph>
         <Paragraph>
-          <strong>Click on any region</strong> to view utilities operating within that Balancing Authority and explore their available rate plans.
+          <strong>Click on any region</strong> to view utilities operating
+          within that Balancing Authority and explore their available rate
+          plans.
         </Paragraph>
         <Paragraph style={{ fontSize: "13px", color: "#666" }}>
-          <strong>Notable regions:</strong> <strong>PJM</strong> covers the Mid-Atlantic and parts of the Midwest, hosting one of the largest concentrations of data center load in the country. <strong>ERCOT</strong> operates Texas's grid largely independently from the rest of North America, with limited interconnections to Mexico. <strong>MISO</strong> spans from the Gulf Coast to the Canadian border, including parts of Manitoba. <strong>CAISO</strong> manages California's grid and leads in renewable energy integration. <strong>ISO-NE</strong> coordinates New England's six-state region. <strong>SPP</strong> covers the wind-rich Great Plains from Texas to the Dakotas. <strong>NYISO</strong> operates New York's market, balancing dense urban load in New York City with upstate hydro and nuclear generation.
+          <strong>Notable regions:</strong> <strong>PJM</strong> covers the
+          Mid-Atlantic and parts of the Midwest, hosting one of the largest
+          concentrations of data center load in the country.{" "}
+          <strong>ERCOT</strong> operates Texas's grid largely independently
+          from the rest of North America, with limited interconnections to
+          Mexico. <strong>MISO</strong> spans from the Gulf Coast to the
+          Canadian border, including parts of Manitoba. <strong>CAISO</strong>{" "}
+          manages California's grid and leads in renewable energy integration.{" "}
+          <strong>ISO-NE</strong> coordinates New England's six-state region.{" "}
+          <strong>SPP</strong> covers the wind-rich Great Plains from Texas to
+          the Dakotas. <strong>NYISO</strong> operates New York's market,
+          balancing dense urban load in New York City with upstate hydro and
+          nuclear generation.
         </Paragraph>
       </Card>
       {error && (
