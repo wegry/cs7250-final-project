@@ -1,0 +1,11 @@
+.stateOutline {
+  fill: none;
+  stroke: #333;
+  stroke-width: 3;
+}
+
+.county {
+  cursor: pointer;
+  stroke: #999;
+  stroke-width: 0.5;
+}

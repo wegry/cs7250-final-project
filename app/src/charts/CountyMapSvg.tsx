@@ -6,6 +6,7 @@ import {
   type BBox,
   type CountyFeature,
 } from "../hooks/useCountyGeojson";
+import s from "./CountyMapSvg.module.css";
 
 function NorthArrow({
   x,
@@ -50,6 +51,8 @@ export interface CountyMapSvgProps {
   ) => string;
 }
 
+const highlightColor = "lch(57.588% 68.242 283.865)";
+
 export function CountyMapSvg({
   width,
   height,
@@ -70,11 +73,9 @@ export function CountyMapSvg({
           {/* State outlines */}
           {stFeatures.map((f: CountyFeature, idx: number) => (
             <path
+              className={s.stateOutline}
               key={`outline-${idx}`}
               d={bbox ? buildSvgPath(f, bbox, width, height) : ""}
-              fill="none"
-              stroke="#333"
-              strokeWidth={3}
             />
           ))}
           {/* County fills */}
@@ -83,7 +84,9 @@ export function CountyMapSvg({
             const key = `${st}:${normalizeCountyName(countyName)}`;
             const isHighlighted = highlightedCounties.has(key);
             const isHovered = hovered === `${st}:${countyName}`;
-            const fillColor = isHighlighted ? "#b03a2e" : "#f5f5f5";
+            const fillColor = isHighlighted
+              ? `lch(from ${highlightColor} calc(l * 1.3) c h)`
+              : "#f5f5f5";
 
             const tooltipText = getTooltip
               ? getTooltip(countyName, st, isHighlighted)
@@ -92,19 +95,17 @@ export function CountyMapSvg({
             return (
               <Tooltip key={`fill-${idx}`} title={tooltipText} placement="top">
                 <path
+                  className={s.county}
                   d={bbox ? buildSvgPath(f, bbox, width, height) : ""}
                   fill={
                     isHovered
                       ? isHighlighted
-                        ? "#8b2e24"
+                        ? highlightColor
                         : "#e0e0e0"
                       : fillColor
                   }
-                  stroke="#999"
-                  strokeWidth={0.5}
                   onMouseEnter={() => setHovered(`${st}:${countyName}`)}
                   onMouseLeave={() => setHovered(null)}
-                  style={{ cursor: "pointer" }}
                 />
               </Tooltip>
             );
