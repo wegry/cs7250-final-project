@@ -39,7 +39,7 @@ function Layout() {
       <Link to="/zip-search">Zip Search</Link>
       <Link to="/detail">Detail View</Link>
       <Link to="/compare">Compare Plans</Link>
-      <Link to="/map">BA Map</Link>
+      <Link to="/map">Map</Link>
     </>
   );
 

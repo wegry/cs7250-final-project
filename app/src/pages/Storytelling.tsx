@@ -22,14 +22,29 @@ const sections = [
 function Storytelling() {
   const body = (
     <main className={s.main}>
-      <h1>How is electricity priced in the US?</h1>
-      This app uses{" "}
-      <a href="https://openei.org/wiki/Utility_Rate_Database">OpenEI data</a> to
-      try and show what rates are in use across the country.{" "}
-      <i>
-        Note: these rates and prices are mostly generation charges and do not
-        include distribution charges.
-      </i>
+      <h1>How is electricity usage priced in the US?</h1>
+      <Paragraph>
+        America's electricity grids face challenges from extreme weather events,
+        aging infrastructure, and growing demand from data centers and
+        electrification. This app is built to help users understand different
+        pricing mechanisms across different utilities. We combine data from the
+        US Utility Rate Database<a href="#footnote-1">[1]</a> and the Energy
+        Information Agency's EIA-861 to show patterns in how different pricing
+        schemes affect consumer costs.
+      </Paragraph>
+      <h2>Pages in this app</h2>
+      <Paragraph>
+        This app consists of a few pages:{" "}
+        <a href="#plan-survey">the remainder of this page</a> is a aggregation
+        of how pricing mechanisms work. <Link to="/zip-search">Zip Search</Link>{" "}
+        allows looking up utilities and by extension rate plans by zip code.{" "}
+        <Link to="/detail">Detail View</Link> lets you search directly by
+        utility and rate plan name. <Link to="/compare">Compare</Link> lets you
+        see how costs compare between two rate plans of your choice.{" "}
+        <Link to="/bamap">Map</Link> allows you to search for utility and rate
+        plan names at a higher level.
+      </Paragraph>
+      <h2 id="plan-survey">Different Categories of Utility Rate Plans</h2>
       <Card className={s.toc}>
         <strong>Jump to:</strong>
         <ul>
@@ -41,7 +56,7 @@ function Storytelling() {
         </ul>
       </Card>
       <section id="flat">
-        <h2>Flat Rate Plans</h2>
+        <h3>Flat Rate Plans</h3>
         <Paragraph>
           Flat rate plans are the simplest form of electricity pricing—you pay
           the same price per kilowatt-hour no matter when you use power or how
@@ -57,7 +72,7 @@ function Storytelling() {
         <PlanTypeTable planType="flat" date={TODAY} />
       </section>
       <section id="tiered">
-        <h2>Flat Rate Plans with Lots of Tiers</h2>
+        <h3>Flat Rate Plans with Lots of Tiers</h3>
         <Paragraph>
           Tiered rate plans charge different prices depending on how much
           electricity you use each month. The first block of kilowatt-hours
@@ -73,7 +88,7 @@ function Storytelling() {
         <PlanTypeTable planType="tiered" date={TODAY} />
       </section>
       <section id="tou">
-        <h2>Time of Day</h2>
+        <h3>Time of Day</h3>
         <Paragraph>
           Time-of-use (TOU) plans charge different rates depending on when you
           consume electricity. Peak hours—typically late afternoon and early
@@ -89,7 +104,7 @@ function Storytelling() {
         <PlanTypeTable planType="tou" date={TODAY} />
       </section>
       <section id="coincident">
-        <h2>Coincident Demand</h2>
+        <h3>Coincident Demand</h3>
         <Paragraph>
           Coincident demand plans charge based on your usage during the single
           peak hour each month—a window chosen by the utility based on
@@ -105,7 +120,7 @@ function Storytelling() {
         <PlanTypeTable planType="coincident" date={TODAY} />
       </section>
       <section id="demand">
-        <h2>Demand</h2>
+        <h3>Demand</h3>
         <Paragraph>
           Demand-based plans charge not just for total energy consumed, but also
           for your peak power draw measured in kilowatts. Think of it like
@@ -122,7 +137,7 @@ function Storytelling() {
         <PlanTypeTable planType="demand" date={TODAY} />
       </section>
       <section id="flat-demand">
-        <h2>Flat Demand</h2>
+        <h3>Flat Demand</h3>
         <Paragraph>
           Flat demand plans include a fixed monthly charge based on a
           predetermined demand threshold, regardless of your actual peak usage.
@@ -138,7 +153,7 @@ function Storytelling() {
         <PlanTypeTable planType="flatDemand" date={TODAY} />
       </section>
       <section id="complex">
-        <h2>All of the Above</h2>
+        <h3>All of the Above</h3>
         <Paragraph>
           Some rate structures combine multiple pricing mechanisms into a single
           plan—tiered energy rates, time-of-use pricing, coincident demand
@@ -152,6 +167,20 @@ function Storytelling() {
           this one essential for understanding your bill.
         </Paragraph>
         <PlanTypeTable planType="complex" date={TODAY} />
+      </section>
+      <section>
+        <h2>Footnotes</h2>
+        <Paragraph id="footnote-1">
+          [1] This app uses{" "}
+          <a href="https://openei.org/wiki/Utility_Rate_Database">
+            OpenEI data
+          </a>{" "}
+          to try and show what rates are in use across the country.{" "}
+          <i>
+            Note: these rates and prices are Residential and mostly generation
+            charges and do not include distribution charges.
+          </i>
+        </Paragraph>
       </section>
     </main>
   );
