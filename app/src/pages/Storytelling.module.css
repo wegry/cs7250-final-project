@@ -39,7 +39,7 @@
   display: block;
 }
 
-.sectionImage+.sectionImage {
+.sectionImage + .sectionImage {
   margin-top: 1rem;
 }
 
