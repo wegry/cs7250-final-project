@@ -8,6 +8,7 @@ import {
   Form,
   Popover,
   Row,
+  Tag,
 } from "antd";
 import clsx from "clsx";
 import {
@@ -24,21 +25,21 @@ import * as s from "./DetailView.module.css";
 import dayjs, { Dayjs } from "dayjs";
 import { useCallback, useMemo } from "react";
 import { EnergyRateChart } from "../charts/energyRateStructure";
+import { EnergyTiersChart } from "../charts/EnergyTiersChart";
 import {
   CoincidentRateChart,
   DemandRateChart,
   DemandTierRateChart,
   FlatDemandChart,
 } from "../charts/otherRateStructures";
+import CountyMap from "../components/CountyMap";
 import { DetailSection } from "../components/DetailSection";
 import { FixedChargesCard } from "../components/FixedCharges";
+import { PageBody } from "../components/PageBody";
 import { RatePlanTimeline } from "../components/RatePlanTimeline";
 import { ScheduleHeatmap } from "../components/Schedule";
 import { list } from "../formatters";
-import { EnergyTiersChart } from "../charts/EnergyTiersChart";
-import CountyMap from "../components/CountyMap";
 import { RATE_PLAN_QUERY_PARAM } from "./ComparePlans";
-import { PageBody } from "../components/PageBody";
 const DATE_PARAM = "date";
 
 const DESCRIPTIONS = {
@@ -157,6 +158,67 @@ export default function DetailView() {
         ) : (
           <>&mdash;</>
         ),
+      },
+      {
+        label: "Rate features",
+        children: (() => {
+          // Time-sensitive (orange)
+          const tags = [
+            {
+              key: "Energy time-of-use",
+              active: selectedPlan?.energyWeekdaySched
+                ?.map((month) => new Set(month).size ?? 0)
+                ?.some((x) => x > 1),
+              color: "orange",
+            },
+            {
+              key: "Demand charges",
+              active: selectedPlan?.demandWeekdaySched != null,
+              color: "orange",
+            },
+            {
+              key: "Coincident demand",
+              active: selectedPlan?.coincidentSched != null,
+              color: "orange",
+            },
+
+            // Volume-sensitive (purple)
+            {
+              key: "Energy tiers",
+              active: selectedPlan?.energyRate_tiers?.some((periodTiers) => {
+                const rates = periodTiers.map(
+                  (t) => (t.rate ?? 0) + (t.adj ?? 0),
+                );
+                return new Set(rates).size > 1;
+              }),
+              color: "purple",
+            },
+
+            // Fixed/predictable (cyan)
+            {
+              key: "Flat energy rate",
+              active: selectedPlan?.energyWeekdaySched
+                ?.map((month) => new Set(month).size ?? 0)
+                ?.every((x) => x === 1),
+              color: "cyan",
+            },
+            {
+              key: "Flat demand",
+              active: selectedPlan?.flatDemandMonths != null,
+              color: "cyan",
+            },
+          ].flatMap((f) =>
+            f.active ? (
+              <Tag key={f.key} color={f.color}>
+                {f.key}
+              </Tag>
+            ) : (
+              []
+            ),
+          );
+
+          return <div className={s.tags}>{tags}</div>;
+        })(),
       },
     ] satisfies DescriptionsProps["items"];
   }, [selectedPlan, supercededBy]);
