@@ -1,10 +1,10 @@
 import type { RateAspect } from "./components/Schedule";
 
 export const complexEnergyScheduleTooltip = (
-  type: RateAspect<"flat demand">["type"],
+  type: RateAspect<"flat demand">["type"]
 ) => (
   <>
-    This rate plan's {type} rate varies based on month
+    This rate plan's {type} rate varies based on the month
     {["demand", "energy"].includes(type) && ` or weekday vs. weekend`}. Each
     period represents a different set of rates and/or tiers.
     <br />

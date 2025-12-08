@@ -35,7 +35,7 @@ function Storytelling() {
       <h2>Pages in this app</h2>
       <Paragraph>
         This app consists of a few pages:{" "}
-        <a href="#plan-survey">the remainder of this page</a> is a aggregation
+        <a href="#plan-survey">the remainder of this page</a> is an aggregation
         of how pricing mechanisms work. <Link to="/zip-search">Zip Search</Link>{" "}
         allows looking up utilities and by extension rate plans by zip code.{" "}
         <Link to="/detail">Detail View</Link> lets you search directly by
