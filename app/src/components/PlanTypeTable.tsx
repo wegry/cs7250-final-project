@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
-import { Table } from "antd";
+import { Input, Table } from "antd";
+import { SearchOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
+import { useState, type Key } from "react";
 import { useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import {
@@ -23,6 +25,10 @@ export function PlanTypeTable({
 }: PlanTypeTableProps) {
   const dateStr = date.format("YYYY-MM-DD");
 
+  const [utilityFilter, setUtilityFilter] = useState("");
+  const [rateFilter, setRateFilter] = useState("");
+  const [stateFilter, setStateFilter] = useState("");
+
   const { data, isLoading, error } = useQuery({
     queryKey: ["plansByType", planType, dateStr],
     queryFn: async () => {
@@ -31,12 +37,65 @@ export function PlanTypeTable({
     },
   });
 
+  const buildTextFilter =
+    (
+      placeholder: string | undefined,
+      value: string,
+      onChange: (next: string) => void,
+    ): ColumnsType<PlanTypeSummary>[number]["filterDropdown"] =>
+    ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
+      <div style={{ padding: 8 }}>
+        <Input
+          placeholder={placeholder}
+          value={selectedKeys[0] ?? value}
+          onChange={(e) => {
+            const next = e.target.value;
+            setSelectedKeys(next ? [next] : []);
+            onChange(next);
+            confirm({ closeDropdown: false });
+          }}
+          onPressEnter={() => confirm()}
+          allowClear
+          autoFocus
+        />
+        <div style={{ display: "flex", justifyContent: "space-between" }}>
+          <a
+            onClick={() => {
+              onChange("");
+              setSelectedKeys([]);
+              clearFilters?.();
+              confirm({ closeDropdown: false });
+            }}
+          >
+            Reset
+          </a>
+          <a onClick={() => confirm({ closeDropdown: true })}>Apply</a>
+        </div>
+      </div>
+    );
+
+  const textFilterIcon = (filtered: boolean) => (
+    <SearchOutlined style={{ color: filtered ? "#1677ff" : undefined }} />
+  );
+
+  const matches = (value: string, query: boolean | Key) =>
+    (value ?? "").toLowerCase().includes((query as string).toLowerCase());
+
   const columns: ColumnsType<PlanTypeSummary> = [
     {
       title: "State(s)",
       dataIndex: "states",
       key: "states",
-      width: 78,
+      width: 95,
+      filterDropdown: buildTextFilter(
+        "Search states",
+        stateFilter,
+        setStateFilter,
+      ),
+      filterIcon: textFilterIcon,
+      filteredValue: stateFilter ? [stateFilter] : null,
+      onFilter: (value, record) =>
+        (record.states ?? []).some((st) => matches(st, value)),
       render: (_, record) => {
         return list.format(record.states ?? []);
       },
@@ -46,11 +105,27 @@ export function PlanTypeTable({
       dataIndex: "utilityName",
       key: "utilityName",
       ellipsis: true,
+      filterDropdown: buildTextFilter(
+        "Search utility",
+        utilityFilter,
+        setUtilityFilter,
+      ),
+      filterIcon: textFilterIcon,
+      filteredValue: utilityFilter ? [utilityFilter] : null,
+      onFilter: (value, record) => matches(record.utilityName, value),
     },
     {
       title: "Rate Name",
       dataIndex: "rateName",
       key: "rateName",
+      filterDropdown: buildTextFilter(
+        "Search rate name",
+        rateFilter,
+        setRateFilter,
+      ),
+      filterIcon: textFilterIcon,
+      filteredValue: rateFilter ? [rateFilter] : null,
+      onFilter: (value, record) => matches(record.rateName, value as string),
       render: (text, record) => (
         <Link to={`/detail/${record._id}?date=${dateStr}`}>{text}</Link>
       ),
