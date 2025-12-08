@@ -6,6 +6,6 @@ html,
 body {
   margin: 0;
   overscroll-behavior-y: none;
-  --highlight-color: lch(61% 64 145);
+  --highlight-color: lch(57% 64 145);
   --row-alt-color: lch(90% 5 145);
 }

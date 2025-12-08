@@ -11,12 +11,7 @@ import {
   Tag,
 } from "antd";
 import clsx from "clsx";
-import {
-  Link,
-  useNavigate,
-  useParams,
-  useSearchParams,
-} from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { RatePlanSelector } from "../components/RatePlanSelector";
 import { useRateSupercededBy } from "../hooks/useRateInPlanData";
 import { useRatePlan } from "../hooks/useRatePlan";
@@ -40,6 +35,7 @@ import { RatePlanTimeline } from "../components/RatePlanTimeline";
 import { ScheduleHeatmap } from "../components/Schedule";
 import { list } from "../formatters";
 import { RATE_PLAN_QUERY_PARAM } from "./ComparePlans";
+import { InternalLink } from "../components/InternalLink";
 const DATE_PARAM = "date";
 
 const DESCRIPTIONS = {
@@ -95,12 +91,13 @@ export default function DetailView() {
       {
         label: "Supercedes",
         children: selectedPlan?.supercedes ? (
-          <Link
+          <InternalLink
+            mode="table"
             className={s.supercedes}
             to={`/detail/${selectedPlan?.supercedes}`}
           >
             {selectedPlan?.supercedes}
-          </Link>
+          </InternalLink>
         ) : (
           <>&mdash;</>
         ),
@@ -108,9 +105,13 @@ export default function DetailView() {
       {
         label: "Superceded By",
         children: supercededBy?.[0]?._id ? (
-          <Link className={s.supercedes} to={`/detail/${supercededBy[0]._id}`}>
+          <InternalLink
+            mode="table"
+            className={s.supercedes}
+            to={`/detail/${supercededBy[0]._id}`}
+          >
             {supercededBy[0]._id}
-          </Link>
+          </InternalLink>
         ) : (
           <>&mdash;</>
         ),

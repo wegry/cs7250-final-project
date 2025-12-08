@@ -2,7 +2,7 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { Alert, Card, Col, Form, Input, Row, Spin, Table } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { useMemo } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { z } from "zod";
 import { conn } from "../data/duckdb";
 import { useDebouncedValue } from "../hooks/useDebouncedValue";
@@ -17,6 +17,7 @@ import { countFormatter } from "../formatters";
 import { PageBody } from "../components/PageBody";
 import { preprocessVector } from "../data/schema";
 import { countyMapTooltip, zipCodeSearchTooltip } from "../copy";
+import { InternalLink } from "../components/InternalLink";
 
 // Zod schema for utility results
 const UtilityResultSchema = z.object({
@@ -40,7 +41,9 @@ const columns: ColumnsType<UtilityResult> = [
     key: "utilityName",
     render: (value: string | null, record) =>
       record.usurdb_id ? (
-        <Link to={`/detail/${record.usurdb_id}`}>{value ?? "Unknown"}</Link>
+        <InternalLink mode="table" to={`/detail/${record.usurdb_id}`}>
+          {value ?? "Unknown"}
+        </InternalLink>
       ) : (
         (value ?? "Unknown")
       ),

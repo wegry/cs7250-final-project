@@ -2,11 +2,12 @@ import { Alert, Card, Spin, Table, Typography } from "antd";
 import * as d3 from "d3";
 import type { FeatureCollection } from "geojson";
 import { useEffect, useRef, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { z } from "zod";
+import { InternalLink } from "../components/InternalLink";
+import { PageBody } from "../components/PageBody";
 import { conn } from "../data/duckdb";
 import { statesArray } from "../data/schema";
-import { PageBody } from "../components/PageBody";
 
 const { Paragraph } = Typography;
 
@@ -469,7 +470,9 @@ export default function BAMap() {
               key: "utilityName",
               render: (value: string, record: BAUtility) =>
                 record.usurdb_id ? (
-                  <Link to={`/detail/${record.usurdb_id}`}>{value}</Link>
+                  <InternalLink mode="table" to={`/detail/${record.usurdb_id}`}>
+                    {value}
+                  </InternalLink>
                 ) : (
                   value
                 ),

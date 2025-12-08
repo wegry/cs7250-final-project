@@ -1,16 +1,16 @@
-import { Link } from "react-router-dom";
-import { Input, Table } from "antd";
 import { SearchOutlined } from "@ant-design/icons";
-import type { ColumnsType } from "antd/es/table";
-import { useState, type Key } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Input, Table } from "antd";
+import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
+import { useState, type Key } from "react";
 import {
   getPlansByType,
   type PlanType,
   type PlanTypeSummary,
 } from "../data/plan-type-queries";
 import { countFormatter, list } from "../formatters";
+import { InternalLink } from "./InternalLink";
 import s from "./PlanTypeTable.module.css";
 
 interface PlanTypeTableProps {
@@ -127,7 +127,9 @@ export function PlanTypeTable({
       filteredValue: rateFilter ? [rateFilter] : null,
       onFilter: (value, record) => matches(record.rateName, value as string),
       render: (text, record) => (
-        <Link to={`/detail/${record._id}?date=${dateStr}`}>{text}</Link>
+        <InternalLink mode="table" to={`/detail/${record._id}?date=${dateStr}`}>
+          {text}
+        </InternalLink>
       ),
     },
     {
