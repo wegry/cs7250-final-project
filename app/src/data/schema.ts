@@ -118,7 +118,7 @@ export const RatePlan = z.object({
   energyRate_tiers: tierShape(
     z.object({
       adj: z.number().nullish(),
-      rate: z.optional(z.number()),
+      rate: z.number().nullish(),
       max: z.number().nullish(),
       unit: unionOfLiterals(["kWh", "kWh daily", "kWh/kW"] as const).nullish(),
     }),
