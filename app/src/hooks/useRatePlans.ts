@@ -1,28 +1,24 @@
 import { useQuery } from "@tanstack/react-query";
-import { get_query } from "../data/duckdb";
-import { RatePlanSelect } from "../data/schema";
-import * as queries from "../data/queries";
-import type { Dayjs } from "dayjs";
+import { getActiveRatePlans } from "../data/queries";
+import { GroupedRatePlanOptionArray } from "../data/schema";
 
-async function fetchRatePlans(byDate?: Dayjs) {
-  let raw;
-  if (!byDate) {
-    raw = await get_query(queries.selectList);
-  } else {
-    raw = await queries.selectListForDate(byDate);
-  }
-  const { data, error } = RatePlanSelect.safeParse(raw.toArray());
-
-  if (error) {
-    console.error(error);
-  }
-
-  return data;
-}
-
-export function useRatePlans(byDate?: Dayjs) {
+export function useRatePlans() {
   return useQuery({
-    queryKey: ["ratePlans", byDate],
-    queryFn: () => fetchRatePlans(byDate),
+    queryKey: ["ratePlans", "active"],
+    queryFn: async () => {
+      const result = await getActiveRatePlans();
+      const raw = result.toArray();
+
+      const { data, error } = GroupedRatePlanOptionArray.safeParse(raw, {
+        reportInput: true,
+      });
+
+      if (error) {
+        console.error(error);
+        throw error;
+      }
+
+      return data;
+    },
   });
 }

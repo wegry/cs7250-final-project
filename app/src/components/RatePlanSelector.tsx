@@ -1,39 +1,44 @@
+// RatePlanSelector.tsx
 import { Select } from "antd";
+import type { RatePlanOption } from "../data/schema";
 import { useRatePlans } from "../hooks/useRatePlans";
-import type { Dayjs } from "dayjs";
 
 interface RatePlanSelectorProps {
-  /**
-   * Use only plans active on this date
-   */
-  byDate?: Dayjs;
   value?: string | null;
   onChange: (value: string) => void;
-  label?: string;
 }
 
-export function RatePlanSelector({
-  value,
-  byDate,
-  onChange,
-}: RatePlanSelectorProps) {
-  const { data: options, isLoading, error } = useRatePlans(byDate);
+export function RatePlanSelector({ value, onChange }: RatePlanSelectorProps) {
+  const { data: options, isLoading, error } = useRatePlans();
 
   if (error) {
     return <div>Error loading rate plans: {error.message}</div>;
   }
 
+  // Search both utility name (group label) and rate name (option label)
+  const filterOption = (
+    input: string | undefined,
+    option?: RatePlanOption,
+  ): boolean => {
+    const search = input?.toLowerCase();
+    return (
+      (option?.label?.toLowerCase().includes(search!) ||
+        option?.utilityName?.toLowerCase().includes(search!)) ??
+      false
+    );
+  };
+
   return (
-    <Select
+    <Select<string, RatePlanOption>
       disabled={isLoading}
       loading={isLoading}
       onChange={onChange}
       size="large"
-      optionFilterProp="label"
-      options={options}
+      // Not sure why this type isn't matching. It may have something to do with the second type param on <Select>
+      options={options as any}
       placeholder="Choose a rate plan"
-      showSearch
+      showSearch={{ filterOption }}
       value={value}
-    ></Select>
+    />
   );
 }
