@@ -242,7 +242,6 @@ export default function DetailView() {
         className={clsx(s.charts, { [s.chartLoading]: selectedPlanLoading })}
       >
         <DetailSection
-          breakBefore
           description={DESCRIPTIONS.energy}
           hide={selectedPlan?.energyWeekdaySched == null}
           title="Energy"

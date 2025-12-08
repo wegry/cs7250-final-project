@@ -1,3 +1,5 @@
+import type { LogicalComposition } from "vega-lite/types_unstable/logical.js";
+
 interface LegendDataPoint {
   period?: number;
   tier?: number;
@@ -13,7 +15,7 @@ type OpacityEncoding =
   | { value: number }
   | {
       condition:
-        | { test: unknown; value: number }
+        | { test: LogicalComposition<any>; value: number }
         | { param: string; empty: boolean; value: number };
       value: number;
     };
@@ -36,7 +38,7 @@ export interface InteractiveLegendResult {
  */
 export function buildInteractiveLegend<T extends LegendDataPoint>(
   data: T[],
-  options: { periodField?: string; tierField?: string } = {}
+  options: { periodField?: string; tierField?: string } = {},
 ): InteractiveLegendResult {
   const { periodField = "period", tierField = "tier" } = options;
 

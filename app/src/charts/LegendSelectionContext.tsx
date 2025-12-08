@@ -27,7 +27,7 @@ interface LegendSelectionContextValue {
   registerView: (
     id: string,
     view: View,
-    opts: { hasPeriodLegend: boolean; hasTierLegend: boolean }
+    opts: { hasPeriodLegend: boolean; hasTierLegend: boolean },
   ) => void;
   unregisterView: (id: string) => void;
 }
@@ -136,18 +136,18 @@ export function LegendSelectionProvider({ children }: { children: ReactNode }) {
         }
       });
     },
-    []
+    [],
   );
 
   const registerView = useCallback(
     (
       id: string,
       view: View,
-      opts: { hasPeriodLegend: boolean; hasTierLegend: boolean }
+      opts: { hasPeriodLegend: boolean; hasTierLegend: boolean },
     ) => {
       viewsRef.current.set(id, { view, ...opts });
     },
-    []
+    [],
   );
 
   const unregisterView = useCallback((id: string) => {
@@ -156,7 +156,7 @@ export function LegendSelectionProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo(
     () => ({ updateSelection, registerView, unregisterView }),
-    [updateSelection, registerView, unregisterView]
+    [updateSelection, registerView, unregisterView],
   );
 
   return (
@@ -200,7 +200,7 @@ export function useSyncedLegend(opts: {
         } catch (e) {
           console.warn(
             "[LegendSync] Could not add periodSel_store listener",
-            e
+            e,
           );
         }
       }
@@ -216,7 +216,7 @@ export function useSyncedLegend(opts: {
         }
       }
     },
-    [ctx, id]
+    [ctx, id],
   );
 
   useEffect(() => {

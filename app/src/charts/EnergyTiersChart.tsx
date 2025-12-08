@@ -31,7 +31,7 @@ function effectiveRate(tier: TierInfo): number {
 function processTiersForPeriod(
   tiers: TierInfo[],
   period: number,
-  extendLastTierBy = 1.3
+  extendLastTierBy = 1.3,
 ): ChartTierSegment[] {
   if (!tiers.length) return [];
 
@@ -70,7 +70,7 @@ function processTiersForPeriod(
 }
 
 function getPeriodsFromSchedule(
-  schedule: number[] | null | undefined
+  schedule: number[] | null | undefined,
 ): number[] {
   if (!schedule) return [];
   return [...new Set(schedule)].sort((a, b) => a - b);
@@ -91,7 +91,7 @@ export function EnergyTiersChart({
 
   const colorScale = useMemo(
     () => buildPeriodColorScale(selectedPlan, "energy"),
-    [selectedPlan]
+    [selectedPlan],
   );
 
   const chartData = useMemo(() => {

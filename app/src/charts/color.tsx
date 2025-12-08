@@ -20,7 +20,7 @@ type Types = "coincident" | "energy" | "demand" | "flatDemand";
 
 export function getAllPeriods(
   plan: RatePlan | null | undefined,
-  type: Types
+  type: Types,
 ): number[] {
   if (!plan) return [];
 
@@ -47,7 +47,7 @@ export function getAllPeriods(
 /** Build a consistent color scale for all periods in a schedule */
 export function buildPeriodColorScale(
   plan: RatePlan | null | undefined,
-  type: Types
+  type: Types,
 ): { domain: number[]; range: string[] } {
   const periods = getAllPeriods(plan, type);
   const colors = getViridisColors(periods.length);

@@ -32,12 +32,7 @@ export function RatePlanTimeline({ ratePlan }: { ratePlan?: RatePlan | null }) {
   }, [ratePlan]);
 
   return (
-    <DetailSection
-      breakBefore
-      description={null}
-      hide={timelineEntries.length === 0}
-      title="Timeline"
-    >
+    <DetailSection hide={timelineEntries.length === 0} title="Timeline">
       <Timeline
         orientation={isMobile ? "vertical" : "horizontal"}
         mode="start"
