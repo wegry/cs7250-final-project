@@ -493,9 +493,9 @@ export function FlatDemandMonthsChart({
       : [],
     mark: {
       type: "rect",
-      width: 15,
-      height: 15,
-      stroke: "white",
+      width: 18,
+      height: 18,
+      stroke: "transparent",
       cursor: interactive ? "pointer" : "default",
     },
     encoding: {
