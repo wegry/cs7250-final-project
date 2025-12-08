@@ -56,11 +56,13 @@ function Storytelling() {
         </ul>
       </Card>
       <section id="flat">
-        <img 
-          src="/images/flat_rate.png" 
-          alt="Flat Rate Plan Example" 
-          className={`${s.sectionImage} ${s.leftImage}`}
-        />
+        <div className={`${s.imageContainer} ${s.leftImage}`}>
+          <img
+            src="/images/flat_rate.png"
+            alt="Flat Rate Plan Example"
+            className={s.sectionImage}
+          />
+        </div>
         <h3>Flat Rate Plans</h3>
         <Paragraph>
           Flat rate plans are the simplest form of electricity pricing—you pay
@@ -77,11 +79,13 @@ function Storytelling() {
         <PlanTypeTable planType="flat" date={TODAY} />
       </section>
       <section id="tiered">
-        <img 
-          src="/images/flat_rate_with_tiers.png" 
-          alt="Tiered Rate Plan Example" 
-          className={`${s.sectionImage} ${s.rightImage}`}
-        />
+        <div className={`${s.imageContainer} ${s.rightImage}`}>
+          <img
+            src="/images/flat_rate_with_tiers.png"
+            alt="Tiered Rate Plan Example"
+            className={s.sectionImage}
+          />
+        </div>
         <h3>Flat Rate Plans with Lots of Tiers</h3>
         <Paragraph>
           Tiered rate plans charge different prices depending on how much
@@ -98,11 +102,13 @@ function Storytelling() {
         <PlanTypeTable planType="tiered" date={TODAY} />
       </section>
       <section id="tou">
-        <img 
-          src="/images/time_of_use.png" 
-          alt="Time of Use Plan Example" 
-          className={`${s.sectionImage} ${s.leftImage}`}
-        />
+        <div className={`${s.imageContainer} ${s.leftImage}`}>
+          <img
+            src="/images/time_of_use.png"
+            alt="Time of Use Plan Example"
+            className={s.sectionImage}
+          />
+        </div>
         <h3>Time of Day</h3>
         <Paragraph>
           Time-of-use (TOU) plans charge different rates depending on when you
@@ -119,11 +125,13 @@ function Storytelling() {
         <PlanTypeTable planType="tou" date={TODAY} />
       </section>
       <section id="coincident">
-        <img 
-          src="/images/coincident_demand.png" 
-          alt="Coincident Demand Plan Example" 
-          className={`${s.sectionImage} ${s.rightImage}`}
-        />
+        <div className={`${s.imageContainer} ${s.rightImage}`}>
+          <img
+            src="/images/coincident_demand.png"
+            alt="Coincident Demand Plan Example"
+            className={s.sectionImage}
+          />
+        </div>
         <h3>Coincident Demand</h3>
         <Paragraph>
           Coincident demand plans charge based on your usage during the single
@@ -140,11 +148,13 @@ function Storytelling() {
         <PlanTypeTable planType="coincident" date={TODAY} />
       </section>
       <section id="demand">
-        <img 
-          src="/images/demand.png" 
-          alt="Demand Plan Example" 
-          className={`${s.sectionImage} ${s.leftImage}`}
-        />
+        <div className={`${s.imageContainer} ${s.rightImage}`}>
+          <img
+            src="/images/demand.png"
+            alt="Demand Plan Example"
+            className={s.sectionImage}
+          />
+        </div>
         <h3>Demand</h3>
         <Paragraph>
           Demand-based plans charge not just for total energy consumed, but also
@@ -162,16 +172,20 @@ function Storytelling() {
         <PlanTypeTable planType="demand" date={TODAY} />
       </section>
       <section id="flat-demand">
-        <img 
-          src="/images/flat_demand_1.png" 
-          alt="Flat Demand Plan Example 1" 
-          className={`${s.sectionImage} ${s.rightImage}`}
-        />
-        <img 
-          src="/images/flat_demand_2.png" 
-          alt="Flat Demand Plan Example 2" 
-          className={`${s.sectionImage} ${s.rightImage}`}
-        />
+        <div className={`${s.imageContainer} ${s.leftImage}`}>
+          <img
+            src="/images/flat_demand_1.png"
+            alt="Flat Demand Plan Example 1"
+            className={s.sectionImage}
+          />
+        </div>
+        <div className={`${s.imageContainer} ${s.rightImage}`}>
+          <img
+            src="/images/flat_demand_2.png"
+            alt="Flat Demand Plan Example 2"
+            className={s.sectionImage}
+          />
+        </div>
         <h3>Flat Demand</h3>
         <Paragraph>
           Flat demand plans include a fixed monthly charge based on a
@@ -188,16 +202,20 @@ function Storytelling() {
         <PlanTypeTable planType="flatDemand" date={TODAY} />
       </section>
       <section id="complex">
-        <img 
-          src="/images/all_1.png" 
-          alt="Complex Plan Example 1" 
-          className={`${s.sectionImage} ${s.leftImage}`}
-        />
-        <img 
-          src="/images/all_2.png" 
-          alt="Complex Plan Example 2" 
-          className={`${s.sectionImage} ${s.leftImage}`}
-        />
+        <div className={`${s.imageContainer} ${s.leftImage}`}>
+          <img
+            src="/images/all_1.png"
+            alt="Complex Plan Example 1"
+            className={s.sectionImage}
+          />
+        </div>
+        <div className={`${s.imageContainer} ${s.rightImage}`}>
+          <img
+            src="/images/all_2.png"
+            alt="Complex Plan Example 2"
+            className={s.sectionImage}
+          />
+        </div>
         <h3>All of the Above</h3>
         <Paragraph>
           Some rate structures combine multiple pricing mechanisms into a single
