@@ -7,8 +7,9 @@
   max-width: 50ch;
 
   section {
+    position: relative;
+    
     &:nth-of-type(2n + 1) {
-      position: relative;
       &::before {
         content: "";
         position: absolute;
@@ -26,6 +27,35 @@
 
   h3 {
     padding-top: 1em;
+  }
+}
+
+.sectionImage {
+  position: absolute;
+  width: 300px;
+  height: auto;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  object-fit: contain;
+}
+
+.sectionImage + .sectionImage {
+  top: 320px;
+}
+
+.leftImage {
+  right: calc(100% + 2rem);
+  top: 0;
+}
+
+.rightImage {
+  left: calc(100% + 2rem);
+  top: 0;
+}
+
+@media (max-width: 1200px) {
+  .sectionImage {
+    display: none;
   }
 }
 
