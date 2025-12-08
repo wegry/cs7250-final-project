@@ -10,6 +10,8 @@ import type { RatePlan } from "../data/schema";
 import { getFirstDayOfType } from "../dates";
 import { price } from "../formatters";
 import { buildPeriodColorScale } from "./color";
+import { buildInteractiveLegend } from "./interactiveLegend";
+import { useSyncedLegend } from "./LegendSelectionContext";
 import { MONTHS } from "./constants";
 
 interface DayAndPlan {
@@ -39,6 +41,11 @@ interface TierSegment {
 
 export function CoincidentRateChart({ date, selectedPlan }: DayAndPlan) {
   const periods = selectedPlan?.coincidentSched?.[date.month()];
+
+  const colorScale = useMemo(
+    () => buildPeriodColorScale(selectedPlan, "coincident"),
+    [selectedPlan]
+  );
 
   const segments = useMemo(() => {
     if (!periods) return [];
@@ -76,6 +83,13 @@ export function CoincidentRateChart({ date, selectedPlan }: DayAndPlan) {
     return result;
   }, [periods, selectedPlan?.coincidentRate_tiers]);
 
+  const legend = useMemo(() => buildInteractiveLegend(segments), [segments]);
+
+  const { handleEmbed } = useSyncedLegend({
+    hasPeriodLegend: legend.showPeriodLegend,
+    hasTierLegend: legend.showTierLegend,
+  });
+
   if (!segments.length) return null;
 
   const isBoring = uniqBy(segments, (x) => x.value).length === 1;
@@ -103,6 +117,7 @@ export function CoincidentRateChart({ date, selectedPlan }: DayAndPlan) {
     width: 320,
     height: 200,
     data: { values: segments },
+    params: legend.params,
     mark: { type: "rule", strokeWidth: 3 },
     title: `Coincident Demand Rate (${date.format("dddd LL")})`,
     encoding: {
@@ -117,14 +132,23 @@ export function CoincidentRateChart({ date, selectedPlan }: DayAndPlan) {
       y: {
         field: "value",
         type: "quantitative",
-        title: `Rate (${selectedPlan?.coincidentRateUnits ?? "kW"})`,
+        title: `Rate ($ per ${selectedPlan?.coincidentRateUnits ?? "kW"})`,
+        axis: { format: ".2f" },
       },
       color: {
         field: "period",
         type: "nominal",
-        legend: null,
-        scale: { scheme: "viridis" },
+        title: "Period",
+        scale: colorScale,
+        legend: legend.colorLegend,
       },
+      strokeDash: {
+        field: "tier",
+        type: "ordinal",
+        title: "Tier",
+        legend: legend.strokeDashLegend,
+      },
+      opacity: legend.opacityEncoding,
       tooltip: [
         { field: "hourStart", title: "From Hour" },
         { field: "hourEnd", title: "To Hour" },
@@ -132,13 +156,18 @@ export function CoincidentRateChart({ date, selectedPlan }: DayAndPlan) {
         { field: "baseRate", title: "Base Rate", format: ".3f" },
         { field: "adj", title: "Adjustment", format: ".3f" },
         { field: "period", title: "Period" },
+        { field: "tier", title: "Tier" },
       ],
     },
   };
 
   return (
     <Card>
-      <VegaEmbed spec={spec} options={{ mode: "vega-lite", actions: false }} />
+      <VegaEmbed
+        spec={spec}
+        options={{ mode: "vega-lite", actions: false }}
+        onEmbed={handleEmbed}
+      />
     </Card>
   );
 }
@@ -155,7 +184,7 @@ export function DemandRateChart({ date, selectedPlan }: DayAndPlan) {
 
   const colorScale = useMemo(
     () => buildPeriodColorScale(selectedPlan, "demand"),
-    [selectedPlan],
+    [selectedPlan]
   );
 
   const segments = useMemo(() => {
@@ -193,6 +222,13 @@ export function DemandRateChart({ date, selectedPlan }: DayAndPlan) {
     return result;
   }, [monthSchedule, selectedPlan.demandRate_tiers]);
 
+  const legend = useMemo(() => buildInteractiveLegend(segments), [segments]);
+
+  const { handleEmbed: handleDemandEmbed } = useSyncedLegend({
+    hasPeriodLegend: legend.showPeriodLegend,
+    hasTierLegend: legend.showTierLegend,
+  });
+
   if (!segments.length) {
     return null;
   } else if (segments.every((x) => x.value === 0)) {
@@ -213,6 +249,7 @@ export function DemandRateChart({ date, selectedPlan }: DayAndPlan) {
     height: 240,
     title: `Demand Rate Structure (${date.format("dddd LL")})`,
     data: { values: segments },
+    params: legend.params,
     mark: { type: "rule", strokeWidth: 3 },
     encoding: {
       x: {
@@ -234,12 +271,15 @@ export function DemandRateChart({ date, selectedPlan }: DayAndPlan) {
         type: "nominal",
         title: "Period",
         scale: colorScale,
+        legend: legend.colorLegend,
       },
       strokeDash: {
         field: "tier",
         type: "ordinal",
         title: "Tier",
+        legend: legend.strokeDashLegend,
       },
+      opacity: legend.opacityEncoding,
       tooltip: [
         { field: "hourStart", title: "From Hour" },
         { field: "hourEnd", title: "To Hour" },
@@ -254,7 +294,11 @@ export function DemandRateChart({ date, selectedPlan }: DayAndPlan) {
 
   return (
     <Card>
-      <VegaEmbed spec={spec} options={{ mode: "vega-lite", actions: false }} />
+      <VegaEmbed
+        spec={spec}
+        options={{ mode: "vega-lite", actions: false }}
+        onEmbed={handleDemandEmbed}
+      />
     </Card>
   );
 }
@@ -269,7 +313,7 @@ export function DemandTierRateChart({ date, selectedPlan }: DayAndPlan) {
 
   const colorScale = useMemo(
     () => buildPeriodColorScale(selectedPlan, "demand"),
-    [selectedPlan],
+    [selectedPlan]
   );
 
   const periods = schedule?.[date.month()];
@@ -318,15 +362,20 @@ export function DemandTierRateChart({ date, selectedPlan }: DayAndPlan) {
     return result;
   }, [periods, selectedPlan.demandRate_tiers]);
 
+  const legend = useMemo(() => buildInteractiveLegend(segments), [segments]);
+
+  const { handleEmbed: handleTierEmbed } = useSyncedLegend({
+    hasPeriodLegend: legend.showPeriodLegend,
+    hasTierLegend: legend.showTierLegend,
+  });
+
   if (!segments.length) return null;
 
   const isBoring =
     uniqBy(segments, (x) => [x.value, x.period].join("/")).length === 1;
   const first = segments[0];
 
-  if (isBoring && first?.value === 0) {
-    return null;
-  }
+  if (isBoring && first?.value === 0) return null;
 
   if (isBoring) {
     return (
@@ -350,6 +399,7 @@ export function DemandTierRateChart({ date, selectedPlan }: DayAndPlan) {
     width: 320,
     height: 200,
     data: { values: segments },
+    params: legend.params,
     mark: { type: "rule", strokeWidth: 3 },
     title: `Demand Rate Tiers (${date.format("dddd LL")})`,
     encoding: {
@@ -365,8 +415,19 @@ export function DemandTierRateChart({ date, selectedPlan }: DayAndPlan) {
         type: "quantitative",
         title: `$ per ${selectedPlan?.demandRateUnits ?? "kW"}`,
       },
-      color: { field: "period", title: "Period", scale: colorScale },
-      strokeDash: { field: "tier", type: "ordinal", title: "Tier" },
+      color: {
+        field: "period",
+        title: "Period",
+        scale: colorScale,
+        legend: legend.colorLegend,
+      },
+      strokeDash: {
+        field: "tier",
+        type: "ordinal",
+        title: "Tier",
+        legend: legend.strokeDashLegend,
+      },
+      opacity: legend.opacityEncoding,
       tooltip: [
         { field: "min", title: "Demand From", format: ".1f" },
         { field: "max", title: "Demand To", format: ".1f" },
@@ -381,7 +442,11 @@ export function DemandTierRateChart({ date, selectedPlan }: DayAndPlan) {
 
   return (
     <Card>
-      <VegaEmbed spec={spec} options={{ mode: "vega-lite", actions: false }} />
+      <VegaEmbed
+        spec={spec}
+        options={{ mode: "vega-lite", actions: false }}
+        onEmbed={handleTierEmbed}
+      />
     </Card>
   );
 }
@@ -395,16 +460,12 @@ export function FlatDemandMonthsChart({
   date: Dayjs;
   onDateChange?: (newDate: Dayjs) => void;
 }) {
-  if (!selectedPlan?.flatDemandMonths) {
-    return null;
-  }
+  if (!selectedPlan?.flatDemandMonths) return null;
 
   const flatDemandMonths = selectedPlan.flatDemandMonths;
   const uniqueTiers = [...new Set(flatDemandMonths)].sort((a, b) => a - b);
 
-  if (uniqueTiers.length <= 1) {
-    return null;
-  }
+  if (uniqueTiers.length <= 1) return null;
 
   const colorScale = buildPeriodColorScale(selectedPlan, "flatDemand");
 
@@ -426,11 +487,7 @@ export function FlatDemandMonthsChart({
       ? [
           {
             name: "cellClick",
-            select: {
-              type: "point",
-              on: "click",
-              fields: ["monthIndex"],
-            },
+            select: { type: "point", on: "click", fields: ["monthIndex"] },
           },
         ]
       : [],
@@ -476,12 +533,10 @@ export function FlatDemandChart({
   date,
   selectedPlan,
   onDateChange,
-}: DayAndPlan & {
-  onDateChange?: (newDate: Dayjs) => void;
-}) {
+}: DayAndPlan & { onDateChange?: (newDate: Dayjs) => void }) {
   const colorScale = useMemo(
     () => buildPeriodColorScale(selectedPlan, "flatDemand"),
-    [selectedPlan],
+    [selectedPlan]
   );
 
   const currentMonth = date.month();
@@ -527,6 +582,8 @@ export function FlatDemandChart({
     return result;
   }, [tiers, periodIndex]);
 
+  const legend = useMemo(() => buildInteractiveLegend(segments), [segments]);
+
   if (!segments.length) return null;
 
   const isBoring =
@@ -566,6 +623,7 @@ export function FlatDemandChart({
     width: 320,
     height: 200,
     data: { values: segments },
+    params: legend.params,
     mark: { type: "rule", strokeWidth: 3 },
     title: `Flat Demand Tiers (${date.format("MMMM")})`,
     encoding: {
@@ -587,12 +645,15 @@ export function FlatDemandChart({
         type: "nominal",
         title: "Period",
         scale: colorScale,
+        legend: legend.colorLegend,
       },
       strokeDash: {
         field: "tier",
         type: "ordinal",
         title: "Tier",
+        legend: legend.strokeDashLegend,
       },
+      opacity: legend.opacityEncoding,
       tooltip: [
         { field: "min", title: "Demand From", format: ".1f" },
         { field: "max", title: "Demand To", format: ".1f" },

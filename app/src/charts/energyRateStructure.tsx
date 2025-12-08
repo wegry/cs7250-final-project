@@ -1,12 +1,15 @@
-import { Button, Card, Statistic, Tooltip } from "antd";
+import { Card, Statistic } from "antd";
 import type { Dayjs } from "dayjs";
 import { sum, uniqBy } from "es-toolkit";
 import { useMemo } from "react";
 import { VegaEmbed } from "react-vega";
 import type { TopLevelSpec } from "vega-lite";
+import { AdjPopover } from "../components/AdjPopover";
 import type { RatePlan } from "../data/schema";
 import { price } from "../formatters";
 import { buildPeriodColorScale } from "./color";
+import { buildInteractiveLegend } from "./interactiveLegend";
+import { useSyncedLegend } from "./LegendSelectionContext";
 
 interface ChartDataPoint {
   hourStart: number;
@@ -31,7 +34,7 @@ export function EnergyRateChart({
     () =>
       uniqBy(retailData, (x) => [x.period, x.tier, x.value, x.adj].join("/"))
         .length === 1,
-    [retailData],
+    [retailData]
   );
 
   const sameAllYearLong = useMemo(
@@ -39,15 +42,25 @@ export function EnergyRateChart({
       new Set(
         selectedPlan?.energyWeekdaySched
           ?.concat(selectedPlan.energyWeekendSched ?? [])
-          ?.flat(),
+          ?.flat()
       ).size === 1,
-    [selectedPlan],
+    [selectedPlan]
   );
 
   const colorScale = useMemo(
     () => buildPeriodColorScale(selectedPlan, "energy"),
-    [selectedPlan],
+    [selectedPlan]
   );
+
+  const legend = useMemo(
+    () => buildInteractiveLegend(retailData),
+    [retailData]
+  );
+
+  const { handleEmbed } = useSyncedLegend({
+    hasPeriodLegend: legend.showPeriodLegend,
+    hasTierLegend: legend.showTierLegend,
+  });
 
   if (!retailData.length) {
     return null;
@@ -63,15 +76,7 @@ export function EnergyRateChart({
           suffix={
             <>
               / kWh all day {sameAllYearLong ? "all year" : ""}
-              {first.adj != null && (
-                <Tooltip
-                  title={`This rate is the base rate + the adjustment. ${price.format(first.baseRate ?? 0)} + ${price.format(first.adj ?? 0)}`}
-                >
-                  <Button size="large" style={{ marginLeft: 8 }}>
-                    Adj.
-                  </Button>
-                </Tooltip>
-              )}
+              <AdjPopover baseRate={first.baseRate} adj={first.adj} />
             </>
           }
         />
@@ -85,10 +90,8 @@ export function EnergyRateChart({
     height: 240,
     title: `Energy Rate Structure (${date.format("dddd LL")})`,
     data: { values: retailData },
-    mark: {
-      type: "rule",
-      strokeWidth: 3,
-    },
+    params: legend.params,
+    mark: { type: "rule", strokeWidth: 3 },
     encoding: {
       x: {
         field: "hourStart",
@@ -109,12 +112,15 @@ export function EnergyRateChart({
         type: "nominal",
         title: "Period",
         scale: colorScale,
+        legend: legend.colorLegend,
       },
       strokeDash: {
         field: "tier",
         type: "ordinal",
         title: "Tier",
+        legend: legend.strokeDashLegend,
       },
+      opacity: legend.opacityEncoding,
       tooltip: [
         { field: "hourStart", title: "From Hour" },
         { field: "hourEnd", title: "To Hour" },
@@ -127,14 +133,18 @@ export function EnergyRateChart({
 
   return (
     <Card>
-      <VegaEmbed spec={spec} options={{ mode: "vega-lite", actions: false }} />
+      <VegaEmbed
+        spec={spec}
+        options={{ mode: "vega-lite", actions: false }}
+        onEmbed={handleEmbed}
+      />
     </Card>
   );
 }
 
 function pullData(
   data: RatePlan | null | undefined,
-  date: Dayjs,
+  date: Dayjs
 ): ChartDataPoint[] {
   const tiers = data?.energyRate_tiers;
   const schedule = [0, 6].includes(date.day())
@@ -145,7 +155,6 @@ function pullData(
   if (!monthSchedule) return [];
 
   const results: ChartDataPoint[] = [];
-
   let segmentStart = 0;
   let currentPeriod = monthSchedule[0]!;
 
@@ -153,14 +162,12 @@ function pullData(
     const period = hour < 24 ? monthSchedule[hour] : null;
 
     if (period !== currentPeriod) {
-      // Close the current segment
       if (currentPeriod != null) {
         const periodInfo = tiers?.[currentPeriod];
         if (periodInfo) {
           for (let t = 0; t < periodInfo.length; t++) {
             const tierInfo = periodInfo[t];
             if (!tierInfo) continue;
-
             results.push({
               hourStart: segmentStart,
               hourEnd: hour,
