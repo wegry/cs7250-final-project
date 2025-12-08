@@ -496,7 +496,7 @@ export default function BAMap() {
           ref={svgRef}
           style={{
             width: "100%",
-            height: "600px",
+            height: "min(600px, calc(100vw / 1.61))",
             display: "block",
           }}
         />

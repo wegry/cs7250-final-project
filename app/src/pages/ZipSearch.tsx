@@ -18,6 +18,7 @@ import { PageBody } from "../components/PageBody";
 import { preprocessVector } from "../data/schema";
 import { countyMapTooltip, zipCodeSearchTooltip } from "../copy";
 import { InternalLink } from "../components/InternalLink";
+import { useBodyResizeObserver } from "../hooks/useBodyResizeObserver";
 
 // Zod schema for utility results
 const UtilityResultSchema = z.object({
@@ -153,7 +154,7 @@ export function ZipSearch() {
     queryKey: ["utilities", debouncedZipCode],
     queryFn: () => fetchUtilitiesByZip(debouncedZipCode),
     enabled: debouncedZipCode.length >= 1,
-    placeholderData: keepPreviousData,
+    placeholderData: zipCode === "" ? undefined : keepPreviousData,
   });
 
   // Use shared GeoJSON hook
@@ -184,8 +185,9 @@ export function ZipSearch() {
     () => computeBBoxAndFeaturesByState(geojson, relevantStates),
     [geojson, relevantStates],
   );
+  const { width: bodyWidth } = useBodyResizeObserver();
 
-  const width = 500;
+  const width = Math.min(600, bodyWidth - 64);
   const height = width / 1.61;
 
   // Summary stats
@@ -265,31 +267,6 @@ export function ZipSearch() {
 
       <Row gutter={[24, 24]}>
         <Col>
-          <Table
-            columns={columns}
-            dataSource={results}
-            rowKey={(r) => r.utilityNumber.toString()}
-            tableLayout="fixed"
-            loading={isLoading}
-            pagination={{
-              pageSize: 5,
-              showSizeChanger: true,
-              pageSizeOptions: ["10", "20", "50", "100"],
-              showTotal: (total, range) =>
-                `${countFormatter.format(range[0])}-${countFormatter.format(range[1])} of ${countFormatter.format(total)} utilities`,
-            }}
-            locale={{
-              emptyText:
-                debouncedZipCode.length >= 1
-                  ? isLoading
-                    ? ""
-                    : "No utilities found for this zip code."
-                  : "Enter at least 1 digit to search.",
-            }}
-          />
-        </Col>
-
-        <Col>
           <Card
             style={{ width: "fit-content" }}
             title="Service Territory Map"
@@ -365,6 +342,30 @@ export function ZipSearch() {
               </>
             )}
           </Card>
+        </Col>
+        <Col>
+          <Table
+            columns={columns}
+            dataSource={results}
+            rowKey={(r) => r.utilityNumber.toString()}
+            tableLayout="fixed"
+            loading={isLoading}
+            pagination={{
+              pageSize: 5,
+              showSizeChanger: true,
+              pageSizeOptions: ["10", "20", "50", "100"],
+              showTotal: (total, range) =>
+                `${countFormatter.format(range[0])}-${countFormatter.format(range[1])} of ${countFormatter.format(total)} utilities`,
+            }}
+            locale={{
+              emptyText:
+                debouncedZipCode.length >= 1
+                  ? isLoading
+                    ? ""
+                    : "No utilities found for this zip code."
+                  : "Enter at least 1 digit to search.",
+            }}
+          />
         </Col>
       </Row>
     </PageBody>
