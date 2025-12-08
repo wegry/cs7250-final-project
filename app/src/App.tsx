@@ -40,6 +40,7 @@ function Layout() {
       <Link to="/detail">Detail View</Link>
       <Link to="/compare">Compare Plans</Link>
       <Link to="/map">Map</Link>
+      <Link to="/about">About</Link>
     </>
   );
 
@@ -123,6 +124,13 @@ const router = createBrowserRouter([
         lazy: () =>
           import("./pages/ZipSearch").then((module) => ({
             Component: module.ZipSearch,
+          })),
+      },
+      {
+        path: "about",
+        lazy: () =>
+          import("./pages/About").then((module) => ({
+            Component: module.default,
           })),
       },
     ],

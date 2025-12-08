@@ -1,0 +1,45 @@
+.clipper {
+  overflow-x: clip;
+}
+
+.main {
+  margin: 0 auto;
+  max-width: 65ch;
+  padding: 2rem 1rem;
+
+  section {
+    position: relative;
+    padding: 1.5rem 0;
+
+    &:nth-of-type(2n) {
+      &::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        left: 50%;
+        background-color: var(--row-alt-color);
+        z-index: -1;
+        transform: translateX(-50%);
+        width: 100vw;
+      }
+    }
+  }
+
+  h2 {
+    margin-top: 0;
+    margin-bottom: 0.5em;
+  }
+}
+
+.toc {
+  margin: 2rem 0;
+}
+
+.toc ul {
+  margin-bottom: 0;
+  margin-top: 0.5rem;
+}
+
+.toc a:hover {
+  text-decoration: underline;
+}
