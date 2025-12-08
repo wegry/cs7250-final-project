@@ -43,14 +43,34 @@ interface BAProperties {
 
 const BA_PARAM = "ba";
 
+const DEFAULT_FILL = "lch(from var(--highlight-color) 95% calc(c * 0.25) h)";
+
 export default function BAMap() {
   const svgRef = useRef<SVGSVGElement>(null);
+  const selectedPathRef = useRef<SVGPathElement | null>(null);
+
   const tooltipRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [utilities, setUtilities] = useState<BAUtility[]>([]);
   const [utilsLoading, setUtilsLoading] = useState(false);
   const [params, setParams] = useSearchParams();
+
+  function getBAShort(props: BAProperties): string | null {
+    const baShortFromSummary = props?.baSummary?.name;
+    const baShortFromZone = props?.zoneName
+      ? String(props.zoneName).split("-").slice(-1)[0]
+      : null;
+    return (
+      baShortFromSummary ||
+      baShortFromZone ||
+      props.name ||
+      props.BA_NAME ||
+      props.BA_CODE ||
+      props.zone_name ||
+      null
+    );
+  }
 
   const selectedBA = params.get(BA_PARAM);
 
@@ -225,7 +245,7 @@ export default function BAMap() {
           .data(conusFeatures)
           .join("path")
           .attr("d", (d) => path(d as any) || "")
-          .attr("fill", "#3388ff")
+          .attr("fill", DEFAULT_FILL)
           .attr("fill-opacity", 0.3)
           .attr("stroke", "#2c3e50")
           .attr("stroke-width", 2)
@@ -264,25 +284,51 @@ export default function BAMap() {
             d3.select(this).attr("fill-opacity", 0.3).attr("stroke-width", 2);
             tooltip.style("opacity", 0);
           })
-          .on("click", (_event, d) => {
+          .on("click", function (_event, d) {
+            // Reset previous selection
+            if (selectedPathRef.current) {
+              d3.select(selectedPathRef.current)
+                .attr("fill", DEFAULT_FILL)
+                .attr("fill-opacity", 0.3)
+                .attr("stroke-width", 2);
+            }
+
+            // Highlight this selection
+            d3.select(this)
+              .attr("fill", "var(--highlight-color)")
+              .attr("fill-opacity", 0);
+
+            if (this instanceof SVGPathElement) {
+              selectedPathRef.current = this;
+            }
+
             const props = d.properties as BAProperties;
-            const baShortFromSummary = props?.baSummary?.name;
-            const baShortFromZone = props?.zoneName
-              ? String(props.zoneName).split("-").slice(-1)[0]
-              : null;
-            const baShort =
-              baShortFromSummary ||
-              baShortFromZone ||
-              props.name ||
-              props.BA_NAME ||
-              props.BA_CODE ||
-              props.zone_name ||
-              null;
+            const baShort = getBAShort(props);
 
             if (baShort) {
               setSelectedBA(baShort);
             }
           });
+
+        // 4. Add this block right after the paths are created (after the .on("click", ...) chain):
+        // Highlight BA from URL params if present
+        const baFromParams = params.get(BA_PARAM);
+        if (baFromParams) {
+          svg.selectAll<SVGPathElement, any>("path").each(function (d) {
+            const props = d.properties as BAProperties;
+            const baShort = getBAShort(props);
+            if (
+              baShort &&
+              baShort.toLowerCase() === baFromParams.toLowerCase()
+            ) {
+              d3.select(this)
+                .attr("fill", "var(--highlight-color)")
+                .attr("fill-opacity", 0.8)
+                .attr("stroke-width", 3);
+              selectedPathRef.current = this;
+            }
+          });
+        }
 
         setLoading(false);
       } catch (err) {
