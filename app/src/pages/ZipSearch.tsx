@@ -184,6 +184,8 @@ export function ZipSearch() {
     error: geoError,
   } = useCountyGeoJSON();
 
+  console.log(geoError);
+
   // Extract unique counties and states from results for highlighting
   const { highlightedCounties, relevantStates } = useMemo(() => {
     const counties = new Set<string>();
@@ -203,7 +205,7 @@ export function ZipSearch() {
   // Compute bbox and features using shared utility
   const { bbox, featuresByState } = useMemo(
     () => computeBBoxAndFeaturesByState(geojson, relevantStates),
-    [geojson, relevantStates]
+    [geojson, relevantStates],
   );
   const { width: bodyWidth } = useBodyResizeObserver();
 
@@ -228,7 +230,7 @@ export function ZipSearch() {
   const getTooltip = (
     countyName: string,
     state: string,
-    isHighlighted: boolean
+    isHighlighted: boolean,
   ) => `${countyName}, ${state}${isHighlighted ? " (Matched)" : ""}`;
 
   return (
@@ -248,7 +250,7 @@ export function ZipSearch() {
                     }
                     return params;
                   },
-                  { replace: true }
+                  { replace: true },
                 )
               }
               style={{ maxWidth: 300 }}

@@ -33,19 +33,19 @@ async function init() {
       "flattened",
       window.location.origin + "/flattened.duckdb",
       duckdb.DuckDBDataProtocol.HTTP,
-      true
+      true,
     );
     await db.registerFileURL(
       "county-data.geojson",
       window.location.origin + "/geodata/county-data.geojson",
       duckdb.DuckDBDataProtocol.HTTP,
-      false
+      false,
     );
     await db.registerFileURL(
       "COUNTY_ZIP_122020.csv",
       window.location.origin + "/COUNTY_ZIP_122020.csv",
       duckdb.DuckDBDataProtocol.HTTP,
-      false
+      false,
     );
     await conn.query(`ATTACH 'flattened' AS flattened (READ_ONLY)`);
 
