@@ -6,7 +6,7 @@ export function useBodyResizeObserver() {
   useEffect(() => {
     const observer = new ResizeObserver((entries) => {
       const width = entries[0]!.contentRect.width;
-      setIsMobile(width < 700);
+      setIsMobile(width < 800);
       setWidth(width);
     });
     observer.observe(document.body);

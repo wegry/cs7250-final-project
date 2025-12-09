@@ -37,7 +37,10 @@ function Layout() {
   const navLinks = (
     <>
       <Link to="/categories">Categories</Link>
-      <Link to="/zip-search"><SearchOutlined /> Zip Search</Link>
+      <Link to="/zip-search">
+        <SearchOutlined style={{ marginRight: 4 }} />
+        Zip Search
+      </Link>
       <Link to="/detail">Detail View</Link>
       <Link to="/compare">Compare Plans</Link>
       <Link to="/map">Map</Link>
