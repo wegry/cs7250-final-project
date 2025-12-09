@@ -1,3 +1,4 @@
+import { ExternalLink } from "./ExternalLink";
 import styles from "./Footer.module.css";
 
 const dataSources = [
@@ -50,14 +51,14 @@ export function Footer() {
           <ul className={styles.sourcesList}>
             {dataSources.map((source) => (
               <li key={source.name} className={styles.sourceItem}>
-                <a
+                <ExternalLink
                   href={source.url}
                   target="_blank"
                   rel="noopener noreferrer"
                   className={styles.sourceLink}
                 >
                   {source.name}
-                </a>
+                </ExternalLink>
                 {source.note && (
                   <span className={styles.sourceNote}>{source.note}</span>
                 )}

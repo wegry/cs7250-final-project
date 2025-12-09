@@ -36,6 +36,7 @@ import { ScheduleHeatmap } from "../components/Schedule";
 import { list } from "../formatters";
 import { RATE_PLAN_QUERY_PARAM } from "./ComparePlans";
 import { InternalLink } from "../components/InternalLink";
+import { ExternalLink } from "../components/ExternalLink";
 const DATE_PARAM = "date";
 
 const DESCRIPTIONS = {
@@ -153,25 +154,20 @@ export default function DetailView() {
       },
       {
         label: "Source",
-        children: selectedPlan?.sourceReference ? (
-          <a
-            href={selectedPlan?.sourceReference!}
-            style={{ whiteSpace: "nowrap" }}
-          >
-            Link
-          </a>
-        ) : (
-          <>&mdash;</>
+        children: (
+          <DashIfEmpty empty={!selectedPlan?.sourceReference}>
+            <ExternalLink href={selectedPlan?.sourceReference!}>
+              Link
+            </ExternalLink>
+          </DashIfEmpty>
         ),
       },
       {
         label: "Source Parent",
-        children: selectedPlan?.sourceParent ? (
-          <a href={selectedPlan.sourceParent} style={{ whiteSpace: "nowrap" }}>
-            Link
-          </a>
-        ) : (
-          <>&mdash;</>
+        children: (
+          <DashIfEmpty empty={!selectedPlan?.sourceParent}>
+            <ExternalLink href={selectedPlan?.sourceParent!}>Link</ExternalLink>
+          </DashIfEmpty>
         ),
       },
       {

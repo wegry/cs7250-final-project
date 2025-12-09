@@ -3,6 +3,7 @@ import dayjs from "dayjs";
 import { InternalLink } from "../components/InternalLink";
 import { PlanTypeTable } from "../components/PlanTypeTable";
 import s from "./Storytelling.module.css";
+import { ExternalLink } from "../components/ExternalLink";
 
 // Use current date for filtering active plans
 const TODAY = dayjs();
@@ -219,9 +220,9 @@ function Storytelling() {
         <h2>Footnotes</h2>
         <Paragraph id="footnote-1">
           [1] This app uses{" "}
-          <a href="https://openei.org/wiki/Utility_Rate_Database">
+          <ExternalLink href="https://openei.org/wiki/Utility_Rate_Database">
             OpenEI data
-          </a>{" "}
+          </ExternalLink>{" "}
           to show what rates are in use across the country.{" "}
           <i>
             Note: these rates and prices are Residential and mostly generation

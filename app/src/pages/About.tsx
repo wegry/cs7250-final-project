@@ -1,6 +1,7 @@
 import { Typography, Card } from "antd";
 import s from "./About.module.css";
 import { InternalLink } from "../components/InternalLink";
+import { ExternalLink } from "../components/ExternalLink";
 
 const { Paragraph, Title } = Typography;
 
@@ -19,20 +20,20 @@ function About() {
   return (
     <div className={s.clipper}>
       <main className={s.main}>
-        <Title level={1}>Visualizing Variable Electricity Pricing</Title>
+        <Title level={1}>Visualizing Dynamic Electricity Pricing</Title>
 
         <Paragraph>
           America's electricity grids face unprecedented challenges—extreme
           weather events, aging infrastructure, and surging demand from data
           centers and electrification initiatives. Variable peak pricing and
-          demand response programs are critical tools for managing grid
+          other demand response programs are critical tools for managing grid
           stability, yet their implementation varies dramatically across
           regions. This creates real disparities in both grid resilience and
           what consumers actually pay.
         </Paragraph>
         <Paragraph>
           We built this tool to help answer some fundamental questions: How can
-          we make variable electricity pricing more transparent? What patterns
+          we make dynamic electricity pricing more transparent? What patterns
           exist across different utilities and regions? And how do different
           pricing mechanisms actually impact your costs under various usage
           scenarios?
@@ -76,15 +77,20 @@ function About() {
           <Title level={2}>Related Work</Title>
           <Paragraph>
             Commercial platforms like{" "}
-            <a href="https://www.gridstatus.io">GridStatus.io</a> and{" "}
-            <a href="https://app.electricitymaps.com">Electricity Maps</a>{" "}
+            <ExternalLink href="https://www.gridstatus.io">
+              GridStatus.io
+            </ExternalLink>{" "}
+            and{" "}
+            <ExternalLink href="https://app.electricitymaps.com">
+              Electricity Maps
+            </ExternalLink>{" "}
             provide real-time grid monitoring and carbon intensity visualization
             - but they focus on wholesale markets rather than what residential
             customers actually experience. Individual ISO dashboards from{" "}
-            <a href="https://www.caiso.com">CAISO</a>,{" "}
-            <a href="https://www.ercot.com">ERCOT</a>, and{" "}
-            <a href="https://www.iso-ne.com">ISO-NE</a> remain siloed, making
-            cross-regional comparison difficult.
+            <ExternalLink href="https://www.caiso.com">CAISO</ExternalLink>,{" "}
+            <ExternalLink href="https://www.ercot.com">ERCOT</ExternalLink>, and{" "}
+            <ExternalLink href="https://www.iso-ne.com">ISO-NE</ExternalLink>{" "}
+            remain siloed, making cross-regional comparison difficult.
           </Paragraph>
           <Paragraph>
             Research on demand response documents substantial variation in how
@@ -119,17 +125,17 @@ function About() {
             served by each utility. This enables county-level analysis and
             geographic linking of utilities to the regions they serve. We also
             use a zip code to county mapping from{" "}
-            <a href="https://github.com/scpike/us-state-county-zip">
+            <ExternalLink href="https://github.com/scpike/us-state-county-zip">
               scpike's us-state-county-zip repository
-            </a>{" "}
+            </ExternalLink>{" "}
             to support our zip code search functionality, allowing users to
             quickly find utilities and rate plans available in their area.
           </Paragraph>
           <Paragraph>
             Finally, we use balancing authority boundary data from the{" "}
-            <a href="https://github.com/electricitymaps/electricitymaps-contrib">
+            <ExternalLink href="https://github.com/electricitymaps/electricitymaps-contrib">
               Electricity Maps
-            </a>{" "}
+            </ExternalLink>{" "}
             to visualize the geographic distribution of grid operators and
             utilities across the country. This allows us to show how pricing and
             grid operations vary by balancing authority.

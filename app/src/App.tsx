@@ -51,7 +51,7 @@ function Layout() {
     <div className={s.root}>
       <nav className={s.nav}>
         <Link className={s.title} to="/">
-          Visualizing Variable Electricity Pricing
+          Visualizing Dynamic Electricity Pricing
         </Link>
         {isMobile ? (
           <>
