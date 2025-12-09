@@ -5,8 +5,6 @@ import s from "./About.module.css";
 const { Paragraph, Title } = Typography;
 
 const sections = [
-  { id: "motivation", title: "Motivation" },
-  { id: "pages", title: "Pages in This App" },
   { id: "related-work", title: "Related Work" },
   { id: "expert-interviews", title: "Expert Interviews" },
   { id: "task-analysis", title: "Task Analysis" },
@@ -21,43 +19,24 @@ function About() {
   return (
     <div className={s.clipper}>
       <main className={s.main}>
-        <Title level={1}>About This Project</Title>
+        <Title level={1}>Visualizing Variable Electricity Pricing</Title>
 
-        <Card className={s.toc}>
-          <strong>Jump to:</strong>
-          <ul>
-            {sections.map(({ id, title }) => (
-              <li key={id}>
-                <a href={`#${id}`}>{title}</a>
-              </li>
-            ))}
-          </ul>
-        </Card>
-
-        <section id="motivation">
-          <Title level={2}>Motivation</Title>
-          <Paragraph>
-            America's electricity grids face unprecedented challenges—extreme
-            weather events, aging infrastructure, and surging demand from data
-            centers and electrification initiatives. Variable peak pricing and
-            demand response programs are critical tools for managing grid
-            stability, yet their implementation varies dramatically across
-            regions. This creates real disparities in both grid resilience and
-            what consumers actually pay.
-          </Paragraph>
-          <Paragraph>
-            We built this tool to help answer some fundamental questions: How
-            can we make variable electricity pricing more transparent? What
-            patterns exist across different utilities and regions? And how do
-            different pricing mechanisms actually impact your costs under
-            various usage scenarios?
-          </Paragraph>
-
-          <Paragraph>
-            We use data compiled from the US Utility Rate Database and the Energy
-            Information Agency's EIA-861.
-          </Paragraph>
-        </section>
+        <Paragraph>
+          America's electricity grids face unprecedented challenges—extreme
+          weather events, aging infrastructure, and surging demand from data
+          centers and electrification initiatives. Variable peak pricing and
+          demand response programs are critical tools for managing grid
+          stability, yet their implementation varies dramatically across
+          regions. This creates real disparities in both grid resilience and
+          what consumers actually pay.
+        </Paragraph>
+        <Paragraph>
+          We built this tool to help answer some fundamental questions: How
+          can we make variable electricity pricing more transparent? What
+          patterns exist across different utilities and regions? And how do
+          different pricing mechanisms actually impact your costs under
+          various usage scenarios?
+        </Paragraph>
 
         <section id="pages">
           <Title level={2}>Pages in This App</Title>
@@ -78,6 +57,17 @@ function About() {
             authorities across the United States.
           </Paragraph>
         </section>
+
+        <Card className={s.toc}>
+          <strong>Table of Contents:</strong>
+          <ul>
+            {sections.map(({ id, title }) => (
+              <li key={id}>
+                <a href={`#${id}`}>{title}</a>
+              </li>
+            ))}
+          </ul>
+        </Card>
 
         <section id="related-work">
           <Title level={2}>Related Work</Title>
