@@ -14,7 +14,7 @@ import dayjs, { Dayjs } from "dayjs";
 import { useRatePlan } from "../hooks/useRatePlan";
 import { RatePlanSelector } from "../components/RatePlanSelector";
 import { calculateMonthlyBill, type PriceBreakdown } from "../prices";
-import { Link, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import {
   type DwellingType,
   type Region,
@@ -24,6 +24,7 @@ import {
 } from "../data/usage-estimator";
 import s from "./ComparePlans.module.css";
 import { PageBody } from "../components/PageBody";
+import { InternalLink } from "../components/InternalLink";
 
 const DATE_MIN = dayjs("2025-01-01");
 const DATE_DEFAULT = dayjs().clone().set("year", 2025);
@@ -256,12 +257,13 @@ function ComparePlans() {
                   }
                 />
                 {ratePlanSelected && (
-                  <Link
+                  <InternalLink
                     to={`/detail/${ratePlanSelected}`}
                     style={{ marginLeft: 8 }}
+                    mode="table"
                   >
-                    View Details →
-                  </Link>
+                    View Details
+                  </InternalLink>
                 )}
               </Form.Item>
             </Col>
@@ -277,12 +279,13 @@ function ComparePlans() {
                   }
                 />
                 {ratePlan2Selected && (
-                  <Link
+                  <InternalLink
                     to={`/detail/${ratePlan2Selected}`}
                     style={{ marginLeft: 8 }}
+                    mode="table"
                   >
-                    View Details →
-                  </Link>
+                    View Details
+                  </InternalLink>
                 )}
               </Form.Item>
             </Col>
