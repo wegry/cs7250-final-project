@@ -111,13 +111,13 @@ async function fetchUtilitiesByZip(zipCode: string): Promise<UtilityResult[]> {
         dp._id AS usurdb_id,
         est.State AS state,
         est.County AS county,
-        z.zipcode
-      FROM flattened.zip_county_map z
+        z.ZIP AS zipcode
+      FROM flattened.county_zip_one_to_many z
       INNER JOIN flattened.eia861_service_territory est
-        ON z.county = est.County AND z.state_abbr = est.State
+        ON z.county_name = est.County AND z.USPS_ZIP_PREF_STATE = est.State
       INNER JOIN default_plans dp
         ON dp.eiaId = est."Utility Number"
-      WHERE starts_with(z.zipcode, $1)
+      WHERE starts_with(z.ZIP, $1)
     )
     -- Group by utility, aggregating states, counties, and zip codes
     SELECT
