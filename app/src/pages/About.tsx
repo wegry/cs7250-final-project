@@ -7,9 +7,8 @@ const { Paragraph, Title } = Typography;
 
 const sections = [
   { id: "related-work", title: "Related Work" },
-  { id: "expert-interviews", title: "Expert Interviews" },
-  { id: "task-analysis", title: "Task Analysis" },
   { id: "data", title: "Data" },
+  { id: "task-analysis", title: "Task Analysis" },
   { id: "data-analysis", title: "Data Analysis" },
   { id: "design-process", title: "Design Process" },
   { id: "final-visualization", title: "Final Visualization" },
