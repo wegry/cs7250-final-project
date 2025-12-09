@@ -84,7 +84,7 @@ const columns: ColumnsType<UtilityResult> = [
 
 // Query function
 async function fetchUtilitiesByZip(zipCode: string): Promise<UtilityResult[]> {
-  const stmt = (await conn).prepare(`
+  const stmt = await (await conn).prepare(`
     WITH
     -- Find all rate plans that have been superseded by another
     superseded_ids AS (
@@ -103,6 +103,22 @@ async function fetchUtilitiesByZip(zipCode: string): Promise<UtilityResult[]> {
         ORDER BY is_default DESC, effectiveDate DESC
       ) = 1
     ),
+    -- Match county id with county name from geojson
+    feats AS (
+        SELECT unnest(features) as features
+        FROM read_json('county-data.geojson')
+    ),
+    counties AS (
+        SELECT
+            features.properties.Name as county_name,
+            features.properties.geoid as fips,
+            features.properties.stusps as stusps
+        FROM feats
+    ),
+    crosswalk_zip_map AS (
+        SELECT *
+        FROM read_csv('COUNTY_ZIP_122023.csv')
+    ),
     -- Match zip codes to counties and utilities
     zip_matches AS (
       SELECT
@@ -111,13 +127,15 @@ async function fetchUtilitiesByZip(zipCode: string): Promise<UtilityResult[]> {
         dp._id AS usurdb_id,
         est.State AS state,
         est.County AS county,
-        z.ZIP AS zipcode
-      FROM flattened.county_zip_one_to_many z
-      INNER JOIN flattened.eia861_service_territory est
-        ON z.county_name = est.County AND z.USPS_ZIP_PREF_STATE = est.State
+        map.ZIP AS zipcode
+      FROM flattened.eia861_service_territory AS est
+      INNER JOIN counties c
+        ON c.county_name = est.County AND c.stusps = est.State
+      LEFT JOIN crosswalk_zip_map AS map
+        ON c.fips = map.COUNTY
       INNER JOIN default_plans dp
         ON dp.eiaId = est."Utility Number"
-      WHERE starts_with(z.ZIP, $1)
+      WHERE starts_with(map.ZIP, $1)
     )
     -- Group by utility, aggregating states, counties, and zip codes
     SELECT
