@@ -55,7 +55,7 @@ function Storytelling() {
           much you consume. This predictability makes budgeting easy, but it
           also means there's no financial incentive to shift your usage to
           off-peak hours. Utilities like{" "}
-          <InternalLink to="detail/5cd3415b5457a3fc7154e9d2?date=2024-12-01">
+          <InternalLink to="/detail/5cd3415b5457a3fc7154e9d2?date=2024-12-01">
             Eversource
           </InternalLink>{" "}
           offer these straightforward plans that work well for households with
@@ -79,7 +79,7 @@ function Storytelling() {
           tiers, the price per kWh increases—sometimes dramatically. This
           structure encourages conservation by making heavy usage progressively
           more expensive, as seen in plans from utilities like the{" "}
-          <InternalLink to="detail/539fb70dec4f024bc1dc0749?date=2025-10-28">
+          <InternalLink to="/detail/539fb70dec4f024bc1dc0749?date=2025-10-28">
             City of Kosciusko, Mississippi
           </InternalLink>
           .
