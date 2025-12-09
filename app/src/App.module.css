@@ -35,7 +35,7 @@
 
 .links {
   display: grid;
-  grid-template-columns: repeat(4, min-content);
+  grid-template-columns: repeat(5, min-content);
   column-gap: 16px;
   margin-left: auto;
 
