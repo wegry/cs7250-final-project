@@ -84,7 +84,9 @@ const columns: ColumnsType<UtilityResult> = [
 
 // Query function
 async function fetchUtilitiesByZip(zipCode: string): Promise<UtilityResult[]> {
-  const stmt = await (await conn).prepare(`
+  const stmt = await (
+    await conn
+  ).prepare(`
     WITH
     -- Find all rate plans that have been superseded by another
     superseded_ids AS (
@@ -117,7 +119,7 @@ async function fetchUtilitiesByZip(zipCode: string): Promise<UtilityResult[]> {
     ),
     crosswalk_zip_map AS (
         SELECT *
-        FROM read_csv('COUNTY_ZIP_122023.csv')
+        FROM read_csv('COUNTY_ZIP_122020.csv')
     ),
     -- Match zip codes to counties and utilities
     zip_matches AS (
@@ -201,7 +203,7 @@ export function ZipSearch() {
   // Compute bbox and features using shared utility
   const { bbox, featuresByState } = useMemo(
     () => computeBBoxAndFeaturesByState(geojson, relevantStates),
-    [geojson, relevantStates],
+    [geojson, relevantStates]
   );
   const { width: bodyWidth } = useBodyResizeObserver();
 
@@ -226,7 +228,7 @@ export function ZipSearch() {
   const getTooltip = (
     countyName: string,
     state: string,
-    isHighlighted: boolean,
+    isHighlighted: boolean
   ) => `${countyName}, ${state}${isHighlighted ? " (Matched)" : ""}`;
 
   return (
@@ -246,7 +248,7 @@ export function ZipSearch() {
                     }
                     return params;
                   },
-                  { replace: true },
+                  { replace: true }
                 )
               }
               style={{ maxWidth: 300 }}

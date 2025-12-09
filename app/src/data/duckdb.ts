@@ -15,7 +15,6 @@ const MANUAL_BUNDLES: duckdb.DuckDBBundles = {
   },
 };
 let c = Promise.withResolvers<duckdb.AsyncDuckDBConnection>();
-let dbInstance: duckdb.AsyncDuckDB;
 
 export const conn = c.promise;
 
@@ -28,27 +27,25 @@ async function init() {
   const db = new duckdb.AsyncDuckDB(logger, worker);
   await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
 
-  dbInstance = db; 
-
   try {
     const conn = await db.connect();
     await db.registerFileURL(
       "flattened",
       window.location.origin + "/flattened.duckdb",
       duckdb.DuckDBDataProtocol.HTTP,
-      true,
+      true
     );
     await db.registerFileURL(
       "county-data.geojson",
       window.location.origin + "/geodata/county-data.geojson",
       duckdb.DuckDBDataProtocol.HTTP,
-      false,
+      false
     );
     await db.registerFileURL(
-      "COUNTY_ZIP_122023.csv",
-      window.location.origin + "/COUNTY_ZIP_122023.csv",
+      "COUNTY_ZIP_122020.csv",
+      window.location.origin + "/COUNTY_ZIP_122020.csv",
       duckdb.DuckDBDataProtocol.HTTP,
-      false,
+      false
     );
     await conn.query(`ATTACH 'flattened' AS flattened (READ_ONLY)`);
 
