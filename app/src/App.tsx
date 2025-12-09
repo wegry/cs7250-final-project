@@ -8,7 +8,7 @@ import {
   useLocation,
 } from "react-router-dom";
 import { Drawer, Button } from "antd";
-import { MenuOutlined } from "@ant-design/icons";
+import { MenuOutlined, SearchOutlined } from "@ant-design/icons";
 import * as s from "./App.module.css";
 import "./global.css";
 import { Footer } from "./components/Footer";
@@ -36,11 +36,11 @@ function Layout() {
 
   const navLinks = (
     <>
-      <Link to="/zip-search">Zip Search</Link>
+      <Link to="/categories">Categories</Link>
+      <Link to="/zip-search"><SearchOutlined /> Zip Search</Link>
       <Link to="/detail">Detail View</Link>
       <Link to="/compare">Compare Plans</Link>
       <Link to="/map">Map</Link>
-      <Link to="/about">About</Link>
     </>
   );
 
@@ -87,7 +87,7 @@ const router = createBrowserRouter([
       {
         index: true,
         lazy: () =>
-          import("./pages/Storytelling").then((module) => ({
+          import("./pages/About").then((module) => ({
             Component: module.default,
           })),
       },
@@ -130,6 +130,13 @@ const router = createBrowserRouter([
         path: "about",
         lazy: () =>
           import("./pages/About").then((module) => ({
+            Component: module.default,
+          })),
+      },
+      {
+        path: "categories",
+        lazy: () =>
+          import("./pages/Storytelling").then((module) => ({
             Component: module.default,
           })),
       },

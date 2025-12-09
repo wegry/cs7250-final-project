@@ -24,25 +24,9 @@ function Storytelling() {
     <main className={s.main}>
       <h1>How is electricity usage priced in the US?</h1>
       <Paragraph>
-        America's electricity grids face challenges from extreme weather events,
-        aging infrastructure, and growing demand from data centers and
-        electrification. This app is built to help users understand different
-        pricing mechanisms across different utilities. We combine data from the
-        US Utility Rate Database<a href="#footnote-1">[1]</a> and the Energy
-        Information Agency's EIA-861 to show patterns in how different pricing
-        schemes affect consumer costs.
-      </Paragraph>
-      <h2>Pages in this app</h2>
-      <Paragraph>
-        This app consists of a few pages:{" "}
-        <a href="#plan-survey">the remainder of this page</a> is a aggregation
-        of how pricing mechanisms work. <Link to="/zip-search">Zip Search</Link>{" "}
-        allows looking up utilities and by extension rate plans by zip code.{" "}
-        <Link to="/detail">Detail View</Link> lets you search directly by
-        utility and rate plan name. <Link to="/compare">Compare</Link> lets you
-        see how costs compare between two rate plans of your choice.{" "}
-        <Link to="/bamap">Map</Link> allows you to search for utility and rate
-        plan names at a higher level.
+        Electricity rates in the United States vary widely by utility and
+        region. Below are the main categories of pricing mechanisms used across
+        the country.
       </Paragraph>
       <h2 id="plan-survey">Different Categories of Utility Rate Plans</h2>
       <Card className={s.toc}>
