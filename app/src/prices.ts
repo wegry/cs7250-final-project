@@ -209,7 +209,7 @@ export function calculateMonthlyBill({
 // Find the applicable rate from tiered energy structure
 function findTierRate(
   tiers:
-    | Array<{ rate?: number; adj?: number | null; max?: number | null }>
+    | Array<{ rate?: number | null; adj?: number | null; max?: number | null }>
     | undefined,
   cumulativeUsage: number,
 ): number {

@@ -1,12 +1,13 @@
-import { Alert, Card, Spin, Table, Typography } from "antd";
+import { Alert, Card, Collapse, Spin, Table, Typography } from "antd";
 import * as d3 from "d3";
 import type { FeatureCollection } from "geojson";
 import { useEffect, useRef, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { z } from "zod";
+import { InternalLink } from "../components/InternalLink";
+import { PageBody } from "../components/PageBody";
 import { conn } from "../data/duckdb";
 import { statesArray } from "../data/schema";
-import { PageBody } from "../components/PageBody";
 
 const { Paragraph } = Typography;
 
@@ -42,14 +43,34 @@ interface BAProperties {
 
 const BA_PARAM = "ba";
 
+const DEFAULT_FILL = "lch(from var(--highlight-color) 95% calc(c * 0.25) h)";
+
 export default function BAMap() {
   const svgRef = useRef<SVGSVGElement>(null);
+  const selectedPathRef = useRef<SVGPathElement | null>(null);
+
   const tooltipRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [utilities, setUtilities] = useState<BAUtility[]>([]);
   const [utilsLoading, setUtilsLoading] = useState(false);
   const [params, setParams] = useSearchParams();
+
+  function getBAShort(props: BAProperties): string | null {
+    const baShortFromSummary = props?.baSummary?.name;
+    const baShortFromZone = props?.zoneName
+      ? String(props.zoneName).split("-").slice(-1)[0]
+      : null;
+    return (
+      baShortFromSummary ||
+      baShortFromZone ||
+      props.name ||
+      props.BA_NAME ||
+      props.BA_CODE ||
+      props.zone_name ||
+      null
+    );
+  }
 
   const selectedBA = params.get(BA_PARAM);
 
@@ -224,7 +245,7 @@ export default function BAMap() {
           .data(conusFeatures)
           .join("path")
           .attr("d", (d) => path(d as any) || "")
-          .attr("fill", "#3388ff")
+          .attr("fill", DEFAULT_FILL)
           .attr("fill-opacity", 0.3)
           .attr("stroke", "#2c3e50")
           .attr("stroke-width", 2)
@@ -263,25 +284,51 @@ export default function BAMap() {
             d3.select(this).attr("fill-opacity", 0.3).attr("stroke-width", 2);
             tooltip.style("opacity", 0);
           })
-          .on("click", (_event, d) => {
+          .on("click", function (_event, d) {
+            // Reset previous selection
+            if (selectedPathRef.current) {
+              d3.select(selectedPathRef.current)
+                .attr("fill", DEFAULT_FILL)
+                .attr("fill-opacity", 0.3)
+                .attr("stroke-width", 2);
+            }
+
+            // Highlight this selection
+            d3.select(this)
+              .attr("fill", "var(--highlight-color)")
+              .attr("fill-opacity", 0);
+
+            if (this instanceof SVGPathElement) {
+              selectedPathRef.current = this;
+            }
+
             const props = d.properties as BAProperties;
-            const baShortFromSummary = props?.baSummary?.name;
-            const baShortFromZone = props?.zoneName
-              ? String(props.zoneName).split("-").slice(-1)[0]
-              : null;
-            const baShort =
-              baShortFromSummary ||
-              baShortFromZone ||
-              props.name ||
-              props.BA_NAME ||
-              props.BA_CODE ||
-              props.zone_name ||
-              null;
+            const baShort = getBAShort(props);
 
             if (baShort) {
               setSelectedBA(baShort);
             }
           });
+
+        // 4. Add this block right after the paths are created (after the .on("click", ...) chain):
+        // Highlight BA from URL params if present
+        const baFromParams = params.get(BA_PARAM);
+        if (baFromParams) {
+          svg.selectAll<SVGPathElement, any>("path").each(function (d) {
+            const props = d.properties as BAProperties;
+            const baShort = getBAShort(props);
+            if (
+              baShort &&
+              baShort.toLowerCase() === baFromParams.toLowerCase()
+            ) {
+              d3.select(this)
+                .attr("fill", "var(--highlight-color)")
+                .attr("fill-opacity", 0.8)
+                .attr("stroke-width", 3);
+              selectedPathRef.current = this;
+            }
+          });
+        }
 
         setLoading(false);
       } catch (err) {
@@ -367,41 +414,55 @@ export default function BAMap() {
 
   return (
     <PageBody title="U.S. Balancing Authorities">
-      <Card title="About This Map" style={{ marginBottom: "24px" }}>
-        <Paragraph>
-          This map displays the geographic boundaries of Balancing Authorities
-          (BAs) in the continental United States. A Balancing Authority is the
-          organization responsible for keeping electricity supply and demand in
-          balance across a region, operating the transmission grid, and managing
-          wholesale electricity markets.
-        </Paragraph>
-        <Paragraph>
-          The United States is divided into dozens of these regions, each with
-          its own market rules, pricing structures, and mix of utilities. The
-          boundaries you see here represent the areas where each BA coordinates
-          power generation and delivery.
-        </Paragraph>
-        <Paragraph>
-          <strong>Click on any region</strong> to view utilities operating
-          within that Balancing Authority and explore their available rate
-          plans.
-        </Paragraph>
-        <Paragraph style={{ fontSize: "13px", color: "#666" }}>
-          <strong>Notable regions:</strong> <strong>PJM</strong> covers the
-          Mid-Atlantic and parts of the Midwest, hosting one of the largest
-          concentrations of data center load in the country.{" "}
-          <strong>ERCOT</strong> operates Texas's grid largely independently
-          from the rest of North America, with limited interconnections to
-          Mexico. <strong>MISO</strong> spans from the Gulf Coast to the
-          Canadian border, including parts of Manitoba. <strong>CAISO</strong>{" "}
-          manages California's grid and leads in renewable energy integration.{" "}
-          <strong>ISO-NE</strong> coordinates New England's six-state region.{" "}
-          <strong>SPP</strong> covers the wind-rich Great Plains from Texas to
-          the Dakotas. <strong>NYISO</strong> operates New York's market,
-          balancing dense urban load in New York City with upstate hydro and
-          nuclear generation.
-        </Paragraph>
-      </Card>
+      <Collapse
+        size="large"
+        defaultActiveKey={1}
+        items={[
+          {
+            key: 1,
+            label: "About This Map",
+            children: (
+              <>
+                <Paragraph>
+                  This map displays the geographic boundaries of Balancing
+                  Authorities (BAs) in the continental United States. A
+                  Balancing Authority is the organization responsible for
+                  keeping electricity supply and demand in balance across a
+                  region, operating the transmission grid, and managing
+                  wholesale electricity markets.
+                </Paragraph>
+                <Paragraph>
+                  The United States is divided into dozens of these regions,
+                  each with its own market rules, pricing structures, and mix of
+                  utilities. The boundaries you see here represent the areas
+                  where each BA coordinates power generation and delivery.
+                </Paragraph>
+                <Paragraph>
+                  <strong>Click on any region</strong> to view utilities
+                  operating within that Balancing Authority and explore their
+                  available rate plans.
+                </Paragraph>
+                <Paragraph style={{ fontSize: "13px", color: "#666" }}>
+                  <strong>Notable regions:</strong> <strong>PJM</strong> covers
+                  the Mid-Atlantic and parts of the Midwest, hosting one of the
+                  largest concentrations of data center load in the country.{" "}
+                  <strong>ERCOT</strong> operates Texas's grid largely
+                  independently from the rest of North America, with limited
+                  interconnections to Mexico. <strong>MISO</strong> spans from
+                  the Gulf Coast to the Canadian border, including parts of
+                  Manitoba. <strong>CAISO</strong> manages California's grid and
+                  leads in renewable energy integration. <strong>ISO-NE</strong>{" "}
+                  coordinates New England's six-state region.{" "}
+                  <strong>SPP</strong> covers the wind-rich Great Plains from
+                  Texas to the Dakotas. <strong>NYISO</strong> operates New
+                  York's market, balancing dense urban load in New York City
+                  with upstate hydro and nuclear generation.
+                </Paragraph>
+              </>
+            ),
+          },
+        ]}
+      />
       {error && (
         <Alert
           message="Error Loading Map"
@@ -435,7 +496,7 @@ export default function BAMap() {
           ref={svgRef}
           style={{
             width: "100%",
-            height: "600px",
+            height: "min(600px, calc(100vw / 1.61))",
             display: "block",
           }}
         />
@@ -469,7 +530,9 @@ export default function BAMap() {
               key: "utilityName",
               render: (value: string, record: BAUtility) =>
                 record.usurdb_id ? (
-                  <Link to={`/detail/${record.usurdb_id}`}>{value}</Link>
+                  <InternalLink mode="table" to={`/detail/${record.usurdb_id}`}>
+                    {value}
+                  </InternalLink>
                 ) : (
                   value
                 ),

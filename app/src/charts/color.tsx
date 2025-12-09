@@ -16,14 +16,18 @@ export function getViridisColors(n: number): string[] {
   return Array.from({ length: n }, (_, i) => interpolateViridis(i / (n - 1)));
 }
 
+type Types = "coincident" | "energy" | "demand" | "flatDemand";
+
 export function getAllPeriods(
   plan: RatePlan | null | undefined,
-  type: "energy" | "demand" | "flatDemand",
+  type: Types,
 ): number[] {
   if (!plan) return [];
 
   if (type === "flatDemand") {
     return Array.from(new Set(plan.flatDemandMonths));
+  } else if (type === "coincident") {
+    return Array.from(new Set(plan?.coincidentSched?.flat() ?? []));
   }
 
   const weekdaySched = plan[`${type}WeekdaySched`];
@@ -43,7 +47,7 @@ export function getAllPeriods(
 /** Build a consistent color scale for all periods in a schedule */
 export function buildPeriodColorScale(
   plan: RatePlan | null | undefined,
-  type: "energy" | "demand" | "flatDemand",
+  type: Types,
 ): { domain: number[]; range: string[] } {
   const periods = getAllPeriods(plan, type);
   const colors = getViridisColors(periods.length);

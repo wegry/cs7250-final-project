@@ -1,49 +1,34 @@
-import type { Dayjs } from "dayjs";
 import { conn } from "./duckdb";
 import { WholesalePrice, type SynthData } from "./schema";
 
-/** For select list */
-export const selectList = `
-  SELECT DISTINCT ON (utilityName, rateName)
-    _id as value
-    , concat_ws(' / ', utilityName, rateName ) as label
-  FROM flattened.usurdb
-  ORDER BY
-    utilityName ASC
-    , rateName ASC
-    , effectiveDate DESC NULLS LAST
-    , enddate DESC NULLS FIRST
+export const activeRatePlansQuery = `
+  WITH latest_plans AS (
+    SELECT DISTINCT ON (utilityName, rateName)
+      _id,
+      utilityName,
+      rateName
+    FROM flattened.usurdb
+    WHERE endDate IS NULL
+    ORDER BY
+      utilityName ASC,
+      rateName ASC,
+      effectiveDate DESC NULLS LAST
+  )
+  SELECT
+    utilityName AS label,
+    list({
+      value: _id,
+      label: rateName,
+      utilityName: utilityName
+    } ORDER BY rateName) AS options
+  FROM latest_plans
+  GROUP BY utilityName
+  ORDER BY utilityName
 `;
-export async function selectListForDate(date: Dayjs) {
-  const stmt = await (
-    await conn
-  ).prepare(`
-  SELECT DISTINCT ON (utilityName, rateName)
-    _id as value
-    , concat_ws('/', utilityName, rateName) as label
-  FROM flattened.usurdb
-  WHERE
-    (enddate IS NULL OR
-      (enddate IS NOT NULL AND enddate >= ?)
-    ) AND
-    (effectiveDate IS NULL OR
-      (effectiveDate IS NOT NULL AND effectiveDate <= ?)
-    )
-  ORDER BY
-    utilityName ASC
-    , rateName ASC
-    , effectiveDate DESC NULLS LAST
-    , enddate DESC NULLS FIRST
-  `);
 
-  const formattedDate = date.format();
-
-  /**
-   * `@duckdb/wasm` doesn't support named prepared statements.
-   * https://github.com/duckdb/duckdb/discussions/11782
-   */
-  const result = await stmt.query(formattedDate, formattedDate);
-  return result;
+export async function getActiveRatePlans() {
+  const c = await conn;
+  return await c.query(activeRatePlansQuery);
 }
 
 export async function supercededBy(label: string) {

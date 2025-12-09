@@ -66,3 +66,9 @@
   max-height: calc(40ch / 1.61);
   overflow: auto;
 }
+
+.tags {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}

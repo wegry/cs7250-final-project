@@ -5,8 +5,8 @@ import type { Dayjs } from "dayjs";
 import { Card } from "antd";
 import { useMemo } from "react";
 import { buildPeriodColorScale } from "./color";
-
-// ============ Utility Types & Functions ============
+import { buildInteractiveLegend } from "./interactiveLegend";
+import { useSyncedLegend } from "./LegendSelectionContext";
 
 interface TierInfo {
   rate?: number | null;
@@ -76,8 +76,6 @@ function getPeriodsFromSchedule(
   return [...new Set(schedule)].sort((a, b) => a - b);
 }
 
-// ============ Component ============
-
 export function EnergyTiersChart({
   date,
   selectedPlan,
@@ -98,15 +96,20 @@ export function EnergyTiersChart({
 
   const chartData = useMemo(() => {
     const allSegments: ChartTierSegment[] = [];
-
     for (const period of periods) {
       const tiers = selectedPlan?.energyRate_tiers?.[period] ?? [];
       const segments = processTiersForPeriod(tiers, period);
       allSegments.push(...segments);
     }
-
     return allSegments;
   }, [selectedPlan?.energyRate_tiers, periods]);
+
+  const legend = useMemo(() => buildInteractiveLegend(chartData), [chartData]);
+
+  const { handleEmbed } = useSyncedLegend({
+    hasPeriodLegend: legend.showPeriodLegend,
+    hasTierLegend: legend.showTierLegend,
+  });
 
   const domainMax = useMemo(() => {
     if (!chartData.length) return undefined;
@@ -126,10 +129,8 @@ export function EnergyTiersChart({
     height: 240,
     title: `Energy Usage Tiers (${date.format("dddd LL")})`,
     data: { values: chartData },
-    mark: {
-      type: "rule",
-      strokeWidth: 3,
-    },
+    params: legend.params,
+    mark: { type: "rule", strokeWidth: 3 },
     encoding: {
       x: {
         field: "min",
@@ -149,12 +150,15 @@ export function EnergyTiersChart({
         type: "nominal",
         title: "Period",
         scale: colorScale,
+        legend: legend.colorLegend,
       },
       strokeDash: {
         field: "tier",
         type: "ordinal",
         title: "Tier",
+        legend: legend.strokeDashLegend,
       },
+      opacity: legend.opacityEncoding,
       tooltip: [
         { field: "period", title: "Period" },
         { field: "tier", title: "Tier" },
@@ -167,12 +171,14 @@ export function EnergyTiersChart({
 
   return (
     <Card>
-      <VegaEmbed spec={spec} options={{ mode: "vega-lite", actions: false }} />
+      <VegaEmbed
+        spec={spec}
+        options={{ mode: "vega-lite", actions: false }}
+        onEmbed={handleEmbed}
+      />
     </Card>
   );
 }
-
-// ============ Exports for testing ============
 
 export { effectiveRate, processTiersForPeriod, getPeriodsFromSchedule };
 export type { TierInfo, ChartTierSegment };

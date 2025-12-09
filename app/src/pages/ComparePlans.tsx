@@ -247,7 +247,6 @@ function ComparePlans() {
             <Col span={12}>
               <Form.Item label="Rate Plan 1">
                 <RatePlanSelector
-                  byDate={state.date}
                   value={ratePlanSelected}
                   onChange={(e) =>
                     setSearchParams((prev) => {
@@ -269,7 +268,6 @@ function ComparePlans() {
             <Col span={12}>
               <Form.Item label="Rate Plan 2 (Optional)">
                 <RatePlanSelector
-                  byDate={state.date}
                   value={ratePlan2Selected}
                   onChange={(e) =>
                     setSearchParams((prev) => {

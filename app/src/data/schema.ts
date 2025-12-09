@@ -118,7 +118,7 @@ export const RatePlan = z.object({
   energyRate_tiers: tierShape(
     z.object({
       adj: z.number().nullish(),
-      rate: z.optional(z.number()),
+      rate: z.number().nullish(),
       max: z.number().nullish(),
       unit: unionOfLiterals(["kWh", "kWh daily", "kWh/kW"] as const).nullish(),
     }),
@@ -206,3 +206,20 @@ export const BASummary = z.object({
 });
 export type BASummary = z.infer<typeof BASummary>;
 export const BASummaryArraySchema = z.array(BASummary);
+
+export const RatePlanOption = z.object({
+  value: z.string(),
+  label: z.string(),
+  utilityName: z.string(),
+});
+export type RatePlanOption = z.infer<typeof RatePlanOption>;
+
+export const GroupedRatePlanOption = z.object({
+  label: z.string(),
+  options: preprocessVector(z.array(RatePlanOption)),
+});
+export type GroupedRatePlanOption = z.infer<typeof GroupedRatePlanOption>;
+
+export const GroupedRatePlanOptionArray = preprocessVector(
+  z.array(GroupedRatePlanOption),
+);

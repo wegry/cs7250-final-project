@@ -28,6 +28,16 @@
   h3 {
     padding-top: 1em;
   }
+
+  /* Local links only */
+  a[href^="/"],
+  a[href^="#"] {
+    color: var(--highlight-color);
+
+    &:hover {
+      color: lch(from var(--highlight-color) calc(l * 1.2) c h);
+    }
+  }
 }
 
 .sectionImage {
@@ -39,7 +49,7 @@
   display: block;
 }
 
-.sectionImage+.sectionImage {
+.sectionImage + .sectionImage {
   margin-top: 1rem;
 }
 

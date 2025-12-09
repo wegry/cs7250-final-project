@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { RatePlan } from "../data/schema";
 import * as queries from "../data/queries";
 
@@ -21,5 +21,6 @@ export function useRatePlan(label?: string | null) {
   return useQuery({
     queryFn: () => getRatePlan(label),
     queryKey: ["ratePlan", label],
+    placeholderData: keepPreviousData,
   });
 }

@@ -1,21 +1,21 @@
 import type { ReactNode } from "react";
-import s from "./DetailSection.module.css";
+import { LegendSelectionProvider } from "../charts/LegendSelectionContext";
+import * as s from "./DetailSection.module.css";
+
+interface DetailSectionProps {
+  title: string;
+  description?: string;
+  children: ReactNode;
+  hide?: boolean;
+}
 
 export function DetailSection({
   title,
-  children,
   description,
+  children,
   hide,
-}: {
-  breakBefore?: boolean;
-  children: ReactNode[] | ReactNode;
-  title: string;
-  description: ReactNode;
-  hide: boolean;
-}) {
-  if (hide) {
-    return null;
-  }
+}: DetailSectionProps) {
+  if (hide) return null;
 
   return (
     <>
@@ -24,7 +24,7 @@ export function DetailSection({
           <h2>{title}</h2>
           {description}
         </div>
-        {children}
+        <LegendSelectionProvider>{children}</LegendSelectionProvider>
       </div>
     </>
   );

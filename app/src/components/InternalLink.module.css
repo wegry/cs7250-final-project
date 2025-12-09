@@ -1,0 +1,17 @@
+.outlined {
+  & > * {
+    border-color: var(--highlight-color);
+  }
+
+  &:hover {
+    border-color: lch(from var(--highlight-color) calc(l * 1.2) c h);
+  }
+}
+.main {
+  color: var(--highlight-color);
+  text-decoration: none;
+
+  &:hover {
+    color: lch(from var(--highlight-color) calc(l * 1.2) c h);
+  }
+}

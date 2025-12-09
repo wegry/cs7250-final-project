@@ -1,8 +1,8 @@
-import { Link } from "react-router-dom";
+import { Card, Typography } from "antd";
 import dayjs from "dayjs";
+import { InternalLink } from "../components/InternalLink";
 import { PlanTypeTable } from "../components/PlanTypeTable";
 import s from "./Storytelling.module.css";
-import { Card, Typography } from "antd";
 
 // Use current date for filtering active plans
 const TODAY = dayjs();
@@ -54,9 +54,9 @@ function Storytelling() {
           much you consume. This predictability makes budgeting easy, but it
           also means there's no financial incentive to shift your usage to
           off-peak hours. Utilities like{" "}
-          <Link to="detail/5cd3415b5457a3fc7154e9d2?date=2024-12-01">
+          <InternalLink to="detail/5cd3415b5457a3fc7154e9d2?date=2024-12-01">
             Eversource
-          </Link>{" "}
+          </InternalLink>{" "}
           offer these straightforward plans that work well for households with
           consistent energy habits.
         </Paragraph>
@@ -78,9 +78,9 @@ function Storytelling() {
           tiers, the price per kWh increases—sometimes dramatically. This
           structure encourages conservation by making heavy usage progressively
           more expensive, as seen in plans from utilities like the{" "}
-          <Link to="detail/539fb70dec4f024bc1dc0749?date=2025-10-28">
+          <InternalLink to="detail/539fb70dec4f024bc1dc0749?date=2025-10-28">
             City of Kosciusko, Mississippi
-          </Link>
+          </InternalLink>
           .
         </Paragraph>
         <PlanTypeTable planType="tiered" date={TODAY} />
@@ -101,9 +101,9 @@ function Storytelling() {
           periods like late night or early morning. These plans reward customers
           who can shift activities like laundry, dishwashing, or EV charging to
           cheaper hours, as offered by{" "}
-          <Link to="/detail/677ec1cf74180cdbbe08888c?date=2025-06-11">
+          <InternalLink to="/detail/677ec1cf74180cdbbe08888c?date=2025-06-11">
             Virginia Electric & Power Co
-          </Link>
+          </InternalLink>
           .
         </Paragraph>
         <PlanTypeTable planType="tou" date={TODAY} />
@@ -124,9 +124,9 @@ function Storytelling() {
           you happened to be running appliances during that critical hour. If
           you can avoid heavy usage when the grid is most stressed, you can see
           significant savings with plans like those from{" "}
-          <Link to="/detail/539f6bceec4f024411eca1eb?date=2025-08-21">
+          <InternalLink to="/detail/539f6bceec4f024411eca1eb?date=2025-08-21">
             Oklahoma Electric Coop Inc
-          </Link>
+          </InternalLink>
           .
         </Paragraph>
         <PlanTypeTable planType="coincident" date={TODAY} />
@@ -147,9 +147,9 @@ function Storytelling() {
           it—if you run many appliances simultaneously, you'll face higher
           demand charges even if your total consumption is modest. Utilities
           like{" "}
-          <Link to="/detail/67d48dcb050f9354dc00a80e?date=2024-08-13">
+          <InternalLink to="/detail/67d48dcb050f9354dc00a80e?date=2024-08-13">
             Denton County Electric Co-op
-          </Link>{" "}
+          </InternalLink>{" "}
           use this model to encourage customers to spread their usage more
           evenly.
         </Paragraph>
@@ -177,9 +177,9 @@ function Storytelling() {
           This provides cost certainty for customers while still accounting for
           the infrastructure needed to serve their maximum power needs. Plans
           from{" "}
-          <Link to="/detail/67cf29554def754a900b5f79?date=2025-06-11">
+          <InternalLink to="/detail/67cf29554def754a900b5f79?date=2025-06-11">
             Puget Sound Energy Inc
-          </Link>{" "}
+          </InternalLink>{" "}
           demonstrate how utilities balance simplicity with demand-based cost
           recovery.
         </Paragraph>
@@ -207,9 +207,9 @@ function Storytelling() {
           charges, and flat demand fees all layered together. These complex
           structures attempt to capture the true cost of electricity delivery
           across different dimensions of usage. Plans like those from{" "}
-          <Link to="/detail/5da604f35457a3624a6dbecf?date=2025-11-18">
+          <InternalLink to="/detail/5da604f35457a3624a6dbecf?date=2025-11-18">
             Jacksonville Electric Authority
-          </Link>{" "}
+          </InternalLink>{" "}
           show how intricate electricity pricing can become, making tools like
           this one essential for understanding your bill.
         </Paragraph>
@@ -222,7 +222,7 @@ function Storytelling() {
           <a href="https://openei.org/wiki/Utility_Rate_Database">
             OpenEI data
           </a>{" "}
-          to try and show what rates are in use across the country.{" "}
+          to show what rates are in use across the country.{" "}
           <i>
             Note: these rates and prices are Residential and mostly generation
             charges and do not include distribution charges.
