@@ -188,10 +188,10 @@ function About() {
             Our consensus: use a map as the centerpiece of exploration, with the
             ability to drill down from the overview to detailed views of
             specific utilities and their rate plans. Since the geographical mappings
-            for utilities were unavailable, we show the utilities belonging to a 
+            for utilities were unavailable, we show the utilities belonging to a
             balancing authority in a table view. We implemented linking on
-            time series graphs of rate/demand schedules and daily/yearly trends. 
-            Comparison views between utilities are handled by a selection 
+            time series graphs of rate/demand schedules and daily/yearly trends.
+            Comparison views between utilities are handled by a selection
             mechanism to display multiple utilities on the same graph.
           </Paragraph>
         </section>
@@ -211,7 +211,7 @@ function About() {
             with categorized rate plan examples, a zip code search for
             location-based discovery, a detailed rate plan viewer, a comparison
             tool for side-by-side analysis, and an interactive map for
-            geographic exploration per balancing authority. 
+            geographic exploration per balancing authority.
           </Paragraph>
         </section>
 
