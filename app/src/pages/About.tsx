@@ -1,6 +1,6 @@
 import { Typography, Card } from "antd";
-import { Link } from "react-router-dom";
 import s from "./About.module.css";
+import { InternalLink } from "../components/InternalLink";
 
 const { Paragraph, Title } = Typography;
 
@@ -54,8 +54,8 @@ function About() {
           </Paragraph>
 
           <Paragraph>
-            We use data compiled from the US Utility Rate Database and the Energy
-            Information Agency's EIA-861.
+            We use data compiled from the US Utility Rate Database and the
+            Energy Information Agency's EIA-861.
           </Paragraph>
         </section>
 
@@ -64,18 +64,21 @@ function About() {
           <Paragraph>
             This app consists of several interconnected pages designed to help
             you explore electricity pricing data: The{" "}
-            <Link to="/categories">Categories</Link> page provides an overview
-            of different pricing mechanisms used across the country, with
-            examples of each type. <Link to="/zip-search">Zip Search</Link>{" "}
-            allows you to discover utilities and rate plans available in your
-            area by entering a zip code. <Link to="/detail">Detail View</Link>{" "}
-            lets you examine specific utilities and rate plans in depth,
-            including pricing schedules and tier structures.{" "}
-            <Link to="/compare">Compare Plans</Link> enables side-by-side
-            comparison of two rate plans to understand how costs differ under
-            various usage scenarios. Finally, the <Link to="/map">Map</Link>{" "}
-            provides geographic exploration of utilities and balancing
-            authorities across the United States.
+            <InternalLink to="/categories">Categories</InternalLink> page
+            provides an overview of different pricing mechanisms used across the
+            country, with examples of each type.{" "}
+            <InternalLink to="/zip-search">Zip Search</InternalLink> allows you
+            to discover utilities and rate plans available in your area by
+            entering a zip code.{" "}
+            <InternalLink to="/detail">Detail View</InternalLink> lets you
+            examine specific utilities and rate plans in depth, including
+            pricing schedules and tier structures.{" "}
+            <InternalLink to="/compare">Compare Plans</InternalLink> enables
+            side-by-side comparison of two rate plans to understand how costs
+            differ under various usage scenarios. Finally, the{" "}
+            <InternalLink to="/map">Map</InternalLink> provides geographic
+            exploration of utilities and balancing authorities across the United
+            States.
           </Paragraph>
         </section>
 
@@ -85,49 +88,47 @@ function About() {
             Commercial platforms like{" "}
             <a href="https://www.gridstatus.io">GridStatus.io</a> and{" "}
             <a href="https://app.electricitymaps.com">Electricity Maps</a>{" "}
-            provide real-time grid monitoring and carbon intensity
-            visualization - but they focus on wholesale markets rather than what
-            residential customers actually experience. Individual ISO dashboards
-            from{" "}
+            provide real-time grid monitoring and carbon intensity visualization
+            - but they focus on wholesale markets rather than what residential
+            customers actually experience. Individual ISO dashboards from{" "}
             <a href="https://www.caiso.com">CAISO</a>,{" "}
             <a href="https://www.ercot.com">ERCOT</a>, and{" "}
-            <a href="https://www.iso-ne.com">ISO-NE</a>{" "}
-            remain siloed, making cross-regional comparison difficult.
+            <a href="https://www.iso-ne.com">ISO-NE</a> remain siloed, making
+            cross-regional comparison difficult.
           </Paragraph>
           <Paragraph>
             Research on demand response documents substantial variation in how
-            programs are implemented across different regulatory contexts.
-            Energy affordability research identifies critical gaps in
-            visualizing energy justice issues. Our platform addresses these gaps by combining EIA
-            datasets with utility-level pricing data, enabling cross-regional
-            comparison while linking technical grid operations to consumer
-            impacts.
+            programs are implemented across different regulatory contexts. Our
+            platform addresses these gaps by combining EIA datasets with
+            utility-level pricing data, enabling cross-regional comparison while
+            linking technical grid operations to consumer impacts.
           </Paragraph>
         </section>
 
         <section id="data">
           <Title level={2}>Data</Title>
           <Paragraph>
-            Our primary datasets are the US Energy Information Agency (EIA)
-            Form 861 and the US Utility Rate Database (USURDB) from OpenEI.
-            EIA 861 includes utility-level reporting on dynamic
-            pricing enrollment and states/counties served. The data is well
-            structured and doesn't require much cleaning.
+            Our primary datasets are the US Energy Information Agency (EIA) Form
+            861 and the US Utility Rate Database (USURDB) from OpenEI. EIA 861
+            includes utility-level reporting on dynamic pricing enrollment and
+            states/counties served. The data is well structured and doesn't
+            require much cleaning.
           </Paragraph>
           <Paragraph>
-            USURDB contains 20 years of electric utility pricing data&mdash;around 768
-            columns and 159,000 rows. After filtering for residential plans
-            active during 2024, we ended up with 5,572 rows and 313 columns.
-            Most columns describe electricity prices at specific tiers, with
-            specific pricing logic, during specific time periods. Since there
-            are numerous periods, tiers, and logic types&mdash;and most plans use only
-            a few of them&mdash;our data frame is very sparse.
+            USURDB contains 20 years of electric utility pricing
+            data&mdash;around 768 columns and 159,000 rows. After filtering for
+            residential plans active during 2024, we ended up with 5,572 rows
+            and 313 columns. Most columns describe electricity prices at
+            specific tiers, with specific pricing logic, during specific time
+            periods. Since there are numerous periods, tiers, and logic
+            types&mdash;and most plans use only a few of them&mdash;our data
+            frame is very sparse.
           </Paragraph>
           <Paragraph>
-            For geographic data, we use Census shapefiles to map
-            the counties served by each utility. This enables county-level
-            analysis and geographic linking of utilities to the regions they
-            serve. We also use a zip code to county mapping from{" "}
+            For geographic data, we use Census shapefiles to map the counties
+            served by each utility. This enables county-level analysis and
+            geographic linking of utilities to the regions they serve. We also
+            use a zip code to county mapping from{" "}
             <a href="https://github.com/scpike/us-state-county-zip">
               scpike's us-state-county-zip repository
             </a>{" "}
@@ -152,7 +153,8 @@ function About() {
             user tasks using Munzner's task abstraction framework.
           </Paragraph>
           <Paragraph>
-            Our priority tasks include: viewing rate plan schedules and tiers, explore rate plans exhibiting different pricing mechanisms,
+            Our priority tasks include: viewing rate plan schedules and tiers,
+            explore rate plans exhibiting different pricing mechanisms,
             comparing pricing between utilities, filtering by ZIP code or state,
             viewing geographical distribution of utilities within balancing
             authorities, and identifying trends in pricing across time. We
@@ -166,12 +168,13 @@ function About() {
           <Paragraph>
             Our analysis of the 5,572 residential rate plans confirmed the
             diversity of pricing mechanisms described in detail in our{" "}
-            <Link to="/categories">Categories</Link> page. We found all major
-            pricing structures represented across US utilities, from simple flat
-            rates to complex combinations of multiple mechanisms. This diversity
-            reflects different regional priorities: some utilities emphasize
-            conservation through tiered pricing, while others focus on demand
-            management through peak-hour charges or demand-based fees.
+            <InternalLink to="/categories">Categories</InternalLink> page. We
+            found all major pricing structures represented across US utilities,
+            from simple flat rates to complex combinations of multiple
+            mechanisms. This diversity reflects different regional priorities:
+            some utilities emphasize conservation through tiered pricing, while
+            others focus on demand management through peak-hour charges or
+            demand-based fees.
           </Paragraph>
         </section>
 
@@ -187,12 +190,13 @@ function About() {
           <Paragraph>
             Our consensus: use a map as the centerpiece of exploration, with the
             ability to drill down from the overview to detailed views of
-            specific utilities and their rate plans. Since the geographical mappings
-            for utilities were unavailable, we show the utilities belonging to a
-            balancing authority in a table view. We implemented linking on
-            time series graphs of rate/demand schedules and daily/yearly trends.
-            Comparison views between utilities are handled by a selection
-            mechanism to display multiple utilities on the same graph.
+            specific utilities and their rate plans. Since the geographical
+            mappings for utilities were unavailable, we show the utilities
+            belonging to a balancing authority in a table view. We implemented
+            linking on time series graphs of rate/demand schedules and
+            daily/yearly trends. Comparison views between utilities are handled
+            by a selection mechanism to display multiple utilities on the same
+            graph.
           </Paragraph>
         </section>
 
@@ -201,10 +205,9 @@ function About() {
           <Paragraph>
             The final visualization is an interactive web application built with
             React, TypeScript, and Vite. We used React Router for navigation,
-            Ant Design for UI components,
-            DuckDB-WASM for client-side querying, and Vega-Lite for chart
-            visualizations. GeoJSON data powers our mapping of balancing
-            authority boundaries.
+            Ant Design for UI components, DuckDB-WASM for client-side querying,
+            and Vega-Lite for chart visualizations. GeoJSON data powers our
+            mapping of balancing authority boundaries.
           </Paragraph>
           <Paragraph>
             The app features multiple coordinated views: a storytelling homepage
@@ -218,8 +221,8 @@ function About() {
         <section id="conclusion">
           <Title level={2}>Conclusion</Title>
           <Paragraph>
-            This project created an interactive tool for exploring
-            variable electricity pricing across the United States. By combining
+            This project created an interactive tool for exploring variable
+            electricity pricing across the United States. By combining
             comprehensive data with visualization design informed by expert
             interviews, we've made complex rate structures more transparent and
             comparable.

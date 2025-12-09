@@ -29,6 +29,16 @@
     margin-top: 0;
     margin-bottom: 0.5em;
   }
+
+  /* Local links only */
+  a[href^="/"],
+  a[href^="#"] {
+    color: var(--highlight-color);
+
+    &:hover {
+      color: lch(from var(--highlight-color) calc(l * 1.2) c h);
+    }
+  }
 }
 
 .toc {
