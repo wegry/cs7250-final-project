@@ -84,7 +84,9 @@ const columns: ColumnsType<UtilityResult> = [
 
 // Query function
 async function fetchUtilitiesByZip(zipCode: string): Promise<UtilityResult[]> {
-  const stmt = (await conn).prepare(`
+  const stmt = await (
+    await conn
+  ).prepare(`
     WITH
     -- Find all rate plans that have been superseded by another
     superseded_ids AS (
@@ -103,6 +105,22 @@ async function fetchUtilitiesByZip(zipCode: string): Promise<UtilityResult[]> {
         ORDER BY is_default DESC, effectiveDate DESC
       ) = 1
     ),
+    -- Match county id with county name from geojson
+    feats AS (
+        SELECT unnest(features) as features
+        FROM read_json('county-data.geojson')
+    ),
+    counties AS (
+        SELECT
+            features.properties.Name as county_name,
+            features.properties.geoid as fips,
+            features.properties.stusps as stusps
+        FROM feats
+    ),
+    crosswalk_zip_map AS (
+        SELECT *
+        FROM read_csv('COUNTY_ZIP_122020.csv')
+    ),
     -- Match zip codes to counties and utilities
     zip_matches AS (
       SELECT
@@ -111,13 +129,15 @@ async function fetchUtilitiesByZip(zipCode: string): Promise<UtilityResult[]> {
         dp._id AS usurdb_id,
         est.State AS state,
         est.County AS county,
-        z.zipcode
-      FROM flattened.zip_county_map z
-      INNER JOIN flattened.eia861_service_territory est
-        ON z.county = est.County AND z.state_abbr = est.State
+        map.ZIP AS zipcode
+      FROM flattened.eia861_service_territory AS est
+      INNER JOIN counties c
+        ON c.county_name = est.County AND c.stusps = est.State
+      LEFT JOIN crosswalk_zip_map AS map
+        ON c.fips = map.COUNTY
       INNER JOIN default_plans dp
         ON dp.eiaId = est."Utility Number"
-      WHERE starts_with(z.zipcode, $1)
+      WHERE starts_with(map.ZIP, $1)
     )
     -- Group by utility, aggregating states, counties, and zip codes
     SELECT
@@ -163,6 +183,8 @@ export function ZipSearch() {
     isLoading: geoLoading,
     error: geoError,
   } = useCountyGeoJSON();
+
+  console.log(geoError);
 
   // Extract unique counties and states from results for highlighting
   const { highlightedCounties, relevantStates } = useMemo(() => {
