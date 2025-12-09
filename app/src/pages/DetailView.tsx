@@ -18,7 +18,7 @@ import { useRatePlan } from "../hooks/useRatePlan";
 import * as s from "./DetailView.module.css";
 
 import dayjs, { Dayjs } from "dayjs";
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, type ReactNode } from "react";
 import { EnergyRateChart } from "../charts/energyRateStructure";
 import { EnergyTiersChart } from "../charts/EnergyTiersChart";
 import {
@@ -50,6 +50,37 @@ const DESCRIPTIONS = {
   fixedCharges:
     "Fixed monthly costs that appear on your bill regardless of how much electricity you use. These cover metering, billing, and basic infrastructure costs. Minimum charges ensure a baseline payment even with very low usage.",
 } as const;
+
+function DashIfEmpty({
+  children,
+  empty,
+}: {
+  children: ReactNode;
+  empty: boolean;
+}) {
+  if (!empty) {
+    return children;
+  }
+
+  return <>&mdash;</>;
+}
+
+function Copy({ val }: { val: string | null | undefined }) {
+  return (
+    <DashIfEmpty empty={!val}>
+      <Popover
+        content={
+          <div className={s.copy}>
+            <p>{val}</p>
+          </div>
+        }
+        trigger="click"
+      >
+        <Button size="small">Show</Button>
+      </Popover>
+    </DashIfEmpty>
+  );
+}
 
 export default function DetailView() {
   const { id: ratePlanParam } = useParams();
@@ -145,20 +176,19 @@ export default function DetailView() {
       },
       {
         label: "Description",
-        children: selectedPlan?.description ? (
-          <Popover
-            content={
-              <div className={s.copy}>
-                <p>{selectedPlan.description}</p>
-              </div>
-            }
-            trigger="click"
-          >
-            <Button>Click me</Button>
-          </Popover>
-        ) : (
-          <>&mdash;</>
-        ),
+        children: <Copy val={selectedPlan?.description} />,
+      },
+      {
+        label: "Basic comments",
+        children: <Copy val={selectedPlan?.basicComments} />,
+      },
+      {
+        label: "Demand comments",
+        children: <Copy val={selectedPlan?.demandComments} />,
+      },
+      {
+        label: "Energy comments",
+        children: <Copy val={selectedPlan?.energyComments} />,
       },
       {
         label: "Rate features",
@@ -194,7 +224,6 @@ export default function DetailView() {
               }),
               color: "purple",
             },
-
             // Fixed/predictable (cyan)
             {
               key: "Flat energy rate",

@@ -84,6 +84,7 @@ export const RatePlan = z.object({
   coincidentRate_tiers: tierShape(
     z.object({ rate: z.number().nullish(), adj: z.number().nullish() }),
   ).nullish(),
+  basicComments: z.string().nullish(),
   demandComments: z.string().nullish(),
   demandHist: z.number().nullish(),
   demandKeyVals: z.preprocess(
@@ -110,7 +111,7 @@ export const RatePlan = z.object({
     }),
   ).nullish(),
   description: z.string().nullish(),
-  energycomments: z.string().nullish(),
+  energyComments: z.string().nullish(),
   /** Hours of the day by months  */
   energyWeekdaySched: optionalSchedule,
   /** Hours of the day by months  */
@@ -146,6 +147,7 @@ export const RatePlan = z.object({
   ),
   sourceParent: z.string().nullish(),
   sourceReference: z.string().nullish(),
+  serviceType: z.string().nullish(),
 });
 
 export const RatePlanArray = z.array(RatePlan);
