@@ -5,6 +5,10 @@
   gap: 8px;
   grid-column: 1 / -1;
   align-items: start;
+
+  &:last-of-type {
+    padding-bottom: 16px;
+  }
 }
 
 .infoBlock {

@@ -64,6 +64,8 @@
 }
 
 .sourceItem {
+  width: 300px;
+  white-space: nowrap;
   display: flex;
   align-items: baseline;
   gap: 0.35rem;

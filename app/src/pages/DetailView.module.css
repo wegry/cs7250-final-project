@@ -29,7 +29,6 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min-content, 30ch));
   grid-auto-rows: minmax(min-content, max-content);
-  padding-bottom: 16px;
 
   gap: 16px;
   align-items: center;
