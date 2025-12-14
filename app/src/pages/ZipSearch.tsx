@@ -114,7 +114,7 @@ async function fetchUtilitiesByZip(zipCode: string): Promise<UtilityResult[]> {
         z.zipcode
       FROM flattened.zip_county_map z
       INNER JOIN flattened.eia861_service_territory est
-        ON z.county = est.County AND z.state_abbr = est.State
+        ON z.county = est.County AND z.state = est.State
       INNER JOIN default_plans dp
         ON dp.eiaId = est."Utility Number"
       WHERE starts_with(z.zipcode, $1)
@@ -183,7 +183,7 @@ export function ZipSearch() {
   // Compute bbox and features using shared utility
   const { bbox, featuresByState } = useMemo(
     () => computeBBoxAndFeaturesByState(geojson, relevantStates),
-    [geojson, relevantStates],
+    [geojson, relevantStates]
   );
   const { width: bodyWidth } = useBodyResizeObserver();
 
@@ -208,7 +208,7 @@ export function ZipSearch() {
   const getTooltip = (
     countyName: string,
     state: string,
-    isHighlighted: boolean,
+    isHighlighted: boolean
   ) => `${countyName}, ${state}${isHighlighted ? " (Matched)" : ""}`;
 
   return (
@@ -228,7 +228,7 @@ export function ZipSearch() {
                     }
                     return params;
                   },
-                  { replace: true },
+                  { replace: true }
                 )
               }
               style={{ maxWidth: 300 }}
