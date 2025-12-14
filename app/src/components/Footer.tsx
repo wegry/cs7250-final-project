@@ -28,9 +28,9 @@ const dataSources = [
     note: "2020–2024 data",
   },
   {
-    name: "GitHub (@scpike)",
-    url: "https://github.com/scpike/us-state-county-zip/blob/a8fcfcbc5978d40b2105b9b8a8151ad54b5aad8d/geo-data.csv",
-    note: "County/zip code mappings",
+    name: "HUD Crosswalk",
+    url: "https://www.huduser.gov/apps/public/uspscrosswalk/home",
+    note: "County zip code mapping (2020)",
   },
 ];
 
